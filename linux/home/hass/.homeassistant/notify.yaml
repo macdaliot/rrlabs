@@ -1,0 +1,16 @@
+- platform: file
+  name: logfile
+  filename: /home/hass/.homeassistant/notifications.log
+  timestamp: 1
+- platform: smtp
+  name: all-email
+  server: smtp.gmail.com
+  port: 587
+  starttls: 1
+  username: %HOME_GMAIL_USER%
+  password: %HOME_GMAIL_PASSWORD%
+  recipient: andrea.dainese@gmail.com
+- platform: pushover
+  name: %PUSHOVER_USER1_NAME%
+  api_key: %PUSHOVER_USER1_API%
+  user_key: %PUSHOVER_USER1_USER%

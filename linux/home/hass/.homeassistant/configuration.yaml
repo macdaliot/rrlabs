@@ -1,0 +1,101 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: %HOME_LATITUDE%
+  longitude: %HOME_LONGITUDE"
+  # Impacts weather/sunrise data
+  elevation: %HOME_ELEVATION%
+  # metric for Metric, imperial for Imperial
+  unit_system: metric
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: %HOME_TIMEZONE%
+
+automation: !include_dir_list automation
+sensor: !include_dir_list sensors
+logger: !include logger.yaml
+notify: !include notify.yaml
+
+# Enables the frontend
+frontend:
+
+http:
+  server_host: 127.0.0.1
+  server_port: 8123
+mqtt:
+  broker: 127.0.0.1
+  port: 1882
+  client_id: home-assistant-1
+  username: %HASS_MQTT_USERNAME%
+  password: %HASS_MQTT_PASSWORD%
+#  embedded:
+#    listeners:
+#      default:
+#        type: tcp
+#      my-tcp-1:
+#        bind: 127.0.0.1:1882
+#      my-tcp-2:
+#        bind: 0.0.0.0:1883
+#        ssl: on
+#        certfile: /etc/ssl/certs/apache-default.crt
+#        keyfile: /etc/ssl/private/apache-default.key
+#    auth:
+#      allow-anonymous: false
+#      password-file: /etc/homeassistant/mqttaccess
+
+##  embedded:
+#    listeners:
+#      default:
+#        type: tcp
+#        bind: 127.0.0.1:1883
+#    auth:
+#      allow-anonymous: true
+
+device_tracker:
+  platform: owntracks
+  max_gps_accuracy: 50
+
+zone:
+  name: Home
+  latitude: %HOME_LATITUDE%
+  longitude: %HOME_LONGITUDE%
+  radius: 200
+  icon: mdi:home
+zone 2:
+  name: %HASS_ZONE2_NAME%
+  latitude: %HASS_ZONE2_LATITUDE%
+  longitude: %HASS_ZONE2_LONGITUDE%
+  radius: 200
+  icon: mdi:city
+zone 3:
+  name: %HASS_ZONE3_NAME%
+  latitude: %HASS_ZONE3_LATITUDE%
+  longitude: %HASS_ZONE3_LONGITUDE%
+  radius: 200
+  icon: mdi:school
+zone 4:
+  name: %HASS_ZONE4_NAME%
+  latitude: %HASS_ZONE4_LATITUDE%
+  longitude: %HASS_ZONE4_LATITUDE%
+  radius: 200
+  icon: mdi:library
+
+# Checks for available updates
+updater:
+
+# Discover some devices automatically
+discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+
+# Enables support for tracking state changes over time.
+history:
+
+# View all events in a logbook
+logbook:
+
+# Track the sun
+sun:
+
+

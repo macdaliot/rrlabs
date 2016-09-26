@@ -1,0 +1,14 @@
+listeners:
+  default:
+    type: tcp
+  my-tcp-1:
+    bind: 127.0.0.1:1882
+  my-tcp-2:
+    bind: 0.0.0.0:1883
+    ssl: on
+    certfile: /etc/ssl/certs/apache-default.crt
+    keyfile: /etc/ssl/private/apache-default.key
+auth:
+  allow-anonymous: false
+  password-file: /etc/homeassistant/mqttaccess
+
