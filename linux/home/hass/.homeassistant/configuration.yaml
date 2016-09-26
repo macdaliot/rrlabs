@@ -3,7 +3,7 @@ homeassistant:
   name: Home
   # Location required to calculate the time the sun rises and sets
   latitude: %HOME_LATITUDE%
-  longitude: %HOME_LONGITUDE"
+  longitude: %HOME_LONGITUDE%
   # Impacts weather/sunrise data
   elevation: %HOME_ELEVATION%
   # metric for Metric, imperial for Imperial

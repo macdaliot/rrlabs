@@ -2,7 +2,7 @@
 
 VAR_FILE="/root/vars.txt"
 
-VARS=$(egrep "^[A-Z_]+=" ${VAR_FILE} | cut -d'=' -f1)
+VARS=$(egrep "^[A-Z0-9_]+=" ${VAR_FILE} | cut -d'=' -f1)
 
 # Load all vars
 . ${VAR_FILE}
