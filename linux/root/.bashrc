@@ -81,8 +81,8 @@ fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
-alias iplist='iptables -L --line-num -n'
-alias ip6list='ip6tables -L --line-num -n'
+alias iplist='iptables -L --line-num -n -v'
+alias ip6list='ip6tables -L --line-num -n -v'
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like

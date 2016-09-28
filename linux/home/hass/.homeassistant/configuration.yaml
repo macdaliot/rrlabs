@@ -76,7 +76,7 @@ zone 3:
 zone 4:
   name: %HASS_ZONE4_NAME%
   latitude: %HASS_ZONE4_LATITUDE%
-  longitude: %HASS_ZONE4_LATITUDE%
+  longitude: %HASS_ZONE4_LONGITUDE%
   radius: 200
   icon: mdi:library
 
