@@ -10,5 +10,5 @@ listeners:
     keyfile: /etc/ssl/private/apache-default.key
 auth:
   allow-anonymous: false
-  password-file: /etc/homeassistant/mqttaccess
+  password-file: /etc/hbmqtt/mqttaccess
 

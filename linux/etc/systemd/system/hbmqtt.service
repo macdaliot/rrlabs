@@ -1,0 +1,13 @@
+[Unit]
+Description=HBMQTT for Home Assistant
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/hbmqtt -c /etc/hbmqtt/hbmqtt.yaml
+SendSIGKILL=no
+RestartForceExitStatus=100
+
+[Install]
+WantedBy=home-assistant@hass.service
