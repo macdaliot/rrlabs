@@ -1,4 +1,5 @@
 #!/bin/bash
+# /etc/ppp/ip-up.d/ipv6ppp0
 
 echo 2 > /proc/sys/net/ipv6/conf/ppp0/accept_ra
 echo 2 > /proc/sys/net/ipv6/conf/ppp0/forwarding

@@ -1,3 +1,4 @@
+# /home/hass/.homeassistant/notify.yaml
 #- platform: file
 #  name: logfile
 #  filename: /home/hass/.homeassistant/notifications.log

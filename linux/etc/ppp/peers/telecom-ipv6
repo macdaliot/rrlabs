@@ -1,4 +1,4 @@
-# Minimalistic default options file for DSL/PPPoE connections
+# /etc/ppp/peers/telecom-ipv6
 debug
 noipdefault
 passive

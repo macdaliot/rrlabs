@@ -1,3 +1,5 @@
+# /etc/hbmqtt/hbmqtt.yaml
+
 listeners:
   default:
     type: tcp

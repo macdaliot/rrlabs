@@ -1,4 +1,5 @@
 #!/bin/bash
+# /usr/local/sbin/update_dnsmasq.sh
 
 DNSMASQ_IP=$(egrep -e "^dhcp-range=[0-9a-f:]+, [0-9a-f:]+, 64, " /etc/dnsmasq.conf | cut -d'=' -f2 | cut -d ',' -f1)
 CURRENT_IP=$(ip -f inet6 addr show dev eth1 | grep global | sed 's/^.*inet6 \([0-9a-f:]\+\)\/64.*/\1/g')

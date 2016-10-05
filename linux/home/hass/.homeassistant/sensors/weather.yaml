@@ -1,1 +1,2 @@
+# /home/hass/.homeassistant/sensors/weather.yaml
 - platform: yr
