@@ -26,8 +26,8 @@ mqtt:
   broker: 127.0.0.1
   port: 1882
   client_id: home-assistant-1
-  username: %HASS_MQTT_USERNAME%
-  password: %HASS_MQTT_PASSWORD%
+  username: %MQTT_HASS_USERNAME%
+  password: %MQTT_HASS_PASSWORD%
 #  embedded:
 #    listeners:
 #      default:
