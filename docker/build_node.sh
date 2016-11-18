@@ -5,7 +5,8 @@ Y="\033[1;33m"
 G="\033[0;32m"
 U="\033[0m"
 
-IMAGE=$1
+IMAGE=$(basename $1)
+SOURCE=$(dirname $1)
 TMP="$(mktemp -dt eveimage_tmp.XXXXXXXXXX)"
 LOG="/tmp/eveimage_build.log"
 QEMU="/opt/qemu/bin/qemu-img"
@@ -16,13 +17,13 @@ function clean {
 
 trap clean EXIT
 
-if [ "${IMAGE}" == "" ]; then
+if [ "$1" == "" ]; then
 	echo -e "${R}Input file not specified.${U}"
 	exit 1
 fi
 
-if [ ! -f "${IMAGE}" ]; then
-	echo -e "${R}Input file (${IMAGE}) does not exist.${U}"
+if [ ! -f "${SOURCE}/${IMAGE}" ]; then
+	echo -e "${R}Input file (${SOURCE}/${IMAGE}) does not exist.${U}"
 	exit 1
 fi
 
@@ -37,14 +38,43 @@ case "${IMAGE}" in
 		TYPE="xrv"
 		DISKS="iosxrv-demo.vmdk"
 		NAME="xrv:$(echo ${IMAGE} | sed 's/^.*-\([0-9.]*\)\..*$/\1/g')"
+		tar -vxf ${SOURCE}/${IMAGE} -C ${TMP} iosxrv-demo.vmdk &> ${LOG}
+		if [ $? -ne 0 ]; then
+			echo -e "${R}Failed to uncompress image.${U}"
+		fi
 		echo -e "Input file is XRv:"
-		tar -vxf ${IMAGE} -C ${TMP} iosxrv-demo.vmdk &> ${LOG}
+		echo -e " - image: ${IMAGE}"
+		echo -e " - type: ${TYPE}"
+		echo -e " - name: ${NAME}"
+		;;
+	vios-*)
+		TYPE="vios"
+		DISKS="${IMAGE}"
+		NAME="vios:$(echo ${IMAGE} | sed 's/vios-//; s/\.vmdk//')"
+		cp -a ${SOURCE}/${IMAGE} ${TMP} &> ${LOG}
+		if [ $? -ne 0 ]; then
+			echo -e "${R}Failed to copy image.${U}"
+		fi
+		echo -e "Input file is XRv:"
+		echo -e " - image: ${IMAGE}"
+		echo -e " - type: ${TYPE}"
+		echo -e " - name: ${NAME}"
+		;;
+	vios_l2-*)
+		TYPE="viosl2"
+		DISKS="${IMAGE}"
+		NAME="viosl2:$(echo ${IMAGE} | sed 's/vios_l2-//; s/\.vmdk//')"
+		cp -a ${SOURCE}/${IMAGE} ${TMP} &> ${LOG}
+		if [ $? -ne 0 ]; then
+			echo -e "${R}Failed to copy image.${U}"
+		fi
+		echo -e "Input file is XRv:"
 		echo -e " - image: ${IMAGE}"
 		echo -e " - type: ${TYPE}"
 		echo -e " - name: ${NAME}"
 		;;
 	*)
-		echo -e "${R}Input file (${IMAGE}) is not supported.${U}"
+		echo -e "${R}Input file (${SOURCE}/${IMAGE}) is not supported.${U}"
 		exit 1
 		;;
 esac

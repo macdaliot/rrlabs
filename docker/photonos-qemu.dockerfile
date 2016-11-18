@@ -4,7 +4,7 @@ MAINTAINER Andrea Dainese <andrea.dainese@gmail.com>
 # Build with: docker build -t eveng/qemu:latest -f photonos-qemu.dockerfile .
 
 # Installing dependencies
-RUN tdnf -y install autoconf automake binutils diffutils gawk gcc glib-devel glibc-devel gzip libtool linux-api-headers make ncurses-devel sed tar util-linux-devel zlib-devel &> /dev/null || exit 1
+RUN tdnf -y install autoconf automake binutils bridge-utils diffutils gawk gcc glib-devel glibc-devel gzip iproute2 iptables libtool linux-api-headers make ncurses-devel sed tar util-linux-devel zlib-devel &> /dev/null || exit 1
 RUN mkdir /usr/src/ || exit 1
 
 # Installing QEMU
