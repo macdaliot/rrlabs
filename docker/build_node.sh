@@ -9,7 +9,8 @@ IMAGE=$(basename $1)
 SOURCE=$(dirname $1)
 TMP="$(mktemp -dt eveimage_tmp.XXXXXXXXXX)"
 LOG="/tmp/eveimage_build.log"
-QEMU="/opt/qemu/bin/qemu-img"
+DOCKER="docker -H=tcp://127.0.0.1:4243"
+QEMUIMG="/opt/qemu/bin/qemu-img"
 
 function clean {
 	rm -rf ${TMP} node
@@ -27,23 +28,46 @@ if [ ! -f "${SOURCE}/${IMAGE}" ]; then
 	exit 1
 fi
 
-rm -rf node &> ${LOG} && mkdir -p node &> ${LOG}
+rm -rf node &>> ${LOG} && mkdir -p node &>> ${LOG}
 if [ $? -ne 0 ]; then
 	echo -e "${R}Cannot create directory (node).${U}"
 	exit 1
 fi
 
 case "${IMAGE}" in
+	*.bin)
+		TYPE="iol"
+		DISKS=""
+		NAME="iol:$(echo ${IMAGE} | sed 's/\.bin$//')"
+		if [ ! -f "${SOURCE}/iourc" ]; then
+			echo -e "${R}IOL license (${SOURCE}/iourc) not found.${U}"
+			exit 1
+		fi
+		echo -e "Input file is IOL:"
+		echo -e " - image: ${SOURCE}/${IMAGE}"
+		echo -e " - license: ${SOURCE}/iourc"
+		echo -e " - type: ${TYPE}"
+		echo -e " - name: ${NAME}"
+		cp "${SOURCE}/${IMAGE}" node/iol.bin &>> ${LOG}
+		if [ $? -ne 0 ]; then
+			echo -e "${R}Failed to copy IOL image.${U}"
+		fi
+		cp "${SOURCE}/iourc" node/iourc &>> ${LOG}
+		if [ $? -ne 0 ]; then
+			echo -e "${R}Failed to copy IOL license${U}"
+		fi
+		cp "/opt/unetlab/wrappers/iol_wrapper" node
+		;;
 	iosxrv*.ova)
 		TYPE="xrv"
 		DISKS="iosxrv-demo.vmdk"
 		NAME="xrv:$(echo ${IMAGE} | sed 's/^.*-\([0-9.]*\)\..*$/\1/g')"
-		tar -vxf ${SOURCE}/${IMAGE} -C ${TMP} iosxrv-demo.vmdk &> ${LOG}
+		tar -vxf ${SOURCE}/${IMAGE} -C ${TMP} iosxrv-demo.vmdk &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to uncompress image.${U}"
 		fi
 		echo -e "Input file is XRv:"
-		echo -e " - image: ${IMAGE}"
+		echo -e " - image: ${SOURCE}/${IMAGE}"
 		echo -e " - type: ${TYPE}"
 		echo -e " - name: ${NAME}"
 		;;
@@ -51,12 +75,12 @@ case "${IMAGE}" in
 		TYPE="vios"
 		DISKS="${IMAGE}"
 		NAME="vios:$(echo ${IMAGE} | sed 's/vios-//; s/\.vmdk//')"
-		cp -a ${SOURCE}/${IMAGE} ${TMP} &> ${LOG}
+		cp -a ${SOURCE}/${IMAGE} ${TMP} &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy image.${U}"
 		fi
 		echo -e "Input file is XRv:"
-		echo -e " - image: ${IMAGE}"
+		echo -e " - image: ${SOURCE}/${IMAGE}"
 		echo -e " - type: ${TYPE}"
 		echo -e " - name: ${NAME}"
 		;;
@@ -64,12 +88,12 @@ case "${IMAGE}" in
 		TYPE="viosl2"
 		DISKS="${IMAGE}"
 		NAME="viosl2:$(echo ${IMAGE} | sed 's/vios_l2-//; s/\.vmdk//')"
-		cp -a ${SOURCE}/${IMAGE} ${TMP} &> ${LOG}
+		cp -a ${SOURCE}/${IMAGE} ${TMP} &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy image.${U}"
 		fi
 		echo -e "Input file is XRv:"
-		echo -e " - image: ${IMAGE}"
+		echo -e " - image: ${SOURCE}/${IMAGE}"
 		echo -e " - type: ${TYPE}"
 		echo -e " - name: ${NAME}"
 		;;
@@ -83,13 +107,30 @@ echo -ne "Building environment... "
 echo "TYPE=${TYPE}" > node/ENV 2> /dev/null
 if [ $? -ne 0 ]; then
 	echo -e "${R}failed${U}"
+	exit 1
 fi
+find node -type f -exec chmod 644 {} \; &>> ${LOG}
+if [ $? -ne 0 ]; then
+	echo -e "${R}failed${U}"
+	exit 1
+fi
+find node -type f -exec chown root:root {} \; &>> ${LOG}
+if [ $? -ne 0 ]; then
+	echo -e "${R}failed${U}"
+	exit 1
+fi
+find node -type f -name "*.bin" -exec chmod 755 {} \; &>> ${LOG}
+if [ $? -ne 0 ]; then
+	echo -e "${R}failed${U}"
+	exit 1
+fi
+
 echo -e "${G}done${U}"
 
 echo -ne "Converting disks... "
 COUNT=0
 for DISK in ${DISKS}; do
-	${QEMU} convert -f vmdk -O qcow2 ${TMP}/${DISK} node/disk${COUNT}.qcow2 &> ${LOG}
+	${QEMUIMG} convert -f vmdk -O qcow2 ${TMP}/${DISK} node/disk${COUNT}.qcow2 &>> ${LOG}
 	if [ $? -ne 0 ]; then
 		echo -e "${R}failed${U}"
 		exit 1
@@ -99,7 +140,7 @@ done
 echo -e "${G}done${U}"
 
 echo -ne "Building Docker image... "
-docker -H=tcp://127.0.0.1:4243 build -t eveng/${NAME} -f eve-xrv.dockerfile . &> ${LOG}
+${DOCKER} build -t eveng/${NAME} -f eveng-${TYPE}.dockerfile . &>> ${LOG}
 if [ $? -ne 0 ]; then
 	echo -e "${R}failed${U}"
 	exit 1
