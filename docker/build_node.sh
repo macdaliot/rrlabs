@@ -56,7 +56,7 @@ case "${IMAGE}" in
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy IOL license${U}"
 		fi
-		cp "/opt/unetlab/wrappers/iol_wrapper" node
+		cp -a "/usr/src/eve-ng-public-dev/wrappers" node
 		;;
 	iosxrv*.ova)
 		TYPE="xrv"

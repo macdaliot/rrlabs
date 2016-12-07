@@ -24,6 +24,41 @@ if [ $? -ne 0 ]; then
 	echo "Failed to bring mgmt0 bridge up."
 	exit 1
 fi
+tunctl -u root -g root -t veth0 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to create veth0 interface."
+	exit 1
+fi
+ip link set dev veth0 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to bring veth0 interface up."
+	exit 1
+fi
+brctl addif mgmt0 veth0 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to attach veth0 to mgmt0 bridge."
+	exit 1
+fi
+iptables -t nat -A POSTROUTING -o mgmt0 -j MASQUERADE &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to configure iptables (MASQUERADE)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8022:8023 -j DNAT --to 192.0.2.254:22-23 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to configure iptables (NAT ports 22:23)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8080 -j DNAT --to 192.0.2.254:80 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to configure iptables (NAT port 80)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8443 -j DNAT --to 192.0.2.254:443 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to configure iptables (NAT port 443)."
+	exit 1
+fi
 
 case "${TYPE}" in
 	iol)
