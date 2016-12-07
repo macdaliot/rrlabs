@@ -2,9 +2,35 @@
 
 QEMU=/usr/local/bin/qemu-system-x86_64
 
-. /root/ENV &> /dev/null
+. /opt/image/ENV &> /dev/null
 if [ $? -ne 0 ]; then
 	echo "Failed to load environment."
+	exit 1
+fi
+
+# Starting SSH server
+dpkg-reconfigure openssh-server &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to regenerate SSH host keys."
+	exit 1
+fi
+service ssh start &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to start SSH server."
+	exit 1
+fi
+
+# Starting FTP server
+service vsftpd start &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to start FTP server."
+	exit 1
+fi
+
+# Starting TFTP server
+service tftpd-hpa start &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed to start TFTP server."
 	exit 1
 fi
 

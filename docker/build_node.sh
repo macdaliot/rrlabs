@@ -28,7 +28,7 @@ if [ ! -f "${SOURCE}/${IMAGE}" ]; then
 	exit 1
 fi
 
-rm -rf node &>> ${LOG} && mkdir -p node &>> ${LOG}
+rm -rf node &>> ${LOG} && mkdir -p node/{image,config} &>> ${LOG}
 if [ $? -ne 0 ]; then
 	echo -e "${R}Cannot create directory (node).${U}"
 	exit 1
@@ -48,15 +48,14 @@ case "${IMAGE}" in
 		echo -e " - license: ${SOURCE}/iourc"
 		echo -e " - type: ${TYPE}"
 		echo -e " - name: ${NAME}"
-		cp "${SOURCE}/${IMAGE}" node/iol.bin &>> ${LOG}
+		cp "${SOURCE}/${IMAGE}" node/image/iol.bin &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy IOL image.${U}"
 		fi
-		cp "${SOURCE}/iourc" node/iourc &>> ${LOG}
+		cp "${SOURCE}/iourc" node/image/iourc &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy IOL license${U}"
 		fi
-		cp -a "/usr/src/eve-ng-public-dev/wrappers" node
 		;;
 	iosxrv*.ova)
 		TYPE="xrv"
@@ -104,7 +103,7 @@ case "${IMAGE}" in
 esac
 
 echo -ne "Building environment... "
-echo "TYPE=${TYPE}" > node/ENV 2> /dev/null
+echo "TYPE=${TYPE}" > node/image/ENV 2> /dev/null
 if [ $? -ne 0 ]; then
 	echo -e "${R}failed${U}"
 	exit 1
@@ -130,7 +129,7 @@ echo -e "${G}done${U}"
 echo -ne "Converting disks... "
 COUNT=0
 for DISK in ${DISKS}; do
-	${QEMUIMG} convert -f vmdk -O qcow2 ${TMP}/${DISK} node/disk${COUNT}.qcow2 &>> ${LOG}
+	${QEMUIMG} convert -f vmdk -O qcow2 ${TMP}/${DISK} node/image/disk${COUNT}.qcow2 &>> ${LOG}
 	if [ $? -ne 0 ]; then
 		echo -e "${R}failed${U}"
 		exit 1

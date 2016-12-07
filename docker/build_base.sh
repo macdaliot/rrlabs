@@ -11,16 +11,16 @@ LOG="/tmp/eveimage_build.log"
 DOCKER="docker -H=tcp://127.0.0.1:4243"
 SUITE="jessie"
 MIRROR="http://auto.mirror.devuan.org/merged"
-PACKAGES="bridge-utils iproute2 iptables iputils-ping net-tools openssh-server tftp-hpa uml-utilities vsftpd"
+PACKAGES="bridge-utils iproute2 iptables iputils-ping net-tools openssh-server tftpd-hpa uml-utilities vsftpd"
 
 function clean {
-    echo rm -rf ${TMP}
+    rm -rf ${TMP}
 }
 
 trap clean EXIT
 
 if [ "${ARCH}" != "i386" ] && [ "${ARCH}" != "amd64" ]; then
-	echo -e "${R}Selected ARCH is not valid.${U}"
+	echo -e "${R}ARCH is not valid, must be i386 or amd64.${U}"
 	exit 1
 fi
 
@@ -89,6 +89,10 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${G}done${U}"
 
+# Customization for Docker
+rm -f ${TMP}/usr/sbin/invoke-rc.d
+ln -s /bin/true ${TMP}/usr/sbin/invoke-rc.d
+
 echo -ne "Installing additional packages... "
 chroot ${TMP} apt-get -y install ${PACKAGES} &>> ${LOG}
 if [ $? -ne 0 ]; then
@@ -102,7 +106,7 @@ chroot ${TMP} apt-get autoclean &>> ${LOG}
 chroot ${TMP} apt-get clean &>> ${LOG}
 chroot ${TMP} apt-get autoremove &>> ${LOG}
 find ${TMP} -name "*-old" -exec rm -f {} \; &>> ${LOG}
-rm -f ${TMP}/etc/*- ${TMP}/etc/.pwd.lock ${TMP}/var/log/*.log ${TMP}/var/lib/apt/lists/* &>> ${LOG}
+rm -f ${TMP}/etc/*- ${TMP}/etc/.pwd.lock ${TMP}/var/log/*.log ${TMP}/var/lib/apt/lists/* ${TMP}/etc/ssh/ssh_host_* &>> ${LOG}
 echo -e "${G}done${U}"
 
 echo -ne "Importing system to Docker... "
