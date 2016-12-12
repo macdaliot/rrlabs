@@ -92,8 +92,8 @@ case "${TYPE}" in
 		HNAME=$(cat /root/iourc | grep "=" | head -n1 | sed 's/\ *=.*//')
 
 		# Checking ID
-		if [[ ! "${ID}" =~ ^[0-9]+$ ]] || [[ ${ID} -gt 1022 ]] || [[ ${ID} -lt 1 ]]; then
-			echo "ID is not a valid integer (must be between 1 and 1022)."
+		if [[ ! "${ID}" =~ ^[0-9]+$ ]] || [[ ${ID} -gt 1024 ]] || [[ ${ID} -lt 1 ]]; then
+			echo "ID is not a valid integer (must be between 1 and 1024)."
 			exit 1
 		fi
 
@@ -112,7 +112,7 @@ case "${TYPE}" in
 
 		# Writing NETMAP
 		for I in $(seq 0 63); do
-			echo "${ID}:${I} 1023:${I}" >> /root/NETMAP
+			echo "${ID}:${I} 1024:${I}" >> /root/NETMAP
 			if [ $? -ne 0 ]; then
 				echo "Failed to write NETMAP."
 				exit 1
