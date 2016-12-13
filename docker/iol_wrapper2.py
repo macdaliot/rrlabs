@@ -24,6 +24,7 @@ def IOL2UDP(src_label, iol_datagram):
     # - 16 bits equals to 0x0100
     iol_src_if = iol_datagram[5]
     datagram = iol_datagram[8:]
+    print("iol_src_if = {}".format(iol_src_if))
     return src_label.to_bytes(3, byteorder='big') + bytes([iol_src_if]) + datagram
 
 def UDP2IOL(iol_id, wrapper_id, udp_datagram):
@@ -32,6 +33,9 @@ def UDP2IOL(iol_id, wrapper_id, udp_datagram):
     # - 8 bits for the interface ID (up to 256 of per node interfaces)
     iol_dst_if = udp_datagram[3]
     datagram = udp_datagram[4:]
+    print("iol_id = {}".format(iol_id))
+    print("wrapper_id = {}".format(wrapper_id))
+    print("iol_dst_if = {}".format(iol_dst_if))
     return iol_id.to_bytes(2, byteorder='big') + wrapper_id.to_bytes(2, byteorder='big') + iol_dst_if.to_bytes(1, byteorder='big') + iol_dst_if.to_bytes(1, byteorder='big') + (1024).to_bytes(2, byteorder='big') + datagram
 
 def main():
@@ -136,7 +140,7 @@ def main():
                             sys.stderr.write("ERROR: cannot connect to IOL socket, packet dropped\n")
                             del(to_iol)
                             pass
-                    else:
+                    if "to_iol" in locals():
                         try:
                             to_iol.send(UDP2IOL(iol_id, wrapper_id, udp_datagram))
                         except Exception as err:
