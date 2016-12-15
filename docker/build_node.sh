@@ -28,7 +28,7 @@ if [ ! -f "${SOURCE}/${IMAGE}" ]; then
 	exit 1
 fi
 
-rm -rf node &>> ${LOG} && mkdir -p node/{image,config} &>> ${LOG}
+rm -rf node &>> ${LOG} && mkdir -p node/image &>> ${LOG}
 if [ $? -ne 0 ]; then
 	echo -e "${R}Cannot create directory (node).${U}"
 	exit 1

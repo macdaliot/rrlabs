@@ -8,32 +8,6 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-# Starting SSH server
-dpkg-reconfigure openssh-server &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "Failed to regenerate SSH host keys."
-	exit 1
-fi
-service ssh start &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "Failed to start SSH server."
-	exit 1
-fi
-
-# Starting FTP server
-service vsftpd start &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "Failed to start FTP server."
-	exit 1
-fi
-
-# Starting TFTP server
-service tftpd-hpa start &> /dev/null
-if [ $? -ne 0 ]; then
-	echo "Failed to start TFTP server."
-	exit 1
-fi
-
 # Building the management switch
 brctl addbr mgmt0 &> /dev/null
 if [ $? -ne 0 ]; then
@@ -55,7 +29,7 @@ if [ $? -ne 0 ]; then
 	echo "Failed to create veth0 interface."
 	exit 1
 fi
-ip link set dev veth0 &> /dev/null
+ip link set dev veth0 up &> /dev/null
 if [ $? -ne 0 ]; then
 	echo "Failed to bring veth0 interface up."
 	exit 1
@@ -89,7 +63,7 @@ fi
 case "${TYPE}" in
 	iol)
 		ID=$1
-		HNAME=$(cat /root/iourc | grep "=" | head -n1 | sed 's/\ *=.*//')
+		HNAME=$(cat /opt/image/iourc | grep "=" | head -n1 | sed 's/\ *=.*//')
 
 		# Checking ID
 		if [[ ! "${ID}" =~ ^[0-9]+$ ]] || [[ ${ID} -gt 1024 ]] || [[ ${ID} -lt 1 ]]; then
