@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-DEBUG = True
+CONSOLE_PORT = 5005
+DEBUG = False
 IFF_NO_PI = 0x1000
 IFF_TAP = 0x0002
 IOL_BUFFER = 1600
@@ -17,7 +18,7 @@ TUNSETLINK = 0x400454cd
 UDP_BUFFER = 10000
 UDP_PORT = 5005
 
-import sys
+import socket, sys
 
 def decodeIOLPacket(iol_datagram):
     # IOL datagram format (maximum observed size is 1555):
@@ -50,4 +51,15 @@ def decodeUDPPacket(udp_datagram):
 
 def encodeUDPPacket(label, iface, payload):
     return label.to_bytes(3, byteorder='little') + iface.to_bytes(1, byteorder='little') + payload
+
+def terminalServer():
+    ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ts.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    ts.bind(("", CONSOLE_PORT))
+    ts.listen(1)
+    
+    while True:
+        client, addr = ts.accept()
+
+
 

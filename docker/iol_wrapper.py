@@ -1,43 +1,45 @@
 #!/usr/bin/env python3
 
-import array, atexit, fcntl, getopt, os, select, signal, socket, struct, subprocess, sys, time
+import array, atexit, fcntl, getopt, multiprocessing, os, select, signal, socket, struct, subprocess, sys, time
 from functions import *
 
+def handle_except(*args):
+    print("except", args, flush=True)
+    sys.exit(255)
+
 def exit_handler():
-    print("EXITING")
-    print(globals())
-    print(type(from_iol))
     if "from_iol" in globals():
-        print("IOL")
         from_iol.close()
-    print(type(from_switcherd))
     if "from_switcherd" in globals():
-        print("SWITCHERD")
         from_switcherd.close()
-    print(type(from_tun))
     if "from_tun" in globals():
-        print("TUN")
         from_tun.close()
-    print(netmap)
     if "netmap" in globals():
-        print("NETMAP")
         os.unlink(netmap)
-    if time.time() - alive < MIN_TIME:
-        sys.stderr.write("ERROR: IOL process died unexpectedly\n")
-        print(console_history)
+    if "iol" in globals() and iol.poll == None:
+        iol.terminate()
+    if "ts" in globals() and ts.is_alive():
+        ts.terminate()
+    if terminated == True:
+        print("INFO: CTRL+C pressed, terminating")
+    elif time.time() - alive < MIN_TIME:
+        sys.stderr.write("ERROR: IOL process died prematurely\n")
         if "console_history" in globals():
-            print(console_history)
-    #else:
-    #   sys.exit(0)
+            print(console_history.decode("utf-8") )
 
 def exit_gracefully(signum, frame):
+    global terminated
     # restore the original signal handler as otherwise evil things will happen
     # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
     signal.signal(signal.SIGINT, original_sigint)
 
     if signum == 2:
         # CTRL+C
-        sys.exit(3)
+        terminated = True
+        if "iol" in globals() and iol.poll == None:
+            iol.terminate()
+        if "ts" in globals() and ts.is_alive():
+            ts.terminate()
 
     # restore the exit gracefully handler here    
     signal.signal(signal.SIGINT, exit_gracefully)
@@ -52,37 +54,46 @@ def usage():
     print("     IOL device ID")
     print("  -l label")
     print("     Node label")
+    print("  -t")
+    print("     Enable terminal server")
 
 def main():
-    global alive, console_history, from_iol, from_switcherd, from_tun, netmap
+    global alive, console_history, from_iol, from_switcherd, from_tun, iol, netmap, ts
+    enable_ts = False
+    terminated = False
+    console_history = bytearray()
+    inputs = [ ]
+    outputs = [ ]
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "f:g:i:l:n:")
+        opts, args = getopt.getopt(sys.argv[1:], "f:g:i:l:n:t")
     except getopt.GetoptError as err:
         sys.stderr.write("ERROR: {}\n".format(err))
         usage()
         sys.exit(1)
 
     # Parsing options
-    for o, a in opts:
-        if o == "-f":
-            iol = a
-        elif o == "-g":
-            switcherd = a
-        elif o == "-i":
-            iol_id = int(a)
-        elif o == "-l":
-            label = int(a)
+    for opt, arg in opts:
+        if opt == "-f":
+            iol_bin = arg
+        elif opt == "-g":
+            switcherd = arg
+        elif opt == "-i":
+            iol_id = int(arg)
+        elif opt == "-l":
+            label = int(arg)
+        elif opt == "-t":
+            enable_ts = True
         else:
             assert False, "unhandled option"
 
     # Checking options
-    if "iol" not in locals():
+    if "iol_bin" not in locals():
         sys.stderr.write("ERROR: missing IOL binary executable\n")
         usage()
         sys.exit(1)
-    if not os.path.isfile(iol):
+    if not os.path.isfile(iol_bin):
         sys.stderr.write("ERROR: cannot find IOL binary executable\n")
         usage()
         sys.exit(1)
@@ -113,7 +124,7 @@ def main():
     write_fsocket = "/tmp/netio0/{}".format(iol_id)
 
     # Writing NETMAP
-    netmap = os.path.basename(iol)
+    netmap = os.path.dirname(iol_bin) + "/NETMAP"
     try:
         os.unlink(netmap)
     except OSError:
@@ -134,6 +145,7 @@ def main():
             sys.exit(1)
     from_iol = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
     from_iol.bind(read_fsocket)
+    inputs.append(from_iol)
 
     # Preparing socket (wrapper -> IOL)
     if not os.path.exists(read_fsocket):
@@ -142,6 +154,7 @@ def main():
     # Preparing socket (switcherd -> wrapper)
     from_switcherd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     from_switcherd.bind(('', UDP_PORT))
+    inputs.append(from_switcherd)
 
     # Preparing socket (wrapper -> switcherd)
     to_switcherd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -151,15 +164,20 @@ def main():
     ifr = struct.pack('16sH', b"veth0", IFF_TAP | IFF_NO_PI)
     fcntl.ioctl(from_tun, TUNSETIFF, ifr)
     fcntl.ioctl(from_tun, TUNSETNOCSUM, 1)
+    inputs.append(from_tun)
 
     # Starting IOL
-    iol = subprocess.Popen([iol, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    iol_args = [ "1" ]
+    iol_env = { "PWD": os.path.dirname(iol_bin) }
+    iol = subprocess.Popen([ iol_bin ] + iol_args, env = iol_env, cwd = os.path.dirname(iol_bin), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    inputs.extend([ iol.stdout.fileno(), iol.stderr.fileno() ])
 
-    inputs = [ from_iol, from_switcherd, from_tun, iol.stdout.fileno(), iol.stderr.fileno() ]
-    outputs = [ ]
-
-    console_history = bytearray()
-    print(globals())
+    # Starting terminal server
+    if enable_ts == True:
+        if DEBUG: print("DEBUG: starting terminal server")
+        ts = multiprocessing.Process(target = terminalServer, args = ())
+        ts.start()
+        ts.join()
 
     while inputs:
         if DEBUG: print("DEBUG: waiting for data")
@@ -167,9 +185,13 @@ def main():
         if iol.poll() != None:
             if DEBUG: print("ERROR: IOL process died")
             # Grab all output before exiting
-            console_history += iol.stdout.read()
             console_history += iol.stderr.read()
-            sys.exit(2)
+            console_history += iol.stdout.read()
+            break
+
+        if enable_ts == True and not ts.is_alive():
+            if DEBUG: print("ERROR: Terminal Server process died")
+            break
 
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
 
@@ -208,7 +230,7 @@ def main():
                 udp_datagram, src_addr = from_switcherd.recvfrom(UDP_BUFFER)
                 if not udp_datagram:
                     sys.stderr.write("ERROR: cannot receive data from switcherd\n")
-                    break
+                    sys.exit(2)
                 else:
                     label, iface, payload = decodeUDPPacket(udp_datagram)
                     if "to_iol" in locals():
@@ -216,7 +238,7 @@ def main():
                             to_iol.send(encodeIOLPacket(wrapper_id, iol_id, iface, payload))
                         except Exception as err:
                             sys.stderr.write("ERROR: cannot send data to IOL node\n")
-                            sys.exit(2)
+                            break
                     else:
                         sys.stderr.write("ERROR: cannot connect to IOL socket, packet dropped\n")
             elif s is from_tun:
@@ -227,7 +249,7 @@ def main():
                         to_iol.send(encodeIOLPacket(wrapper_id, iol_id, MGMT_ID, tap_datagram))
                     except Exception as err:
                         sys.stderr.write("ERROR: cannot send data to IOL MGMT\n")
-                        sys.exit(2)
+                        break
                 else:
                     sys.stderr.write("ERROR: cannot connect to IOL socket, packet dropped\n")
             elif s is iol.stdout.fileno():
@@ -241,8 +263,16 @@ def main():
             else:
                 sys.stderr.write("ERROR: unknown source from select\n")
 
+    if time.time() - alive < MIN_TIME:
+        # IOL died prematurely
+        sys.exit(2)
+    else:
+        # IOL died after a reasonable time
+        sys.exit(0)
+
 if __name__ == "__main__":
     alive = time.time()
+    sys.excepthook = handle_except
     atexit.register(exit_handler)
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
