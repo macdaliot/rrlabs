@@ -3,11 +3,15 @@
 import array, atexit, fcntl, getopt, multiprocessing, os, select, signal, socket, struct, subprocess, sys, time
 from functions import *
 
-def handle_except(*args):
-    print("except", args, flush=True)
-    sys.exit(255)
+#def handle_except(t, v, tb):
+#    sys.stderr.write("ERROR: unmanaged exception")
+#    sys.stderr.write("Type: {}\n".format(t))
+#    sys.stderr.write("Value: {}\n".format(v))
+#    sys.stderr.write("Traceback:\n{}\n".format(tb))
+#    sys.exit(255)
 
 def exit_handler():
+    if DEBUG: print("DEBUG: exiting")
     if "from_iol" in globals():
         from_iol.close()
     if "from_switcherd" in globals():
@@ -28,10 +32,10 @@ def exit_handler():
             print(console_history.decode("utf-8") )
 
 def exit_gracefully(signum, frame):
-    global terminated
     # restore the original signal handler as otherwise evil things will happen
     # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
     signal.signal(signal.SIGINT, original_sigint)
+    if DEBUG: print("DEBUG: signum {} received".format(signum))
 
     if signum == 2:
         # CTRL+C
@@ -58,7 +62,7 @@ def usage():
     print("     Enable terminal server")
 
 def main():
-    global alive, console_history, from_iol, from_switcherd, from_tun, iol, netmap, ts
+    global alive, console_history, from_iol, from_switcherd, from_tun, iol, netmap, terminated, ts
     enable_ts = False
     terminated = False
     console_history = bytearray()
@@ -170,14 +174,14 @@ def main():
     iol_args = [ "1" ]
     iol_env = { "PWD": os.path.dirname(iol_bin) }
     iol = subprocess.Popen([ iol_bin ] + iol_args, env = iol_env, cwd = os.path.dirname(iol_bin), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-    inputs.extend([ iol.stdout.fileno(), iol.stderr.fileno() ])
+    if enable_ts == True:
+        inputs.extend([ iol.stdout.fileno(), iol.stderr.fileno() ])
 
     # Starting terminal server
     if enable_ts == True:
         if DEBUG: print("DEBUG: starting terminal server")
         ts = multiprocessing.Process(target = terminalServer, args = ())
         ts.start()
-        ts.join()
 
     while inputs:
         if DEBUG: print("DEBUG: waiting for data")
@@ -189,11 +193,11 @@ def main():
             console_history += iol.stdout.read()
             break
 
-        if enable_ts == True and not ts.is_alive():
+        if "ts" in globals() and not ts.is_alive():
             if DEBUG: print("ERROR: Terminal Server process died")
             break
 
-        readable, writable, exceptional = select.select(inputs, outputs, inputs)
+        readable, writable, exceptional = select.select(inputs, outputs, inputs, SELECTTIMEOUT)
 
         if "to_iol" not in locals():
             try:
@@ -263,6 +267,9 @@ def main():
             else:
                 sys.stderr.write("ERROR: unknown source from select\n")
 
+    if "ts" in globals() and ts.is_alive():
+        ts.terminate()
+
     if time.time() - alive < MIN_TIME:
         # IOL died prematurely
         sys.exit(2)
@@ -272,7 +279,7 @@ def main():
 
 if __name__ == "__main__":
     alive = time.time()
-    sys.excepthook = handle_except
+    #sys.excepthook = handle_except
     atexit.register(exit_handler)
     original_sigint = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, exit_gracefully)
