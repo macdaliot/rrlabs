@@ -3,7 +3,8 @@
 import array, atexit, fcntl, getopt, os, select, signal, socket, struct, subprocess, sys, time
 from functions import *
 
-def exit_handler():
+def exitHandler():
+    if DEBUG: print("DEBUG: exiting")
     if "from_iol" in globals():
         from_iol.close()
     if "from_switcherd" in globals():
@@ -12,27 +13,32 @@ def exit_handler():
         from_tun.close()
     if "netmap" in globals():
         os.unlink(netmap)
-    if "iol" in globals() and iol.poll == None:
+    if "iol" in globals() and iol.poll() == None:
         iol.terminate()
-    if time.time() - alive < MIN_TIME:
-        sys.stderr.write("ERROR: IOL process died unexpectedly\n")
+    #terminalServerClose(inputs, clients) inputs and clients are not global
+    if terminated == True:
+        print("INFO: CTRL+C pressed, terminating")
+    elif time.time() - alive < MIN_TIME:
+        sys.stderr.write("ERROR: IOL process died prematurely\n")
         if "console_history" in globals():
             print(console_history.decode("utf-8") )
-    else:
-       sys.exit(0)
 
-def exit_gracefully(signum, frame):
+def exitGracefully(signum, frame):
     # restore the original signal handler as otherwise evil things will happen
     # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
     signal.signal(signal.SIGINT, original_sigint)
+    if DEBUG: print("DEBUG: signum {} received".format(signum))
 
     if signum == 2:
         # CTRL+C
-        print("INFO: CTRL+C pressed, exiting")
-        sys.exit(3)
+        terminated = True
+        if "iol" in globals() and iol.poll == None:
+            iol.terminate()
+        if "ts" in globals() and ts.is_alive():
+            ts.terminate()
 
     # restore the exit gracefully handler here    
-    signal.signal(signal.SIGINT, exit_gracefully)
+    signal.signal(signal.SIGINT, exitGracefully)
 
 def usage():
     print("Usage: {} [OPTIONS]".format(sys.argv[0]))
@@ -44,13 +50,21 @@ def usage():
     print("     IOL device ID")
     print("  -l label")
     print("     Node label")
+    print("  -t")
+    print("     Enable terminal server")
 
 def main():
-    global alive, console_history, from_iol, from_switcherd, from_tun, iol, netmap
+    global alive, console_history, from_iol, from_switcherd, from_tun, iol, netmap, terminated
+    enable_ts = False
+    terminated = False
+    console_history = bytearray()
+    inputs = [ ]
+    outputs = [ ]
+    clients = [ ]
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "f:g:i:l:n:")
+        opts, args = getopt.getopt(sys.argv[1:], "f:g:i:l:n:t")
     except getopt.GetoptError as err:
         sys.stderr.write("ERROR: {}\n".format(err))
         usage()
@@ -66,6 +80,8 @@ def main():
             iol_id = int(arg)
         elif opt == "-l":
             label = int(arg)
+        elif opt == "-t":
+            enable_ts = True
         else:
             assert False, "unhandled option"
 
@@ -126,6 +142,7 @@ def main():
             sys.exit(1)
     from_iol = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
     from_iol.bind(read_fsocket)
+    inputs.append(from_iol)
 
     # Preparing socket (wrapper -> IOL)
     if not os.path.exists(read_fsocket):
@@ -134,6 +151,7 @@ def main():
     # Preparing socket (switcherd -> wrapper)
     from_switcherd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     from_switcherd.bind(('', UDP_PORT))
+    inputs.append(from_switcherd)
 
     # Preparing socket (wrapper -> switcherd)
     to_switcherd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -143,16 +161,24 @@ def main():
     ifr = struct.pack('16sH', b"veth0", IFF_TAP | IFF_NO_PI)
     fcntl.ioctl(from_tun, TUNSETIFF, ifr)
     fcntl.ioctl(from_tun, TUNSETNOCSUM, 1)
+    inputs.append(from_tun)
 
     # Starting IOL
     iol_args = [ "1" ]
     iol_env = { "PWD": os.path.dirname(iol_bin) }
     iol = subprocess.Popen([ iol_bin ] + iol_args, env = iol_env, cwd = os.path.dirname(iol_bin), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    if enable_ts == True:
+        inputs.extend([ iol.stdout.fileno(), iol.stderr.fileno() ])
 
-    inputs = [ from_iol, from_switcherd, from_tun, iol.stdout.fileno(), iol.stderr.fileno() ]
-    outputs = [ ]
-
-    console_history = bytearray()
+    # Starting terminal server
+    if enable_ts == True:
+        if DEBUG: print("DEBUG: starting terminal server on {}".format(CONSOLE_PORT))
+        #terminalServerStart(inputs)
+        ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ts.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        ts.bind(("", CONSOLE_PORT))
+        ts.listen(1)
+        inputs.append(ts)
 
     while inputs:
         if DEBUG: print("DEBUG: waiting for data")
@@ -162,7 +188,11 @@ def main():
             # Grab all output before exiting
             console_history += iol.stderr.read()
             console_history += iol.stdout.read()
-            sys.exit(2)
+            break
+
+        #if "ts" in globals() and not ts.is_alive():
+        #    if DEBUG: print("ERROR: Terminal Server process died")
+        #    break
 
         readable, writable, exceptional = select.select(inputs, outputs, inputs)
 
@@ -177,7 +207,7 @@ def main():
 
         for s in readable:
             if s is from_iol:
-                if DEBUG: print("DEBUG: data from IOL")
+                if DEBUG: print("DEBUG: data from IOL (TAP)")
                 iol_datagram = from_iol.recv(IOL_BUFFER)
                 if not iol_datagram:
                     sys.stderr.write("ERROR: cannot receive data from IOL node\n")
@@ -201,7 +231,7 @@ def main():
                 udp_datagram, src_addr = from_switcherd.recvfrom(UDP_BUFFER)
                 if not udp_datagram:
                     sys.stderr.write("ERROR: cannot receive data from switcherd\n")
-                    break
+                    sys.exit(2)
                 else:
                     label, iface, payload = decodeUDPPacket(udp_datagram)
                     if "to_iol" in locals():
@@ -209,7 +239,7 @@ def main():
                             to_iol.send(encodeIOLPacket(wrapper_id, iol_id, iface, payload))
                         except Exception as err:
                             sys.stderr.write("ERROR: cannot send data to IOL node\n")
-                            sys.exit(2)
+                            break
                     else:
                         sys.stderr.write("ERROR: cannot connect to IOL socket, packet dropped\n")
             elif s is from_tun:
@@ -220,23 +250,49 @@ def main():
                         to_iol.send(encodeIOLPacket(wrapper_id, iol_id, MGMT_ID, tap_datagram))
                     except Exception as err:
                         sys.stderr.write("ERROR: cannot send data to IOL MGMT\n")
-                        sys.exit(2)
+                        break
                 else:
                     sys.stderr.write("ERROR: cannot connect to IOL socket, packet dropped\n")
             elif s is iol.stdout.fileno():
-                read = iol.stdout.read(1)
+                if DEBUG: print("DEBUG: data from IOL console (stdout)")
+                data = iol.stdout.read(1)
                 if time.time() - alive < MIN_TIME:
-                    console_history += read
+                    console_history += data
+                inputs, clients = terminalServerSend(inputs, clients, data)
             elif s is iol.stderr.fileno():
-                read = iol.stderr.read(1)
+                if DEBUG: print("DEBUG: data from IOL console (stderr)")
+                data = iol.stderr.read(1)
                 if time.time() - alive < MIN_TIME:
-                    console_history += read
+                    console_history += data
+                inputs, clients = terminalServerSend(inputs, clients, data)
+            elif s is ts:
+                # New client
+                title = "TEST"
+                inputs, clients = terminalServerAccept(s, inputs, clients, title)
+            elif s in clients:
+                if DEBUG: print("DEBUG: data from client")
+                data, inputs, clients = terminalServerReceive(s, inputs, clients)
+                try:
+                    iol.stdin.write(data)
+                except Exception as err:
+                    sys.stderr.write("ERROR: cannot send data to IOL console\n")
+                    break
             else:
                 sys.stderr.write("ERROR: unknown source from select\n")
 
+    inputs, clients = terminalServerClose(inputs, clients)
+
+    if time.time() - alive < MIN_TIME:
+        # IOL died prematurely
+        sys.exit(2)
+    else:
+        # IOL died after a reasonable time
+        sys.exit(0)
+
 if __name__ == "__main__":
     alive = time.time()
-    atexit.register(exit_handler)
+    sys.excepthook = exceptionHandler
+    atexit.register(exitHandler)
     original_sigint = signal.getsignal(signal.SIGINT)
-    signal.signal(signal.SIGINT, exit_gracefully)
+    signal.signal(signal.SIGINT, exitGracefully)
     main()

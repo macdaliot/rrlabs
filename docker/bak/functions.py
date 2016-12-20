@@ -91,10 +91,10 @@ def exceptionHandler(t, v, tb):
 def terminalServerAccept(client, inputs, clients, title):
     conn, addr = client.accept()
     if DEBUG: print("DEBUG: client {}:{} connected".format(addr[0], str(addr[1])))
-    conn.send(bytes([ IAC ]) + bytes([ WILL ]) + bytes([ ECHO ]))
-    conn.send(bytes([ IAC ]) + bytes([ WILL ]) + bytes([ SGA ]))
-    conn.send(bytes([ IAC ]) + bytes([ WILL ]) + bytes([ BINARY ]))
-    conn.send(bytes([ IAC ]) + bytes([ DO ]) + bytes([ BINARY ]))
+    conn.send(bytes(IAC) + bytes(WILL) + bytes(ECHO))
+    conn.send(bytes(IAC) + bytes(WILL) + bytes(SGA))
+    conn.send(bytes(IAC) + bytes(WILL) + bytes(BINARY))
+    conn.send(bytes(IAC) + bytes(DO) + bytes(BINARY))
     conn.send(b'\033' + b']' + b'0' + b';' + str.encode(title) + b'\007')
     conn.send(str.encode("Welcome {} \n".format(addr[0])))
     inputs.append(conn)
@@ -114,16 +114,13 @@ def terminalServerReceive(client, inputs, clients):
     if DEBUG: print("DEBUG: receiving data from client")
     try:
         data = client.recv(TS_BUFFER)
-        if (int.from_bytes(data, byteorder='big') == IAC):
-            # Need to pop two more telnet commands
-            data = client.recv(TS_BUFFER)
-            data = client.recv(TS_BUFFER)
-            data = None
-
     except Exception as err:
         sys.stderr.write("ERROR: cannot receive data from client\n")
         inputs.remove(client)
         clients.remove(client)
+    if (data):
+        print(data)
+        print("IAC")
     return data, inputs, clients
 
 def terminalServerSend(inputs, clients, data):
