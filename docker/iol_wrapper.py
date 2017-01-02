@@ -19,7 +19,7 @@ def exitHandler():
     #if "inputs" in globals() and "clients" in globals() and not inputs and not clients:
     #    inputs, clients = terminalServerClose(inputs, clients)
     if terminated == True:
-        print("INFO: CTRL+C pressed, terminating")
+        print("INFO: received request to terminate")
     elif time.time() - alive < MIN_TIME:
         sys.stderr.write("ERROR: IOL process died prematurely\n")
         if "console_history" in globals():
@@ -29,10 +29,11 @@ def exitGracefully(signum, frame):
     # restore the original signal handler as otherwise evil things will happen
     # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
     signal.signal(signal.SIGINT, original_sigint)
+    signal.signal(signal.SIGTERM, original_sigterm)
     if DEBUG: print("DEBUG: signum {} received".format(signum))
 
-    if signum == 2:
-        # CTRL+C
+    if signum == 2 or signum == 15:
+        # SIGINT (CTRL+C) / SIGTERM
         terminated = True
         if "iol" in globals() and iol.poll == None:
             iol.terminate()
@@ -41,6 +42,7 @@ def exitGracefully(signum, frame):
 
     # restore the exit gracefully handler here    
     signal.signal(signal.SIGINT, exitGracefully)
+    signal.signal(signal.SIGTERM, exitGracefully)
 
 def usage():
     print("Usage: {} [OPTIONS]".format(sys.argv[0]))
@@ -296,5 +298,7 @@ if __name__ == "__main__":
     sys.excepthook = exceptionHandler
     atexit.register(exitHandler)
     original_sigint = signal.getsignal(signal.SIGINT)
+    original_sigterm = signal.getsignal(signal.SIGTERM)
     signal.signal(signal.SIGINT, exitGracefully)
+    signal.signal(signal.SIGTERM, exitGracefully)
     main()

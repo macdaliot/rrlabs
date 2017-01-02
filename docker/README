@@ -29,7 +29,7 @@ Build specific IOL image:
 Run specific IOL image:
 
 ~~~
-docker run --privileged -e SWITCHERD=127.0.0.1 -e LABEL=1 -e TITLE=ciao eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /bin/bash
+docker run --privileged -d eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh 1
 ~~~
 
 Add -ti to debug
