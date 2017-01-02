@@ -1,62 +1,62 @@
 #!/bin/bash
 
-QEMU=/usr/local/bin/qemu-system-x86_64
+WRAPPER=/sbin/wrapper.py
 
 . /opt/image/ENV &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to load environment."
+	echo "ERROR: failed to load environment"
 	exit 1
 fi
 
 # Building the management switch
 brctl addbr mgmt0 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to add mgmt0 bridge."
+	echo "ERROR: failed to add mgmt0 bridge"
 	exit 1
 fi
 ip addr add 192.0.2.1/24 dev mgmt0 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to set IP address of mgmt0 bridge."
+	echo "ERROR: failed to set IP address of mgmt0 bridge"
 	exit 1
 fi
 ip link set mgmt0 up &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to bring mgmt0 bridge up."
+	echo "ERROR: failed to bring mgmt0 bridge up"
 	exit 1
 fi
 tunctl -u root -g root -t veth0 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to create veth0 interface."
+	echo "ERROR: failed to create veth0 interface"
 	exit 1
 fi
 ip link set dev veth0 up &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to bring veth0 interface up."
+	echo "ERROR: failed to bring veth0 interface up"
 	exit 1
 fi
 brctl addif mgmt0 veth0 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to attach veth0 to mgmt0 bridge."
+	echo "ERROR: failed to attach veth0 to mgmt0 bridge"
 	exit 1
 fi
 iptables -t nat -A POSTROUTING -o mgmt0 -j MASQUERADE &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to configure iptables (MASQUERADE)."
+	echo "ERROR: failed to configure iptables (MASQUERADE)"
 	exit 1
 fi
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8022:8023 -j DNAT --to 192.0.2.254:22-23 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to configure iptables (NAT ports 22:23)."
+	echo "ERROR: failed to configure iptables (NAT ports 22:23)"
 	exit 1
 fi
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8080 -j DNAT --to 192.0.2.254:80 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to configure iptables (NAT port 80)."
+	echo "ERROR: failed to configure iptables (NAT port 80)"
 	exit 1
 fi
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8443 -j DNAT --to 192.0.2.254:443 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "Failed to configure iptables (NAT port 443)."
+	echo "ERROR: failed to configure iptables (NAT port 443)."
 	exit 1
 fi
 
@@ -67,31 +67,30 @@ case "${TYPE}" in
 
 		# Checking ID
 		if [[ ! "${ID}" =~ ^[0-9]+$ ]] || [[ ${ID} -gt 1024 ]] || [[ ${ID} -lt 1 ]]; then
-			echo "ID is not a valid integer (must be between 1 and 1024)."
+			echo "ERROR: ID is not a valid integer (must be between 1 and 1024)"
 			exit 1
 		fi
 
 		# Setting hostname
 		echo -e "127.0.0.1 localhost\n127.0.1.1 ${HNAME}\n127.0.0.127 xml.cisco.com" > /etc/hosts 2> /dev/null
 		if [ $? -ne 0 ]; then
-			echo "Failed to set /etc/hosts."
+			echo "ERROR: failed to set /etc/hosts"
 			exit 1
 		fi
 		echo "${HNAME}" > /etc/hostname 2> /dev/null && hostname ${HNAME} &> /dev/null
 		if [ $? -ne 0 ]; then
-			echo "Failed to set hostname."
+			echo "ERROR: failed to set hostname"
 			exit 1
 		fi
 		export HOSTNAME=${HNAME}
 
-		# Writing NETMAP
-		for I in $(seq 0 63); do
-			echo "${ID}:${I} 1024:${I}" >> /root/NETMAP
-			if [ $? -ne 0 ]; then
-				echo "Failed to write NETMAP."
-				exit 1
-			fi
-		done
+		mkdir -p /tmp/netio0 &> /dev/null
+		if [ $? -ne 0 ]; then
+			echo "ERROR: failed to create directory (/tmp/netio)"
+			exit 1
+		fi
+
+		${WRAPPER} -g 127.0.0.1 -i 1 -l 1 -f /opt/image/iol.bin -t -w ciao
 		;;
 	*)
 		;;

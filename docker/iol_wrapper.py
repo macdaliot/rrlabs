@@ -15,7 +15,9 @@ def exitHandler():
         os.unlink(netmap)
     if "iol" in globals() and iol.poll() == None:
         iol.terminate()
-    #terminalServerClose(inputs, clients) inputs and clients are not global
+    # TODO
+    #if "inputs" in globals() and "clients" in globals() and not inputs and not clients:
+    #    inputs, clients = terminalServerClose(inputs, clients)
     if terminated == True:
         print("INFO: CTRL+C pressed, terminating")
     elif time.time() - alive < MIN_TIME:
@@ -52,11 +54,14 @@ def usage():
     print("     Node label")
     print("  -t")
     print("     Enable terminal server")
+    print("  -w")
+    print("     Window title")
 
 def main():
-    global alive, console_history, from_iol, from_switcherd, from_tun, iol, netmap, terminated
+    global alive, clients, console_history, from_iol, from_switcherd, from_tun, inputs, iol, netmap, terminated
     enable_ts = False
     terminated = False
+    title = None
     console_history = bytearray()
     inputs = [ ]
     outputs = [ ]
@@ -64,7 +69,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "f:g:i:l:n:t")
+        opts, args = getopt.getopt(sys.argv[1:], "f:g:i:l:n:tw:")
     except getopt.GetoptError as err:
         sys.stderr.write("ERROR: {}\n".format(err))
         usage()
@@ -82,6 +87,8 @@ def main():
             label = int(arg)
         elif opt == "-t":
             enable_ts = True
+        elif opt == "-w":
+            title = arg
         else:
             assert False, "unhandled option"
 
@@ -164,16 +171,15 @@ def main():
     inputs.append(from_tun)
 
     # Starting IOL
-    iol_args = [ "1" ]
+    iol_args = [ "-n", "4096", "1" ]
     iol_env = { "PWD": os.path.dirname(iol_bin) }
-    iol = subprocess.Popen([ iol_bin ] + iol_args, env = iol_env, cwd = os.path.dirname(iol_bin), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    iol = subprocess.Popen([ iol_bin ] + iol_args, env = iol_env, cwd = os.path.dirname(iol_bin), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
     if enable_ts == True:
         inputs.extend([ iol.stdout.fileno(), iol.stderr.fileno() ])
 
     # Starting terminal server
     if enable_ts == True:
         if DEBUG: print("DEBUG: starting terminal server on {}".format(CONSOLE_PORT))
-        #terminalServerStart(inputs)
         ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ts.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         ts.bind(("", CONSOLE_PORT))
@@ -263,7 +269,6 @@ def main():
                 inputs, clients = terminalServerSend(inputs, clients, data)
             elif s is ts:
                 # New client
-                title = "TEST"
                 inputs, clients = terminalServerAccept(s, inputs, clients, title)
             elif s in clients:
                 if DEBUG: print("DEBUG: data from client")

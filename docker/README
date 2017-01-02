@@ -1,0 +1,43 @@
+# Docker backend
+
+## How to build
+
+Build base images with:
+
+~~~
+./build_base.sh i386
+./build_base.sh amd64
+~~~
+
+The following docker images will be built:
+
+- eveng/amd64
+- eveng/i386 
+
+Build IOL base image:
+
+~~~
+docker build -t eveng/iol:latest -f base-iol.dockerfile .
+~~~
+
+Build specific IOL image:
+
+~~~
+./build_node.sh /opt/unetlab/addons/iol/bin/L3-ADVENTERPRISEK9-M-15.5-2T.bin
+~~~
+
+Run specific IOL image:
+
+~~~
+docker run --privileged -e SWITCHERD=127.0.0.1 -e LABEL=1 -e TITLE=ciao eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /bin/bash
+~~~
+
+Add -ti to debug
+
+Get the IP address:
+
+~~~
+docker inspect 19c8a5538809 | grep IPAddress
+~~~
+
+Console is at 5005

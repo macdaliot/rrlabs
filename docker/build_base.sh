@@ -11,7 +11,8 @@ LOG="/tmp/eveimage_build.log"
 DOCKER="docker -H=tcp://127.0.0.1:4243"
 SUITE="jessie"
 MIRROR="http://auto.mirror.devuan.org/merged"
-PACKAGES="bridge-utils iproute2 iptables iputils-ping net-tools uml-utilities"
+PACKAGES="bridge-utils iproute2 iptables iputils-ping net-tools procps python3 uml-utilities"
+
 
 function clean {
     rm -rf ${TMP}

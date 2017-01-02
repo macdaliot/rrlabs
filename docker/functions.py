@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+ADMIN_USER = "eveng"
+ADMIN_PASSWORD = "password"
+ADMIN_SECRET = "secret"
 CONSOLE_PORT = 5005
-DEBUG = True
+DEBUG = False
 IFF_NO_PI = 0x1000
 IFF_TAP = 0x0002
 IOL_BUFFER = 1600
@@ -47,7 +50,7 @@ TTYPE  = 24 # Terminal Type
 NAWS   = 31 # Negotiate About Window Size
 LINEMO = 34 # Line Mode
 
-import socket, sys, threading, traceback
+import socket, sys, threading, time, traceback
 
 def decodeIOLPacket(iol_datagram):
     # IOL datagram format (maximum observed size is 1555):
@@ -88,6 +91,10 @@ def exceptionHandler(t, v, tb):
     sys.stderr.write("Traceback:\n{}\n".format(traceback.print_tb(tb)))
     sys.exit(255)
 
+def now():
+    # Return current UNIX time in milliseconds
+    return int(round(time.time() * 1000))
+
 def terminalServerAccept(client, inputs, clients, title):
     conn, addr = client.accept()
     if DEBUG: print("DEBUG: client {}:{} connected".format(addr[0], str(addr[1])))
@@ -95,8 +102,9 @@ def terminalServerAccept(client, inputs, clients, title):
     conn.send(bytes([ IAC ]) + bytes([ WILL ]) + bytes([ SGA ]))
     conn.send(bytes([ IAC ]) + bytes([ WILL ]) + bytes([ BINARY ]))
     conn.send(bytes([ IAC ]) + bytes([ DO ]) + bytes([ BINARY ]))
-    conn.send(b'\033' + b']' + b'0' + b';' + str.encode(title) + b'\007')
-    conn.send(str.encode("Welcome {} \n".format(addr[0])))
+    if title != None:
+        conn.send(b'\033' + b']' + b'0' + b';' + str.encode(title) + b'\007')
+    conn.send(str.encode("Welcome {} \r\n".format(addr[0])))
     inputs.append(conn)
     clients.append(conn)
     return inputs, clients
@@ -134,7 +142,6 @@ def terminalServerSend(inputs, clients, data):
             if DEBUG: print("DEBUG: removing broken client")
             client.close()
             inputs.remove(client)
-            client.remove(client)
+            clients.remove(client)
     return inputs, clients
-
 

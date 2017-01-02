@@ -5,8 +5,6 @@ Y="\033[1;33m"
 G="\033[0;32m"
 U="\033[0m"
 
-IMAGE=$(basename $1)
-SOURCE=$(dirname $1)
 TMP="$(mktemp -dt eveimage_tmp.XXXXXXXXXX)"
 LOG="/tmp/eveimage_build.log"
 DOCKER="docker -H=tcp://127.0.0.1:4243"
@@ -22,6 +20,14 @@ if [ "$1" == "" ]; then
 	echo -e "${R}Input file not specified.${U}"
 	exit 1
 fi
+
+if [ ! -f "$1" ]; then
+	echo -e "${R}Input file ($1) does not exist.${U}"
+	exit 1
+fi
+
+IMAGE=$(basename $1)
+SOURCE=$(dirname $1)
 
 if [ ! -f "${SOURCE}/${IMAGE}" ]; then
 	echo -e "${R}Input file (${SOURCE}/${IMAGE}) does not exist.${U}"
@@ -51,11 +57,24 @@ case "${IMAGE}" in
 		cp "${SOURCE}/${IMAGE}" node/image/iol.bin &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy IOL image.${U}"
+			exit 1
 		fi
 		cp "${SOURCE}/iourc" node/image/iourc &>> ${LOG}
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to copy IOL license${U}"
+			exit 1
 		fi
+		echo -e "${G}Starting IOL node preconfiguration${U}"
+		cd node/image &>> ${LOG}
+		touch NETMAP &>> ${LOG}
+		../../preconfigure-iol.py
+		if [ $? -ne 0 ]; then
+			echo -e "${R}Failed to preconfigure the IOL node${U}"
+			exit 1
+		fi
+		rm -f NETMAP &>> ${LOG}
+		cd ../..
+		echo -e "${G}\nIOL node preconfigured${U}"
 		;;
 	iosxrv*.ova)
 		TYPE="xrv"
