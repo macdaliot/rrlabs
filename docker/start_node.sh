@@ -2,11 +2,90 @@
 
 WRAPPER=/sbin/wrapper.py
 
+function usage {
+	echo "Usage: $0 [OPTIONS]"
+	echo "  -a INTEGER"
+	echo "     Number of ATM interfaces"
+	echo "  -e INTEGER"
+	echo "     Number of Ethernet interfaces"
+	echo "  -g STRING"
+	echo "     switcherd hostname or IP address"
+	echo "  -i STRING"
+	echo "     Device ID or UUID"
+	echo "  -l INTEGER"
+	echo "     Label"
+	echo "  -m INTEGER"
+	echo "     Configured memory"
+	echo "  -s INTEGER"
+	echo "     Number of serial interfaces"
+	echo "  -t"
+	echo "     Enable terminal server"
+	echo "  -w STRING"
+	echo "     Window title"
+}
+
+while getopts ":a:e:g:i:l:m:s:tw:" opt; do
+	case $opt in
+		a)
+			ATM=${OPTARG}
+			;;
+		e)
+			ETH=${OPTARG}
+			;;
+		g)
+			SWITCHERD=${OPTARG}
+			;;
+		i)
+			ID=${OPTARG}
+			;;
+		l)
+			LABEL=${OPTARG}
+			;;
+		m)
+			MEMORY=${OPTARG}
+			;;
+		s)
+			SERIAL=${OPTARG}
+			;;
+		t)
+			TS=1
+			;;
+		w)
+			WINDOW=${OPTARG}
+			;;
+		*)
+			echo "ERROR: unhandled option"
+			usage
+			exit 1
+	esac
+done
+
 . /opt/image/ENV &> /dev/null
 if [ $? -ne 0 ]; then
 	echo "ERROR: failed to load environment"
 	exit 1
 fi
+
+# Checking paramters
+if [ "${LABEL}" == "" ]; then
+	echo "ERROR: missing label"
+	exit 1
+fi
+if [ "${SWITCHERD}" == "" ]; then
+	echo "ERROR: missing switcherid"
+	exit 1
+fi
+case "${TYPE}" in
+	iol)
+		if [ "${ID}" == "" ]; then
+			echo "ERROR: missing ID"
+			exit 1
+		fi
+		;;
+	*)
+		echo "ERROR: unsupported node type"
+		exit 1
+esac
 
 # Building the management switch
 brctl addbr mgmt0 &> /dev/null
@@ -62,7 +141,6 @@ fi
 
 case "${TYPE}" in
 	iol)
-		ID=$1
 		HNAME=$(cat /opt/image/iourc | grep "=" | head -n1 | sed 's/\ *=.*//')
 
 		# Checking ID
@@ -90,9 +168,29 @@ case "${TYPE}" in
 			exit 1
 		fi
 
-		${WRAPPER} -g 127.0.0.1 -i 1 -l 1 -f /opt/image/iol.bin -t -w ciao
-		;;
-	*)
+		ARGS="-g ${SWITCHERD} -i ${ID} -l ${LABEL} -f /opt/image/iol.bin"
+		if [ "${TS}" == "1" ]; then
+			ARGS="${ARGS} -t"
+		fi
+		if [ "${TITLE}" != "" ]; then
+			ARGS="${ARGS} -w ${TITLE}"
+		fi
+		ARGS="${ARGS} -- -q -n 4096"
+		if [ "${ATM}" != "" ]; then
+			ARGS="${ARGS} -a ${ATM}"
+		fi
+		if [ "${ETH}" != "" ]; then
+			ARGS="${ARGS} -e ${ETH}"
+		fi
+		if [ "${MEMORY}" != "" ]; then
+			ARGS="${ARGS} -m ${MEMORY}"
+		fi
+		if [ "${SERIAL}" != "" ]; then
+			ARGS="${ARGS} -s ${SERIAL}"
+		fi
+
+		echo "INFO: starting wrapper: ${WRAPPER} ${ARGS}"
+		${WRAPPER} ${ARGS}
 		;;
 esac
 

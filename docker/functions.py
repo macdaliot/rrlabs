@@ -56,7 +56,7 @@ def decodeIOLPacket(iol_datagram):
     # IOL datagram format (maximum observed size is 1555):
     # - 16 bits for the destination IOL ID
     # - 16 bits for the source IOL ID
-    # - 8 bits for the destination interface (z = x/y -> z = x + 3 * 16)
+    # - 8 bits for the destination interface (z = x/y -> z = x + y * 16)
     # - 8 bits for the source interface (z = x/y -> z = x + y * 16)
     # - 16 bits equals to 0x0100
     dst_id = int.from_bytes(iol_datagram[0:1], byteorder='big')

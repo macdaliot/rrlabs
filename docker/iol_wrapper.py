@@ -46,17 +46,17 @@ def exitGracefully(signum, frame):
 
 def usage():
     print("Usage: {} [OPTIONS]".format(sys.argv[0]))
-    print("  -f IOL")
+    print("  -f STRING")
     print("     IOL binary executable")
-    print("  -g hostname")
+    print("  -g STRING")
     print("     switcherd hostname or IP address")
-    print("  -i iol_id")
+    print("  -i INTEGER")
     print("     IOL device ID")
-    print("  -l label")
+    print("  -l INTEGER")
     print("     Node label")
     print("  -t")
     print("     Enable terminal server")
-    print("  -w")
+    print("  -w STRING")
     print("     Window title")
 
 def main():
@@ -173,8 +173,14 @@ def main():
     inputs.append(from_tun)
 
     # Starting IOL
-    iol_args = [ "-n", "4096", "1" ]
+    try:
+        iol_args = sys.argv[sys.argv.index("--") + 1:]
+    except:
+        iol_args = [ ]
+        pass
+    iol_args.append(str(iol_id))
     iol_env = { "PWD": os.path.dirname(iol_bin) }
+    print("INFO: starting IOL: {} {}".format(iol_bin, ''.join(iol_args)))
     iol = subprocess.Popen([ iol_bin ] + iol_args, env = iol_env, cwd = os.path.dirname(iol_bin), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
     if enable_ts == True:
         inputs.extend([ iol.stdout.fileno(), iol.stderr.fileno() ])
