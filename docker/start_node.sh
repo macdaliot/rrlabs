@@ -123,6 +123,11 @@ if [ $? -ne 0 ]; then
 	echo "ERROR: failed to configure iptables (MASQUERADE)"
 	exit 1
 fi
+iptables -t nat -A POSTROUTING -o mgmt0 -j MASQUERADE &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (MASQUERADE)"
+	exit 1
+fi
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8022 -j DNAT --to 192.0.2.254:22 &> /dev/null
 if [ $? -ne 0 ]; then
 	echo "ERROR: failed to configure iptables (NAT ports 22)"
