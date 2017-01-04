@@ -118,7 +118,7 @@ if [ $? -ne 0 ]; then
 	echo "ERROR: failed to attach veth0 to mgmt0 bridge"
 	exit 1
 fi
-iptables -t nat -A POSTROUTING -o mgmt0 -j MASQUERADE &> /dev/null
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE &> /dev/null
 if [ $? -ne 0 ]; then
 	echo "ERROR: failed to configure iptables (MASQUERADE)"
 	exit 1
@@ -139,6 +139,36 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8443 -j DNAT --to 192.0.2.254:443 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT port 443)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i mgmt0 -p udp --dport 69 -j DNAT --to 172.17.0.1:69
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT port 69)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i mgmt0 -p tcp --dport 20 -j DNAT --to 172.17.0.1:20
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT port 20)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i mgmt0 -p tcp --dport 21 -j DNAT --to 172.17.0.1:21
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT port 21)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i mgmt0 -p tcp --dport 22 -j DNAT --to 172.17.0.1:22
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT port 22)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i mgmt0 -p tcp --dport 80 -j DNAT --to 172.17.0.1:80
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT port 80)."
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i mgmt0 -p tcp --dport 443 -j DNAT --to 172.17.0.1:443
 if [ $? -ne 0 ]; then
 	echo "ERROR: failed to configure iptables (NAT port 443)."
 	exit 1
