@@ -36,19 +36,36 @@ def main():
     IPAddrA[ 53 ] = "172.17.0.2"
     IPAddrA[ 54 ] = "172.17.0.3"
     IPAddrA[ 55 ] = "172.17.0.4"
-    # docker run --privileged -d --name node-53 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh -e 1 -s 1 -g 172.17.0.1 -i 1 -l 53 -s 1-t -w R1
-    # docker run --privileged -d --name node-54 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh -e 1 -s 1 -g 172.17.0.1 -i 1 -l 54 -s 1-t -w R2
-    # docker run --privileged -d --name node-55 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh -e 1 -s 1 -g 172.17.0.1 -i 1 -l 55 -s 1-t -w R3
+    # docker run --privileged -d --name node-53 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh -e 1 -s 1 -g 172.17.0.1 -i 1 -l 53 -t -w R1
+    # docker run --privileged -d --name node-54 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh -e 1 -s 1 -g 172.17.0.1 -i 2 -l 54 -t -w R2
+    # docker run --privileged -d --name node-55 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /sbin/start_node.sh -e 1 -s 1 -g 172.17.0.1 -i 3 -l 55 -t -w R3
 
     topology = TopA
+    ip_addrs = IPAddrA
     print(topology)
 
     from_nodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     from_nodes.bind(('', UDP_PORT))
     to_nodes = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # to_nodes.sendto(encodeUDPPacket(label, src_if, payload), (IPADDR, UDP_PORT))
-    
-
+    while True:
+        udp_datagram, src_addr = from_nodes.recvfrom(UDP_BUFFER)
+        if not udp_datagram:
+            sys.stderr.write("ERROR: cannot receive data from nodes\n")
+            sys.exit(2)
+        else:
+            src_node_id, src_iface_id, payload = decodeUDPPacket(udp_datagram)
+            src_label = src_node_id * 256 + src_iface_id
+            if src_label in topology:
+                for dst_label in topology[src_label]:
+                    dst_node_id = dst_label // 256
+                    dst_iface_id = dst_label % 256
+                    if dst_node_id in ip_addrs:
+                        if DEBUG: print("DEBUG: sending to {} {}:{}".format(ip_addrs[dst_node_id], dst_node_id, dst_iface_id))
+                        to_nodes.sendto(encodeUDPPacket(dst_node_id, dst_iface_id, payload), (ip_addrs[dst_node_id], UDP_PORT))
+                    else:
+                        if DEBUG: print("DEBUG: cannot find node IP for label {}, topology is corrupted".format(dst_label))
+            else:
+                if DEBUG: print("DEBUG: {} not active in the current topology".format(dst_label))
 
 if __name__ == "__main__":
     sys.excepthook = exceptionHandler

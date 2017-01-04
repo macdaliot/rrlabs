@@ -123,9 +123,14 @@ if [ $? -ne 0 ]; then
 	echo "ERROR: failed to configure iptables (MASQUERADE)"
 	exit 1
 fi
-iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8022:8023 -j DNAT --to 192.0.2.254:22-23 &> /dev/null
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8022 -j DNAT --to 192.0.2.254:22 &> /dev/null
 if [ $? -ne 0 ]; then
-	echo "ERROR: failed to configure iptables (NAT ports 22:23)"
+	echo "ERROR: failed to configure iptables (NAT ports 22)"
+	exit 1
+fi
+iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8023 -j DNAT --to 192.0.2.254:23 &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "ERROR: failed to configure iptables (NAT ports 23)"
 	exit 1
 fi
 iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 8080 -j DNAT --to 192.0.2.254:80 &> /dev/null
@@ -147,6 +152,15 @@ case "${TYPE}" in
 		if [[ ! "${ID}" =~ ^[0-9]+$ ]] || [[ ${ID} -gt 1024 ]] || [[ ${ID} -lt 1 ]]; then
 			echo "ERROR: ID is not a valid integer (must be between 1 and 1024)"
 			exit 1
+		fi
+
+		# Fixing NVRAM
+		if [ "${ID}" != "1" ]; then
+			mv /opt/image/nvram_00001 /opt/image/nvram_$(printf "%05d" ${ID}) &> /dev/null
+			if [ $? -ne 0 ]; then
+				echo "ERROR: failed to fix NVRAM."
+				exit 1
+			fi
 		fi
 
 		# Setting hostname

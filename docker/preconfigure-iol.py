@@ -24,8 +24,10 @@ def main():
                 i = p.expect([ "Router>", "Switch>" ], timeout = 5)
                 if i == 0:
                     is_switch = False
+                    hostname = "iolrouter"
                 else:
                     is_switch = True
+                    switch = "iolswitch"
             except:
                 p.sendline("\r\n")
                 i = -1
@@ -35,6 +37,14 @@ def main():
         p.sendline("configure terminal")
         p.expect("\(config\)#")
         p.sendline("username {} privilege 15 password {}".format(ADMIN_USER, ADMIN_PASSWORD))
+        p.expect("\(config\)#")
+        p.sendline("hostname {}".format(hostname))
+        p.expect("\(config\)#")
+        p.sendline("ip domain name example.com")
+        p.expect("\(config\)#")
+        p.sendline("crypto key generate rsa")
+        p.expect("How many bits in the modulus")
+        p.sendline("1024")
         p.expect("\(config\)#")
         p.sendline("interface ethernet0/0")
         p.expect("\(config-if\)#")
@@ -48,6 +58,8 @@ def main():
         p.sendline("line vty 0 4")
         p.expect("\(config-line\)#")
         p.sendline("login local")
+        p.expect("\(config-line\)#")
+        p.sendline("transport input telnet ssh")
         p.expect("\(config-line\)#")
         p.sendline("end")
         p.expect("#")

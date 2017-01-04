@@ -4,7 +4,7 @@ ADMIN_USER = "eveng"
 ADMIN_PASSWORD = "password"
 ADMIN_SECRET = "secret"
 CONSOLE_PORT = 5005
-DEBUG = False
+DEBUG = True
 IFF_NO_PI = 0x1000
 IFF_TAP = 0x0002
 IOL_BUFFER = 1600
@@ -59,8 +59,8 @@ def decodeIOLPacket(iol_datagram):
     # - 8 bits for the destination interface (z = x/y -> z = x + y * 16)
     # - 8 bits for the source interface (z = x/y -> z = x + y * 16)
     # - 16 bits equals to 0x0100
-    dst_id = int.from_bytes(iol_datagram[0:1], byteorder='big')
-    src_id = int.from_bytes(iol_datagram[2:3], byteorder='big')
+    dst_id = int.from_bytes(iol_datagram[0:2], byteorder='big')
+    src_id = int.from_bytes(iol_datagram[2:4], byteorder='big')
     dst_if = iol_datagram[4]
     src_if = iol_datagram[5]
     padding = 256 * iol_datagram[6] + iol_datagram[7]
@@ -122,6 +122,8 @@ def terminalServerReceive(client, inputs, clients):
     if DEBUG: print("DEBUG: receiving data from client")
     try:
         data = client.recv(TS_BUFFER)
+        if not data:
+            raise Exception()
         if (int.from_bytes(data, byteorder='big') == IAC):
             # Need to pop two more telnet commands
             data = client.recv(TS_BUFFER)

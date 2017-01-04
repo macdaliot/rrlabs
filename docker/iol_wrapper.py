@@ -224,13 +224,15 @@ def main():
                     break
                 else:
                     src_id, src_if, dst_id, dst_if, padding, payload = decodeIOLPacket(iol_datagram)
-                    if src_id == MGMT_ID:
+                    if src_if == MGMT_ID:
+                        if DEBUG: print("DEBUG: sending to MGMT")
                         try:
                             os.write(from_tun.fileno(), payload)
                         except Exception as err:
                             sys.stderr.write("ERROR: cannot send data to MGMT\n")
                             sys.exit(2)
                     else:
+                        if DEBUG: print("DEBUG: sending via UDP")
                         try:
                             to_switcherd.sendto(encodeUDPPacket(label, src_if, payload), (switcherd, UDP_PORT))
                         except Exception as err:
