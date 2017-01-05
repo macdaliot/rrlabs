@@ -21,6 +21,7 @@ TUNSETOWNER = 0x400454cc
 TUNSETLINK = 0x400454cd
 UDP_BUFFER = 10000
 UDP_PORT = 5005
+LABEL_BITS = 32
 
 #--[ Telnet Commands ]--------------------------------------------------------
 IS     =   0 # Sub-process negotiation IS command

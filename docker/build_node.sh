@@ -11,7 +11,7 @@ DOCKER="docker -H=tcp://127.0.0.1:4243"
 QEMUIMG="/opt/qemu/bin/qemu-img"
 
 function clean {
-	rm -rf ${TMP} node
+	echo rm -rf ${TMP} node
 }
 
 trap clean EXIT
