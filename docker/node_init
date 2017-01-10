@@ -1,4 +1,9 @@
 #!/bin/bash
+URL=http://$1/api/autoconf/$2
+curl -m 3 -s ${URL} &> /tmp/init
+if [ $? -ne 0 ]; then
+	echo "ERROR: cannot download init script from ${URL}"
+	exit 1
+fi
 
-curl -s "http://$1/api/autoconf/$2" | bash
-
+bash /tmp/init

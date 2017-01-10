@@ -80,6 +80,20 @@ def getJson(url, data = None):
     except Exception as err:
         return  {"content": "no data"}
 
+def invokeUrl(url, method = "GET"):
+    import urllib.request
+    req = urllib.request.Request(url)
+    try:
+        req.get_method = lambda: method
+        output_data = urllib.request.urlopen(req).read()
+    except Exception as err:
+        logging.debug("url {} does not answer correctly".format(url))
+        logging.debug(err)
+        return False
+    if not output_data:
+        return True
+    return output_data
+
 def isLabel(label):
     try:
         if label < 0 or label > LABEL_BITS ** 8 - 1:
@@ -113,6 +127,11 @@ def isNodeRunning(label):
         return False
     return True
 
+def nodeBuild(file):
+    if file.endswith(".bin"):
+        logging.debug("file is IOL")
+    return True
+
 def nodeCreate(label, model, controller):
     node_data = {
         "Hostname": "node-{}".format(label),
@@ -129,6 +148,30 @@ def nodeCreate(label, model, controller):
         return False
     return True
 
+def nodeDelete(label):
+    if not isNode(label):
+        logging.debug("node {} does not exist".format(label))
+        return False
+    elif isNodeRunning(label):
+        logging.debug("node {} is running".format(label))
+        return False
+    else:
+        if not invokeUrl("{}/containers/node_{}".format(DOCKER_URL, label), "DELETE"):
+            logging.debug("node {} cannot be deleted".format(label))
+            return False
+    return True
+
+def nodeGetLog(label):
+    import html.parser
+    data = invokeUrl("{}/containers/node_{}/logs?stderr=1&stdout=1&timestamps=1&follow=1".format(DOCKER_URL, label))
+    if not isNode(label):
+        logging.debug("node {} need does not exist".format(label))
+        return False
+    if not data:
+        logging.debug("node {} does not have logs".format(label))
+        return ""
+    return data.decode('unicode_escape').rstrip()
+
 def nodeStart(controller, label, model):
     if not isNode(label):
         logging.debug("node {} need to be created".format(label))
@@ -143,3 +186,15 @@ def nodeStart(controller, label, model):
         return True
     return True
 
+def nodeStop(label):
+    if not isNode(label):
+        logging.debug("node {} does not exist".format(label))
+        return False
+    elif not isNodeRunning(label):
+        logging.debug("node {} already stopped".format(label))
+    else:
+        data = getJson("{}/containers/node_{}/stop".format(DOCKER_URL, label), {})
+        if len(data) < 1:
+            logging.debug("node {} cannot be stopped".format(label))
+            return False
+    return True
