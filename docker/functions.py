@@ -1,61 +1,27 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3A
+""" Modules """
+__author__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
+__revision__ = '20170105'
 
 ADMIN_USER = 'eveng'
 ADMIN_PASSWORD = 'password'
 ADMIN_SECRET = 'secret'
-CONSOLE_PORT = 5005
-DEBUG = True
-IFF_NO_PI = 0x1000
-IFF_TAP = 0x0002
-IOL_BUFFER = 1600
-MGMT_ID = 0
-MGMT_NAME = 'veth0'
-MIN_TIME = 5
-TAP_BUFFER = 10000
-TS_BUFFER = 1
-TUNSETNOCSUM = 0x400454c8
-TUNSETDEBUG = 0x400454c9
-TUNSETIFF = 0x400454ca
-TUNSETPERSIST = 0x400454cb
-TUNSETOWNER = 0x400454cc
-TUNSETLINK = 0x400454cd
 UDP_BUFFER = 10000
 UDP_PORT = 5005
 LABEL_BITS = 32
-#DOCKER_URL = 'http://127.0.0.1:4243'
 WAIT_FOR_START = 1
-
-#--[ Telnet Commands ]--------------------------------------------------------
-IS     =   0 # Sub-process negotiation IS command
-SEND   =   1 # Sub-process negotiation SEND command
-SE     = 240 # End of subnegotiation parameters
-NOP    = 241 # No operation
-DATMK  = 242 # Data stream portion of a sync.
-BREAK  = 243 # NVT Character BRK
-IP     = 244 # Interrupt Process
-AO     = 245 # Abort Output
-AYT    = 246 # Are you there
-EC     = 247 # Erase Character
-EL     = 248 # Erase Line
-GA     = 249 # The Go Ahead Signal
-SB     = 250 # Sub-option to follow
-WILL   = 251 # Will; request or confirm option begin
-WONT   = 252 # Wont; deny option request
-DO     = 253 # Do = Request or confirm remote option
-DONT   = 254 # Don't = Demand or confirm option halt
-IAC    = 255 # Interpret as Command
-#--[ Telnet Options ]---------------------------------------------------------
-BINARY =  0 # Transmit Binary
-ECHO   =  1 # Echo characters back to sender
-RECON  =  2 # Reconnection
-SGA    =  3 # Suppress Go-Ahead
-TTYPE  = 24 # Terminal Type
-NAWS   = 31 # Negotiate About Window Size
-LINEMO = 34 # Line Mode
 
 import logging
 
 def invokeJson(url, method = 'GET', data = None):
+    """ Invoke an URL using any method, a JSON is expected as result
+    Return:
+    - False: if failed to invoke the URL
+    - {...}: the JSON returned by the server
+    - {}: an empty JSON if no data has been return by the server
+    """
     import json, urllib.request
     try:
         req = urllib.request.Request(url)
@@ -68,20 +34,26 @@ def invokeJson(url, method = 'GET', data = None):
             except Exception as err:
                 logging.debug('data encoding failed')
                 logging.debug(err)
-                return {}
+                return False
         else:
             input_data = None
         output_data = urllib.request.urlopen(req, input_data).read()
     except Exception as err:
         logging.debug('url {} does not answer correctly'.format(url))
         logging.debug(err)
-        return {}
+        return False
     try:
         return json.loads(output_data.decode('utf-8'))
     except Exception as err:
-        return  {'content': 'no data'}
+        return  {}
 
 def invokeUrl(url, method = 'GET'):
+    """ Invoke an URL using any method
+    Return:
+    - False: if failed to invoke the URL
+    - STRING: the data returned by the server
+    - True: if no data has been return by the server
+    """
     import urllib.request
     try:
         req = urllib.request.Request(url)
@@ -96,8 +68,13 @@ def invokeUrl(url, method = 'GET'):
     return output_data
 
 def isLabel(label):
+    """ Check if an interer is valid as a label
+    Return:
+    True: if 0 <= integer <= LABEL_BITS ^ 2 - 1
+    False: otherwise
+    """
     try:
-        if label < 0 or label > LABEL_BITS ** 8 - 1:
+        if label < 0 or label > LABEL_BITS ** 2 - 1:
             logging.debug('label {} is not valid'.format(label))
             return False
     except Exception as err:
@@ -107,33 +84,55 @@ def isLabel(label):
     return True
 
 def isModel(docker_url, model):
+    """ Check if a Docker image exists
+    Return:
+    - True: if the image exists
+    - False: otherwise
+    """
     data = invokeJson('{}/images/json?filter={}'.format(docker_url, model))
-    if len(data) < 1:
+    if data == False or len(data) < 1:
         logging.debug('model {} not found'.format(model))
         return False
     return True
 
 def isNode(docker_url, label):
+    """ Check if the Docker node "node_LABEL" exists
+    Return:
+    - True: if the node exists
+    - False: otherwise
+    """
     data = invokeJson('{}/containers/node_{}/json'.format(docker_url, label))
-    if len(data) < 1:
+    if data == False or len(data) < 1:
         logging.debug('node {} not found'.format(label))
         return False
     return True
 
 def isNodeRunning(docker_url, label):
+    """ Check if the Docker node "node_LABEL" is running
+    Return:
+    - True: if the node is running
+    - False: otherwise
+    """
     if not isNode(docker_url, label):
         return False
     data = invokeJson('{}/containers/node_{}/json'.format(docker_url, label))
-    if data['State']['Status'] != 'running':
+    if data == False or data['State']['Status'] != 'running':
         return False
     return True
 
+"""
 def nodeBuild(file):
     if file.endswith('.bin'):
         logging.debug('file is IOL')
     return True
+"""
 
 def nodeCreate(docker_url, label, model, controller):
+    """ Create a Docker node from LABEL and MODEL
+    Return:
+    - True: if node is created
+    - False: otherwise
+    """
     node_data = {
         'Hostname': 'node-{}'.format(label),
         'Image': model,
@@ -147,13 +146,18 @@ def nodeCreate(docker_url, label, model, controller):
         }
     }
     data = invokeJson('{}/containers/create?name=node_{}'.format(docker_url, label), 'POST', node_data)
-    if len(data) < 1:
+    if data == False:
         logging.debug('node {} not found'.format(label))
         return False
     return True
 
 def nodeDelete(docker_url, label):
-    if not isNode(label):
+    """ Delete a Docker node from LABEL
+    Return:
+    - True: if node does not exist anymore
+    - False: otherwise
+    """
+    if not isNode(docker_url, label):
         logging.debug('node {} does not exist'.format(label))
         return False
     elif isNodeRunning(docker_url, label):
@@ -166,37 +170,57 @@ def nodeDelete(docker_url, label):
     return True
 
 def nodeGetLog(docker_url, label):
+    """ Get log from a Docker node from LABEL
+    Return:
+    - STRING: logs if node exists
+    - False: otherwise
+    """
     import html.parser
-    data = invokeUrl('{}/containers/node_{}/logs?stderr=1&stdout=1&timestamps=1&follow=0'.format(docker_url, label))
     if not isNode(docker_url, label):
-        logging.debug('node {} need does not exist'.format(label))
+        logging.debug('node {} does not exist'.format(label))
         return False
+    data = invokeUrl('{}/containers/node_{}/logs?stderr=1&stdout=1&timestamps=1&follow=0'.format(docker_url, label))
     if not data:
-        logging.debug('node {} does not have logs'.format(label))
-        return ''
+        logging.debug('node {} failed to return logs'.format(label))
+        return False
     return data.decode('unicode_escape').rstrip()
 
 def nodeStart(docker_url, controller, label, model):
+    """ Start a Docker node from LABEL and MODEL
+    Return:
+    - True: if node has been started and is alive after WAIT_FOR_START
+    - False: otherwise
+    """
+    import time
     if not isNode(docker_url, label):
         logging.debug('node {} need to be created'.format(label))
         if not nodeCreate(docker_url, label, model, controller):
             logging.debug('node {} failed to create'.format(label))
             return False
     data = invokeJson('{}/containers/node_{}/start'.format(docker_url, label), 'POST', {})
-    if len(data) < 1:
+    if data == False:
         logging.debug('node {} cannot start'.format(label))
+        return False
+    time.sleep(WAIT_FOR_START)
+    if not isNodeRunning(docker_url, label):
+        logging.error('node {} unexpectedly died'.format(label))
         return False
     return True
 
 def nodeStop(docker_url, label):
-    if not isNode(label):
+    """ Stop a Docker node from LABEL
+    Return:
+    - True: if node has been stopped or not running
+    - False: otherwise
+    """
+    if not isNode(docker_url, label):
         logging.debug('node {} does not exist'.format(label))
         return False
     elif not isNodeRunning(docker_url, label):
         logging.debug('node {} already stopped'.format(label))
     else:
-        data = invokeJson('{}/containers/node_{}/stop'.format(docker_url, label), {})
-        if len(data) < 1:
+        data = invokeUrl('{}/containers/node_{}/stop'.format(docker_url, label), 'POST')
+        if not data:
             logging.debug('node {} cannot be stopped'.format(label))
             return False
     return True

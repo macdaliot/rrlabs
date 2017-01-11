@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-# @author Andrea Dainese <andrea.dainese@gmail.com>
-# @copyright 2016-2017 Andrea Dainese
-# @license https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
-# @link http://www.unetlab.com/
-# @version 20170105
+""" Node manager """
+__author__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
+__revision__ = '20170105'
 
 import atexit, getopt, logging, os.path, signal, sys, time
-from functions2 import *
+from functions import *
 
 def usage(command = None):
+    """ How to use this script
+    Return:
+    - sys.exit(255)
+    """
     if command == None:
         print('Usage: {} COMMAND [OPTIONS]'.format(sys.argv[0]))
         print('')
@@ -25,25 +29,25 @@ def usage(command = None):
     elif command == 'delete':
         print('Usage: {} {} -a dockerapi -l label [OPTIONS]'.format(sys.argv[0], command))
         print('    dockerapi   the docker URL for API')
-        print('    label        a 32 bit integer starting from 0')
+        print('    label       a 32 bit integer starting from 0')
     elif command == 'log':
         print('Usage: {} {} -a dockerapi -l label [OPTIONS]'.format(sys.argv[0], command))
         print('    dockerapi   the docker URL for API')
-        print('    label        a 32 bit integer starting from 0')
+        print('    label       a 32 bit integer starting from 0')
     elif command == 'start':
         print('Usage: {} {} -a dockerapi -c controller -l label -m model [OPTIONS]'.format(sys.argv[0], command))
         print('    dockerapi   the docker URL for API')
-        print('    controller   the IP or domain name of the controller host')
-        print('    label        a 32 bit integer starting from 0')
-        print('    model        the type of the node to be created')
+        print('    controller  the IP or domain name of the controller host')
+        print('    label       a 32 bit integer starting from 0')
+        print('    model       the type of the node to be created')
     elif command == 'stop':
         print('Usage: {} {} -a dockerapi -l label [OPTIONS]'.format(sys.argv[0], command))
         print('    dockerapi   the docker URL for API (without trailing /)')
         print('    dockerapi   the docker URL for API')
-        print('    label        a 32 bit integer starting from 0')
+        print('    label       a 32 bit integer starting from 0')
     print('')
     print('Options:')
-    print('    -d   enable debug')
+    print('    -d          enable debug')
     sys.exit(255)
 
 #def exitGracefully(signum, frame):
@@ -83,7 +87,7 @@ def main():
                 label = int(arg)
                 if not isLabel(label):
                     raise
-            except:
+            except Exception as err:
                 logging.error('label not recognized')
                 sys.exit(255)
         elif opt == '-m':
@@ -133,10 +137,6 @@ def main():
     elif command == 'start':
         if not nodeStart(docker_url, controller, label, model):
             logging.error('node {} cannot start'.format(label))
-            sys.exit(1)
-        time.sleep(WAIT_FOR_START)
-        if not isNodeRunning(docker_url, label):
-            logging.error('node {} unexpectedly died'.format(label))
             sys.exit(1)
         # TODO after start should update node status
     elif command == 'stop':

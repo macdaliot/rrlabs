@@ -3,8 +3,8 @@
 # Node details:
 TYPE=iol
 CONTROLLER=172.17.0.1
-LABEL=0
-ID=1
+LABEL=512
+ID=3
 ARGS="-g ${CONTROLLER} -i ${ID} -l ${LABEL} -f /opt/image/iol.bin -t -w R0 -- -q -n 4096 -e 1 -s 1"
 
 HOSTNAME=$(cat /opt/image/iourc | grep "=" | head -n1 | sed 's/\ *=.*//')

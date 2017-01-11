@@ -67,7 +67,7 @@ case "${IMAGE}" in
 		echo -e "${G}Starting IOL node preconfiguration${U}"
 		cd node/image &>> ${LOG}
 		touch NETMAP &>> ${LOG}
-		../../preconfigure-iol.py
+		../../preconfigure_iol.py
 		if [ $? -ne 0 ]; then
 			echo -e "${R}Failed to preconfigure the IOL node${U}"
 			exit 1
