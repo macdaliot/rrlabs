@@ -41,3 +41,30 @@ docker inspect 19c8a5538809 | grep IPAddress
 ~~~
 
 Console is at 5005
+
+
+
+# Using volumes
+
+/opt is a docker volume, it holds node image, nvram, and so on
+
+So:
+# i386 and x86_64 are baseline eveng/i386, eveng/amd64
+# base-iol is baseline for IOL only eveng/iol eveng/dynamips eveng/qemu
+# eveng/vol_iol:L3-ADVENTERPRISEK9-M-15.5-2T is a volume
+#
+# docker volume create --name 256_data --label "Data for EVE-NG node 256"
+# TMP_DOCKER=$(docker run -ti -d -v 256_data:/opt eveng/amd64 sleep infinity)
+# docker cp node/image ${TMP_DOCKER}:/opt
+# docker stop ${TMP_DOCKER}
+# docker rm ${TMP_DOCKER}
+#
+# per far partire un nodo con il volume:
+# docker run -ti -d --privileged -v 256_data:/opt --name node_256 --label "Node for EVE-NG node 256" -h n256 eveng/iol:L3-ADVENTERPRISEK9-M-15.5-2T /bin/bash
+#
+# a questo punto, quando il container esce potrebbe anche essere rimosso di default "docker run -rm"
+# Inoltre lo script che fa partire il nodo potrebbe aggiornare lo stato in MySQL (on quanto parte, off quanto muore)
+# --rm con -d può essere usato da docker 1.13
+#
+#  non si puo' fare con i volumi perche' non posso clonarli. la soluzione eè quindi usare i container normali con un auto-update script al boot.
+#  il container potrebbe anche fare una get al webserver e prendersi tutti i parametri (ENV)

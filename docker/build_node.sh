@@ -11,7 +11,7 @@ DOCKER="docker -H=tcp://127.0.0.1:4243"
 QEMUIMG="/opt/qemu/bin/qemu-img"
 
 function clean {
-	echo rm -rf ${TMP} node
+	rm -rf ${TMP} node
 }
 
 trap clean EXIT
@@ -73,6 +73,7 @@ case "${IMAGE}" in
 			exit 1
 		fi
 		rm -f NETMAP &>> ${LOG}
+		mv nvram_00001 nvram_00000
 		cd ../..
 		echo -e "${G}\nIOL node preconfigured${U}"
 		;;
@@ -122,11 +123,6 @@ case "${IMAGE}" in
 esac
 
 echo -ne "Building environment... "
-echo "TYPE=${TYPE}" > node/image/ENV 2> /dev/null
-if [ $? -ne 0 ]; then
-	echo -e "${R}failed${U}"
-	exit 1
-fi
 find node -type f -exec chmod 644 {} \; &>> ${LOG}
 if [ $? -ne 0 ]; then
 	echo -e "${R}failed${U}"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import array, atexit, fcntl, getopt, os, select, signal, socket, struct, subprocess, sys, time
-from functions import *
+from wrapper_modules import *
 
 def exitHandler():
     if DEBUG: print("DEBUG: exiting")

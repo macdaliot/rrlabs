@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-ADMIN_USER = "eveng"
-ADMIN_PASSWORD = "password"
-ADMIN_SECRET = "secret"
+ADMIN_USER = 'eveng'
+ADMIN_PASSWORD = 'password'
+ADMIN_SECRET = 'secret'
 CONSOLE_PORT = 5005
 DEBUG = True
 IFF_NO_PI = 0x1000
 IFF_TAP = 0x0002
 IOL_BUFFER = 1600
 MGMT_ID = 0
-MGMT_NAME = "veth0"
+MGMT_NAME = 'veth0'
 MIN_TIME = 5
 TAP_BUFFER = 10000
 TS_BUFFER = 1
@@ -22,7 +22,7 @@ TUNSETLINK = 0x400454cd
 UDP_BUFFER = 10000
 UDP_PORT = 5005
 LABEL_BITS = 32
-DOCKER_URL = "http://127.0.0.1:4243"
+#DOCKER_URL = 'http://127.0.0.1:4243'
 WAIT_FOR_START = 1
 
 #--[ Telnet Commands ]--------------------------------------------------------
@@ -55,39 +55,40 @@ LINEMO = 34 # Line Mode
 
 import logging
 
-def getJson(url, data = None):
+def invokeJson(url, method = 'GET', data = None):
     import json, urllib.request
-    req = urllib.request.Request(url)
-    if data or data == {}:
-        try:
-            input_data = json.dumps(data).encode('utf-8')
-            req.add_header('Content-Type', 'application/json; charset=utf-8')
-            req.add_header('Content-Length', len(input_data))
-        except Exception as err:
-            logging.debug("encode POST data failed")
-            logging.debug(err)
-            return {}
-    else:
-        input_data = None
     try:
+        req = urllib.request.Request(url)
+        req.get_method = lambda: method
+        if data or data == {}:
+            try:
+                input_data = json.dumps(data).encode('utf-8')
+                req.add_header('Content-Type', 'application/json; charset=utf-8')
+                req.add_header('Content-Length', len(input_data))
+            except Exception as err:
+                logging.debug('data encoding failed')
+                logging.debug(err)
+                return {}
+        else:
+            input_data = None
         output_data = urllib.request.urlopen(req, input_data).read()
     except Exception as err:
-        logging.debug("url {} does not answer correctly".format(url))
+        logging.debug('url {} does not answer correctly'.format(url))
         logging.debug(err)
         return {}
     try:
-        return json.loads(output_data.decode("utf-8"))
+        return json.loads(output_data.decode('utf-8'))
     except Exception as err:
-        return  {"content": "no data"}
+        return  {'content': 'no data'}
 
-def invokeUrl(url, method = "GET"):
+def invokeUrl(url, method = 'GET'):
     import urllib.request
-    req = urllib.request.Request(url)
     try:
+        req = urllib.request.Request(url)
         req.get_method = lambda: method
         output_data = urllib.request.urlopen(req).read()
     except Exception as err:
-        logging.debug("url {} does not answer correctly".format(url))
+        logging.debug('url {} does not answer correctly'.format(url))
         logging.debug(err)
         return False
     if not output_data:
@@ -97,104 +98,105 @@ def invokeUrl(url, method = "GET"):
 def isLabel(label):
     try:
         if label < 0 or label > LABEL_BITS ** 8 - 1:
-            logging.debug("label {} is not valid".format(label))
+            logging.debug('label {} is not valid'.format(label))
             return False
     except Exception as err:
-        logging.debug("label {} is not an integer".format(label))
+        logging.debug('label {} is not an integer'.format(label))
         logging.debug(err)
         return False
     return True
 
-def isModel(model):
-    data = getJson("{}/images/json?filter={}".format(DOCKER_URL, model))
+def isModel(docker_url, model):
+    data = invokeJson('{}/images/json?filter={}'.format(docker_url, model))
     if len(data) < 1:
-        logging.debug("model {} not found".format(model))
+        logging.debug('model {} not found'.format(model))
         return False
     return True
 
-def isNode(label):
-    data = getJson("{}/containers/node_{}/json".format(DOCKER_URL, label))
+def isNode(docker_url, label):
+    data = invokeJson('{}/containers/node_{}/json'.format(docker_url, label))
     if len(data) < 1:
-        logging.debug("node {} not found".format(label))
+        logging.debug('node {} not found'.format(label))
         return False
     return True
 
-def isNodeRunning(label):
-    if not isNode(label):
+def isNodeRunning(docker_url, label):
+    if not isNode(docker_url, label):
         return False
-    data = getJson("{}/containers/node_{}/json".format(DOCKER_URL, label))
-    if data["State"]["Status"] != "running":
+    data = invokeJson('{}/containers/node_{}/json'.format(docker_url, label))
+    if data['State']['Status'] != 'running':
         return False
     return True
 
 def nodeBuild(file):
-    if file.endswith(".bin"):
-        logging.debug("file is IOL")
+    if file.endswith('.bin'):
+        logging.debug('file is IOL')
     return True
 
-def nodeCreate(label, model, controller):
+def nodeCreate(docker_url, label, model, controller):
     node_data = {
-        "Hostname": "node-{}".format(label),
-        "Image": model,
-        "Cmd": [
-            "/sbin/node_init",
-            "{}".format(controller),
-            "{}".format(label),
-         ]
+        'Hostname': 'node-{}'.format(label),
+        'Image': model,
+        'Cmd': [
+            '/sbin/node_init',
+            '{}'.format(controller),
+            '{}'.format(label),
+        ],
+        'HostConfig': {
+            'Privileged': True
+        }
     }
-    data = getJson("{}/containers/create?name=node_{}".format(DOCKER_URL, label), node_data)
+    data = invokeJson('{}/containers/create?name=node_{}'.format(docker_url, label), 'POST', node_data)
     if len(data) < 1:
-        logging.debug("node {} not found".format(label))
+        logging.debug('node {} not found'.format(label))
         return False
     return True
 
-def nodeDelete(label):
+def nodeDelete(docker_url, label):
     if not isNode(label):
-        logging.debug("node {} does not exist".format(label))
+        logging.debug('node {} does not exist'.format(label))
         return False
-    elif isNodeRunning(label):
-        logging.debug("node {} is running".format(label))
+    elif isNodeRunning(docker_url, label):
+        logging.debug('node {} is running'.format(label))
         return False
     else:
-        if not invokeUrl("{}/containers/node_{}".format(DOCKER_URL, label), "DELETE"):
-            logging.debug("node {} cannot be deleted".format(label))
+        if not invokeUrl('{}/containers/node_{}'.format(docker_url, label), 'DELETE'):
+            logging.debug('node {} cannot be deleted'.format(label))
             return False
     return True
 
-def nodeGetLog(label):
+def nodeGetLog(docker_url, label):
     import html.parser
-    data = invokeUrl("{}/containers/node_{}/logs?stderr=1&stdout=1&timestamps=1&follow=1".format(DOCKER_URL, label))
-    if not isNode(label):
-        logging.debug("node {} need does not exist".format(label))
+    data = invokeUrl('{}/containers/node_{}/logs?stderr=1&stdout=1&timestamps=1&follow=0'.format(docker_url, label))
+    if not isNode(docker_url, label):
+        logging.debug('node {} need does not exist'.format(label))
         return False
     if not data:
-        logging.debug("node {} does not have logs".format(label))
-        return ""
+        logging.debug('node {} does not have logs'.format(label))
+        return ''
     return data.decode('unicode_escape').rstrip()
 
-def nodeStart(controller, label, model):
-    if not isNode(label):
-        logging.debug("node {} need to be created".format(label))
-        if not nodeCreate(label, model, controller):
-            logging.debug("node {} failed to create".format(label))
+def nodeStart(docker_url, controller, label, model):
+    if not isNode(docker_url, label):
+        logging.debug('node {} need to be created'.format(label))
+        if not nodeCreate(docker_url, label, model, controller):
+            logging.debug('node {} failed to create'.format(label))
             return False
-    else:
-        data = getJson("{}/containers/node_{}/start".format(DOCKER_URL, label), {})
-        if len(data) < 1:
-            logging.debug("node {} cannot start".format(label))
-            return False
-        return True
+    data = invokeJson('{}/containers/node_{}/start'.format(docker_url, label), 'POST', {})
+    if len(data) < 1:
+        logging.debug('node {} cannot start'.format(label))
+        return False
     return True
 
-def nodeStop(label):
+def nodeStop(docker_url, label):
     if not isNode(label):
-        logging.debug("node {} does not exist".format(label))
+        logging.debug('node {} does not exist'.format(label))
         return False
-    elif not isNodeRunning(label):
-        logging.debug("node {} already stopped".format(label))
+    elif not isNodeRunning(docker_url, label):
+        logging.debug('node {} already stopped'.format(label))
     else:
-        data = getJson("{}/containers/node_{}/stop".format(DOCKER_URL, label), {})
+        data = invokeJson('{}/containers/node_{}/stop'.format(docker_url, label), {})
         if len(data) < 1:
-            logging.debug("node {} cannot be stopped".format(label))
+            logging.debug('node {} cannot be stopped'.format(label))
             return False
     return True
