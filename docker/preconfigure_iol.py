@@ -4,7 +4,7 @@ CMD = "./iol.bin -n 4096 -e 1 -s 0 1"
 TIMEOUT = 120
 
 import multiprocessing, pexpect, sys, time
-from functions import *
+from controller_modules import *
 
 def main():
         p = pexpect.spawnu(CMD, logfile = sys.stdout)
@@ -68,7 +68,6 @@ def main():
         p.terminate()
                     
 if __name__ == "__main__":
-    sys.excepthook = exceptionHandler
     p = multiprocessing.Process(target = main)
     p.start()
     p.join(TIMEOUT)

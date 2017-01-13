@@ -116,9 +116,10 @@ def exitGracefully(signum, frame):
     Return:
     - sys.exit(0): with SIGINT and SIGTERM
     """
-    logger.debug('signum {} received'.format(signum))
+    import sys
+    logging.debug('signum {} received'.format(signum))
     if signum == 2 or signum == 15:
-        logger.error('terminating')
+        logging.error('terminating')
         sys.exit(0)
 
 def isLabel(label):

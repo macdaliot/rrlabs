@@ -1,26 +1,13 @@
 #!/usr/bin/env python3
+""" Controller manager """
+__author__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
+__revision__ = '20170105'
 
 import array, atexit, fcntl, getopt, os, select, signal, socket, struct, subprocess, sys, time
-from functions import *
-
-def exitHandler():
-    if DEBUG: print("DEBUG: exiting")
-
-def signalHandler(signum, frame):
-    if DEBUG: print("DEBUG: signum {} received".format(signum))
-
-    if signum == 1:
-        print("RELOAD")
-    if signum == 2:
-        signal.signal(signal.SIGINT, original_sigint)
-        print("CTRL+C")
-        # restore the exit gracefully handler here
-        signal.signal(signal.SIGINT, exitHandler)
-    if signum == 15:
-        signal.signal(signal.SIGTERM, original_sigterm)
-        print("TERM")
-        # restore the exit gracefully handler here
-        signal.signal(signal.SIGTERM, exitHandler)
+from controller_modules import *
+from wrapper_modules import *
 
 def main():
     # Example A: R1:e0/1 <-> R2:e0/2
@@ -68,12 +55,8 @@ def main():
                 if DEBUG: print("DEBUG: {} not active in the current topology".format(dst_label))
 
 if __name__ == "__main__":
-    sys.excepthook = exceptionHandler
-    atexit.register(exitHandler)
-    original_sigint = signal.getsignal(signal.SIGINT)
-    original_sigterm = signal.getsignal(signal.SIGTERM)
-    signal.signal(signal.SIGHUP, signalHandler)     # 1
-    signal.signal(signal.SIGINT, signalHandler)     # 2
-    signal.signal(signal.SIGTERM, signalHandler)    # 15
+    #signal.signal(signal.SIGHUP, controllerReload)
+    #signal.signal(signal.SIGINT, controllerStop)     # 2
+    #signal.signal(signal.SIGTERM, controllerStop)    # 15
     main()
 

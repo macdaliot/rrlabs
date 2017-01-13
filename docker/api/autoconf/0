@@ -7,12 +7,20 @@ LABEL=0
 ID=1
 ARGS="-g ${CONTROLLER} -i ${ID} -l ${LABEL} -f /opt/image/iol.bin -t -w R0 -- -q -n 4096 -e 1 -s 1"
 
+PID=0
 HOSTNAME=$(cat /opt/image/iourc | grep "=" | head -n1 | sed 's/\ *=.*//')
 export HOSTNAME
 
 function die {
 	echo $1
 	exit 1
+}
+
+function nodeStop {
+    if [ ${PID} -ne 0 ]; then
+        kill -SIGTERM ${PID}
+        wait ${PID}
+    fi
 }
 
 # Building the management switch
@@ -46,4 +54,8 @@ curl -m 3 -s http://${CONTROLLER}/api/wrappers/wrapper_modules.py > /usr/lib/pyt
 chmod 755 /sbin/wrapper.py || die "ERROR: cannot make wrapper executable"
 
 echo "INFO: starting wrapper: /sbin/wrapper.py ${ARGS}"
-/sbin/wrapper.py ${ARGS}
+trap nodeStop SIGINT SIGTERM
+/sbin/wrapper.py ${ARGS} &
+PID=$!
+wait $PID
+exit $?

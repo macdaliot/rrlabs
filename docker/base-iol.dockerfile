@@ -5,7 +5,3 @@ MAINTAINER Andrea Dainese <andrea.dainese@gmail.com>
 
 COPY  node_init /sbin/node_init
 
-#COPY start_node.sh /sbin
-#COPY iol_wrapper.py /sbin/wrapper.py
-#COPY functions.py /usr/lib/python3.4/functions.py
-
