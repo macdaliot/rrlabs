@@ -6,7 +6,8 @@ __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170105'
 
 import atexit, getopt, logging, os.path, signal, sys, time
-from functions import *
+from controller_modules import *
+from wrapper_modules import *
 
 def usage(command = None):
     """ How to use this script
@@ -50,9 +51,8 @@ def usage(command = None):
     print('    -d          enable debug')
     sys.exit(255)
 
-#def exitGracefully(signum, frame):
-
 def main():
+    logging.basicConfig(level = logging.INFO)
     command = None
     docker_url = None
     file = None
@@ -104,12 +104,16 @@ def main():
         if controller == None:
             logging.error('controller not recognized')
             sys.exit(255)
-        if  model == None:
+        if not isNode(docker_url, label) and model == None:
+            # model is required only if node does not exist
             logging.error('model not recognized')
             sys.exit(255)
-        elif not isModel(docker_url, model):
+        if not isNode(docker_url, label) and not isModel(docker_url, model):
+            # model is required only if node does not exist
             logging.error('model not recognized')
             sys.exit(255)
+        if isNode(docker_url, label) and model != None:
+            logging.info('node already created, ignoring model')
     if command == 'build':
         if file == None:
             logging.error('file not recognized')
@@ -149,10 +153,5 @@ def main():
     #atexit.register(exitHandler)
 
 if __name__ == '__main__':
-    #sys.excepthook = exceptionHandler
-    #original_sigint = signal.getsignal(signal.SIGINT)
-    #original_sigterm = signal.getsignal(signal.SIGTERM)
-    #signal.signal(signal.SIGINT, exitGracefully)
-    #signal.signal(signal.SIGTERM, exitGracefully)
     main()
 

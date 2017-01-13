@@ -8,9 +8,6 @@ __revision__ = '20170105'
 ADMIN_USER = 'eveng'
 ADMIN_PASSWORD = 'password'
 ADMIN_SECRET = 'secret'
-UDP_BUFFER = 10000
-UDP_PORT = 5005
-LABEL_BITS = 32
 WAIT_FOR_START = 1
 
 import logging
@@ -66,22 +63,6 @@ def invokeUrl(url, method = 'GET'):
     if not output_data:
         return True
     return output_data
-
-def isLabel(label):
-    """ Check if an interer is valid as a label
-    Return:
-    True: if 0 <= integer <= LABEL_BITS ^ 2 - 1
-    False: otherwise
-    """
-    try:
-        if label < 0 or label > LABEL_BITS ** 2 - 1:
-            logging.debug('label {} is not valid'.format(label))
-            return False
-    except Exception as err:
-        logging.debug('label {} is not an integer'.format(label))
-        logging.debug(err)
-        return False
-    return True
 
 def isModel(docker_url, model):
     """ Check if a Docker image exists

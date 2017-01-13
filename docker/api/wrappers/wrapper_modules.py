@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
+""" Wrapper modules """
+__author__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
+__license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
+__revision__ = '20170105'
 
 CONSOLE_PORT = 5005
-DEBUG = False
 IFF_NO_PI = 0x1000
 IFF_TAP = 0x0002
 IOL_BUFFER = 1600
@@ -60,6 +64,7 @@ def decodeIOLPacket(iol_datagram):
     - INTEGER: IOL padding
     - BYTES: payload
     """
+    import sys
     # IOL datagram format (maximum observed size is 1555):
     # - 16 bits for the destination IOL ID
     # - 16 bits for the source IOL ID
@@ -89,13 +94,14 @@ def decodeUDPPacket(udp_datagram):
     - INTEGER: interface ID
     - BYTES: payload
     """
+    import sys
     # UDP datagram format:
     # - 24 bits for the node LABEL (up to 16M of nodes)
     # - 8 bits for the interface ID (up to 256 of per node interfaces)
     node_id = int.from_bytes(udp_datagram[0:2], byteorder='little')
     iface_id = int(udp_datagram[3])
     payload = udp_datagram[4:]
-    logging.debug('DEBUG: UDP packet label={} iface={} payload={}'.format(label, iface, sys.getsizeof(payload)))
+    logging.debug('UDP packet label={} iface={} payload={}'.format(label, iface, sys.getsizeof(payload)))
     return node_id, iface_id, payload
 
 def encodeUDPPacket(node_id, iface_id, payload):
@@ -105,17 +111,36 @@ def encodeUDPPacket(node_id, iface_id, payload):
     """
     return node_id.to_bytes(3, byteorder='little') + iface_id.to_bytes(1, byteorder='little') + payload
 
-def exceptionHandler(t, v, tb):
-    """ Handle exceptions
+def exitGracefully(signum, frame):
+    """ Trap CTRL+C and TERM signal
     Return:
-    - sys.exit(1)
+    - sys.exit(0): with SIGINT and SIGTERM
     """
-    import traceback
-    logging.error('ERROR: unmanaged exception')
-    logging.error('Type: {}'.format(t))
-    logging.error('Value: {}'.format(v))
-    logging.error('Traceback:\n{}\n'.format(traceback.print_tb(tb)))
-    sys.exit(1)
+    logger.debug('signum {} received'.format(signum))
+    if signum == 2 or signum == 15:
+        logger.error('terminating')
+        sys.exit(0)
+
+def isLabel(label):
+    """ Check if an interer is valid as a label
+    Return:
+    True: if 0 <= integer <= LABEL_BITS ^ 2 - 1
+    False: otherwise
+    """
+    try:
+        if label < 0 or label > LABEL_BITS ** 2 - 1:
+            logging.debug('label {} is not valid'.format(label))
+            return False
+    except Exception as err:
+        logging.debug('label {} is not an integer'.format(label))
+        logging.debug(err)
+        return False
+    return True
+
+def subprocessTerminate(process):
+    """ Terminate the subprocess if running """
+    if process.poll() == None:
+        process.terminate()
 
 def terminalServerAccept(client, inputs, clients, title):
     """ Accept a terminal server client and store the descriptor
@@ -187,9 +212,25 @@ def terminalServerSend(inputs, clients, data):
         try:
             client.send(data)
         except:
-            logging.debug('DEBUG: removing broken client')
+            logging.debug('removing broken client')
             client.close()
             inputs.remove(client)
             clients.remove(client)
     return inputs, clients
+
+def terminalServerStart():
+    """ Start the terminal server
+    Return:
+    - INT: the descriptor if it can start
+    - False: otherwise
+    """
+    import socket
+    try:
+        ts = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        ts.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        ts.bind(('', CONSOLE_PORT))
+        ts.listen(1)
+    except Exception as err:
+        return False
+    return ts
 
