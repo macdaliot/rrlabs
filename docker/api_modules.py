@@ -87,17 +87,58 @@ def checkAuthz(username, roles):
 def addUser():
     import json
     data = json.loads(flask.request.data.decode('utf-8'))
-    user = User(**data)
-    user.password = hashlib.sha256(user.password.encode('utf-8')).hexdigest():
-    users = User.query.filter(User.username == user.username)
+    if not 'username' in data.keys() or not 'password' in data.keys():
+        flask.abort(422)
+    data['password'] = hashlib.sha256(data['password'].encode('utf-8')).hexdigest()
+    users = User.query.filter(User.username == data['username'])
     if users.count() != 0:
         flask.abort(409)
+    try:
+        user = User(**data)
+    except Exception as err:
+        flask.abort(422)
     db.session.add(user)
     db.session.commit()
     response = {
         'code': 201,
         'status': 'success',
-        'message': 'User added'
+        'message': 'User "{}" added'.format(user.username)
+    }
+    return flask.jsonify(response), response['code']
+
+def deleteUser(username):
+    user = User.query.filter(User.username == username)
+    if user.count() == 0:
+        flask.abort(404)
+    db.session.delete(user.first())
+    db.session.commit()
+    response = {
+        'code': 200,
+        'status': 'success',
+        'message': 'User "{}" deleted'.format(username)
+    }
+    return flask.jsonify(response), response['code']
+
+def editUser(username):
+    import json
+    data = json.loads(flask.request.data.decode('utf-8'))
+    if 'username' in data.keys():
+        flask.abort(422)
+    if 'password' in data.keys():
+        data['password'] = hashlib.sha256(data['password'].encode('utf-8')).hexdigest()
+    users = User.query.filter(User.username == username)
+    if users.count() == 0:
+        flask.abort(404)
+    user = users.first()
+    for key, value in data.items():
+        if not hasattr(user, key):
+            flask.abort(422)
+        setattr(user, key, value)
+    db.session.commit()
+    response = {
+        'code': 200,
+        'status': 'success',
+        'message': 'User "{}" modified'.format(username)
     }
     return flask.jsonify(response), response['code']
 
@@ -110,7 +151,7 @@ def getUsers(username = None):
         response['message'] = 'All users listed'
         users = User.query
     else:
-        response['message'] = 'User listed'
+        response['message'] = 'User "{}" listed'.format(username)
         users = User.query.filter(User.username == username)
     if users.count() == 0:
         flask.abort(404)
@@ -127,7 +168,6 @@ def getUsers(username = None):
             'label_end': user.label_end
         }
     return flask.jsonify(response), response['code']
-
 
 def requiresAuth(f):
     import flask, functools

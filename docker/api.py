@@ -74,6 +74,15 @@ def http_409(err):
     }
     return flask.jsonify(response), response['code']
 
+@app.errorhandler(422)
+def http_422(err):
+    response = {
+        'code': 422,
+        'status': 'fail',
+        'message': str(err)
+    }
+    return flask.jsonify(response), response['code']
+
 #@app.errorhandler(Exception)
 def http_500(err):
     response = {
@@ -95,12 +104,19 @@ def apiUsers(username = None):
     if flask.request.method == 'POST':
         return addUser()
 
-# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users/admin
-@app.route('/api/users/<username>', methods = ['GET'])
+# curl -s -D- -u admin:admin -X DELETE http://127.0.0.1:5000/api/users/andrea
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users/andrea
+# curl -s -D- -u admin:admin -X PUT -d '{"name":"dainese","email":"adainese@example.com","password":"dainese","label_start":200,"label_end":399}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users/andrea
+@app.route('/api/users/<username>', methods = ['DELETE', 'GET', 'PUT'])
 @requiresAuth
 @requiresRoles('admin')
 def apiUsersUsername(username):
-    return getUsers(username)
+    if flask.request.method == 'DELETE':
+        return deleteUser(username)
+    if flask.request.method == 'GET':
+        return getUsers(username)
+    if flask.request.method == 'PUT':
+        return editUser(username)
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5000, debug = True)
