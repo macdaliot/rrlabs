@@ -11,6 +11,7 @@ DB_USERNAME = 'root'
 DB_PASSWORD = 'eve-ng'
 DB_HOST = '127.0.0.1'
 DB_NAME = 'eve'
+PATH_LABS = '/opt/unetlab/labs'
 
 import flask, flask_sqlalchemy, functools, hashlib, logging
 
@@ -18,29 +19,38 @@ app = flask.Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@{}/{}'.format(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_NAME)
 db = flask_sqlalchemy.SQLAlchemy(app)
 
+roles_to_users = db.Table(
+    'roles_to_users',
+    db.Column('role', db.String(255), db.ForeignKey('roles.role')),
+    db.Column('username', db.String(255), db.ForeignKey('users.username')),
+)
+
 class User(db.Model):
     __tablename__ = 'users'
     username = db.Column(db.String(255), primary_key = True)
     password = db.Column(db.String(255))
-    #roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
     name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique = True)
     label_start = db.Column(db.Integer)
     label_end = db.Column(db.Integer)
+    roles = db.relationship('Role', secondary = roles_to_users, back_populates = 'users')
     def __repr__(self):
         return '<User({})>'.format(self.username)
 
-#class Role(db.Model):
-#    __tablename__ = 'roles'
-#
-#    id = db.Column(db.Integer(), primary_key = True)
-#    name = db.Column(db.String(50), unique = True)
-#
-#    def __repr__(self):
-#        return '<Role({})>'.format(self.name)
+class Role(db.Model):
+    __tablename__ = 'roles'
+    role = db.Column(db.String(255), primary_key = True)
+    access_to = db.Column(db.String(255))
+    users = db.relationship('User', secondary = roles_to_users, back_populates = 'roles')
+    def __repr__(self):
+        return '<Role({})>'.format(self.role)
 
-#class UserRoles(db.Model):
-
+class Roles2Users(db.Model):
+    __tablename__ = 'roles_2_users'
+    username = db.Column(db.String(255), db.ForeignKey('users.username'), primary_key = True)
+    role = db.Column(db.String(255), db.ForeignKey('roles.role'), primary_key = True)
+    def __repr__(self):
+        return '<Role2User({}.{})>'.format(self.role, self.username)
 
 class Lab(db.Model):
     __tablename__ = 'labs'
@@ -80,8 +90,12 @@ def checkAuth(username, password):
     return True
 
 def checkAuthz(username, roles):
-    if username == 'admin':
-        return True
+    users = User.query.filter(User.username == username)
+    if users.count() != 1:
+        return False
+    for role in users.first().roles:
+        if role.role in roles:
+            return True
     return False
 
 def addUser():
@@ -167,6 +181,53 @@ def getUsers(username = None):
             'label_start': user.label_start,
             'label_end': user.label_end
         }
+    return flask.jsonify(response), response['code']
+
+def refreshDb():
+    import fnmatch, os
+    import xml.etree.ElementTree as ElementTree
+    labs = {}
+    for root, dirnames, filenames in os.walk(PATH_LABS):
+        for filename in fnmatch.filter(filenames, '*.unl'):
+            lab_file = (os.path.join(root, filename))
+            xml = ElementTree.parse(lab_file)
+            xml_root = xml.getroot()
+            data = {
+                'id': xml_root.attrib['id'],
+                'name': xml_root.attrib['name'],
+                'path': lab_file
+            }
+            labs[xml_root.attrib['id']] = Lab(**data)
+    # Removing nonexistent labs from DB
+    labs_from_db = Lab.query.all()
+    for lab_from_db in labs_from_db:
+        if lab_from_db.id not in labs:
+            db.session.delete(lab_from_db)
+            db.session.commit()
+    # Checking missing labs to DB
+    for lab_id, lab in labs.items():
+        commit = False
+        lab_from_db = Lab.query.filter(Lab.id == lab.id)
+        if lab_from_db.count() == 0:
+            # Lab need to be added
+            commit = True
+            db.session.add(lab)
+        else:
+            # Lab already exist, check name and path
+            commit = False
+            if lab.name != lab_from_db.first().name:
+                lab_from_db.update({'name': lab.name})
+                commit = True
+            if lab.path != lab_from_db.first().path:
+                lab_from_db.update({'path': lab.path})
+                commit = True
+        if commit:
+            db.session.commit()
+    response = {
+        'code': 200,
+        'status': 'success',
+        'message': 'Database refreshed'
+    }
     return flask.jsonify(response), response['code']
 
 def requiresAuth(f):

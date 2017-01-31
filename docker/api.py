@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
-""" API """
+""" API
+    Methods:
+    - GET /api/objects - Retrieves a list of objects
+    - GET /api/objects/1 - Retrieves a specific objects
+    - POST /api/objects - Creates a new object
+    - PUT /api/objects/1 - Edits a specific object
+    - DELETE /api/objects/1 - Deletes a specific object
+    Return codes:
+    - 200 success - Request ok
+    - 201 success - New objects has been created
+    - 401 unauthorized - User not authenticated
+    - 403 forbidden - User authenticated but not authorized
+    - 404 fail - Url or object not found
+    - 405 fail - Method not allowed
+    - 409 fail - Object already exists, cannot create another one
+    - 422 fail - Input data missing or not valid
+    - 500 error - Server error, maybe a bug/exception or a backend/database error
+"""
 __author__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
@@ -7,27 +24,6 @@ __revision__ = '20170105'
 
 import flask, flask_sqlalchemy, functools, logging
 from api_modules import *
-
-#http://www.vinaysahni.com/best-practices-for-a-pragmatic-restful-api
-#http://flask.pocoo.org/snippets/83/
-#http://www.flaskapi.org/api-guide/status-codes/
-#success for 20x HTTP codes;
-#unauthorized for 401 HTTP code, meaning that user should login;
-#forbidden for 403 HTTP code, meaning that user does not have enough privileges;
-#fail for other 40x HTTP codes;
-#error for 50x HTTP codes.
-#http://docs.sqlalchemy.org/en/latest/orm/tutorial.html#common-filter-operators
-# https://flask-httpauth.readthedocs.io/en/latest/
-#https://pythonhosted.org/Flask-User/authorization.html#login-required
-#GET /tickets - Retrieves a list of tickets
-#GET /tickets/12 - Retrieves a specific ticket
-#POST /tickets - Creates a new ticket
-#PUT /tickets/12 - Updates ticket #12
-#PATCH /tickets/12 - Partially updates ticket #12
-#DELETE /tickets/12 - Deletes ticket #12
-# ERrors:
-# 401 you're not authenticated
-# 403 you're authenticated but not authorized
 
 @app.errorhandler(401)
 def http_401(err):
@@ -93,6 +89,14 @@ def http_500(err):
     logging.error(err)
     return flask.jsonify(response), response['code']
 
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/auth
+@app.route('/api/auth', methods = ['GET'])
+@requiresAuth
+def apiAuth():
+    auth = flask.request.authorization
+    print(auth)
+    return getUsers(auth.username)
+
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users
 # curl -s -D- -u admin:admin -X POST -d '{"name":"andrea","email":"andrea.dainese@example.com","username":"andrea","password":"andrea"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users
 @app.route('/api/users', methods = ['GET', 'POST'])
@@ -117,6 +121,13 @@ def apiUsersUsername(username):
         return getUsers(username)
     if flask.request.method == 'PUT':
         return editUser(username)
+
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/refresh
+@app.route('/api/refresh', methods = ['GET'])
+@requiresAuth
+@requiresRoles('admin')
+def apiRefresh():
+    return refreshDb()
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5000, debug = True)
