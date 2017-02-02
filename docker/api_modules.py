@@ -156,6 +156,20 @@ def editUser(username):
     }
     return flask.jsonify(response), response['code']
 
+def getFolder(folder):
+    import os
+    folder = '{}{}'.format(PATH_LABS, folder)
+    if not os.path.isdir(folder):
+        flask.abort(404)
+    response = {}
+    response['code'] = 200
+    response['status'] = 'success'
+    response['data'] = {'folders': {}, 'labs': {}}
+    response['message'] = 'Folder "{}" listed'.format(folder)
+    for item in os.listdir(folder):
+        print(item)
+    return flask.jsonify(response), response['code']
+
 def getUser(username):
     return getUsers(username)
 

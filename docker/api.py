@@ -97,6 +97,27 @@ def apiAuth():
     print(auth)
     return getUsers(auth.username)
 
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/folders/
+
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/folders/Andrea
+# curl -s -D- -u admin:admin -X DELETE http://127.0.0.1:5000/api/folders/Andrea
+# curl -s -D- -u admin:admin -X PUT -d '{"path":"/Andrea/Folder 3/Test Folder"}' -H 'Content-type: application/json' http://127.0.0.1/api/folders/Andrea/Folder%203/New%20Folder
+
+# curl -s -D- -u admin:admin -X POST -d '{"path":"/Andrea/Folder 3","name":"New Folder"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/folders
+@app.route('/api/folders/', defaults = {'folder': ''}, methods = ['DELETE', 'GET', 'PUT'])
+@app.route('/api/folders/<folder>', methods = ['DELETE', 'GET', 'PUT'])
+@requiresAuth
+def apiFolders(folder = None):
+    folder = '/{}'.format(folder)
+    if flask.request.method == 'DELETE':
+        return "ciao"
+    if flask.request.method == 'GET':
+        return getFolder(folder)
+    if flask.request.method == 'PUT':
+        return "ciao"
+
+
+
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users
 # curl -s -D- -u admin:admin -X POST -d '{"name":"andrea","email":"andrea.dainese@example.com","username":"andrea","password":"andrea"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users
 @app.route('/api/users', methods = ['GET', 'POST'])
