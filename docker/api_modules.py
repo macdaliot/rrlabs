@@ -56,6 +56,7 @@ class Lab(db.Model):
     __tablename__ = 'labs'
     id = db.Column(db.String(255), primary_key = True)
     name = db.Column(db.String(255))
+    filename = db.Column(db.String(255))
     path = db.Column(db.String(255))
     def __repr__(self):
         return '<Lab(id={})>'.format(id)
@@ -96,6 +97,20 @@ def checkAuthz(username, roles):
     for role in users.first().roles:
         if role.role in roles:
             return True
+    return False
+
+def checkAuthzPath(username, path):
+    import re
+    users = User.query.filter(User.username == username)
+    if users.count() != 1:
+        return False
+    for role in users.first().roles:
+        try:
+            pattern = re.compile(role.access_to)
+            if pattern.match(path) != None:
+                return True
+        except Exception as err:
+            return False
     return False
 
 def addUser():
@@ -157,17 +172,28 @@ def editUser(username):
     return flask.jsonify(response), response['code']
 
 def getFolder(folder):
-    import os
-    folder = '{}{}'.format(PATH_LABS, folder)
-    if not os.path.isdir(folder):
+    import flask, os
+    if not checkAuthzPath(flask.request.authorization.username, folder):
+        flask.abort(403)
+    if not os.path.isdir('{}{}'.format(PATH_LABS, folder)):
         flask.abort(404)
     response = {}
     response['code'] = 200
     response['status'] = 'success'
     response['data'] = {'folders': {}, 'labs': {}}
     response['message'] = 'Folder "{}" listed'.format(folder)
-    for item in os.listdir(folder):
-        print(item)
+    labs = Lab.query.filter(Lab.path == folder)
+    if folder == '/':
+        for dir in os.walk('{}{}'.format(PATH_LABS, folder)).__next__()[1]:
+            response['data']['folders'][dir] = '/{}'.format(dir)
+        for lab in labs:
+            response['data']['labs'][lab.name] = '/{}'.format(lab.filename)
+    else:
+        response['data']['folders']['..'] = os.path.dirname(folder)
+        for dir in os.walk('{}{}'.format(PATH_LABS, folder)).__next__()[1]:
+            response['data']['folders'][dir] = '{}/{}'.format(folder, dir)
+        for lab in labs:
+            response['data']['labs'][lab.name] = '{}/{}'.format(lab.path, lab.filename)
     return flask.jsonify(response), response['code']
 
 def getUser(username):
@@ -198,7 +224,7 @@ def getUsers(username = None):
     return flask.jsonify(response), response['code']
 
 def refreshDb():
-    import fnmatch, os
+    import fnmatch, os, re
     import xml.etree.ElementTree as ElementTree
     labs = {}
     for root, dirnames, filenames in os.walk(PATH_LABS):
@@ -209,14 +235,19 @@ def refreshDb():
             data = {
                 'id': xml_root.attrib['id'],
                 'name': xml_root.attrib['name'],
-                'path': lab_file
+                'filename': os.path.basename(lab_file),
+                'path': os.path.dirname(lab_file).replace(PATH_LABS, '', 1)
             }
+            # Fix empty path from dirname + replace
+            if data['path'] == '':
+                data['path'] = '/'
             labs[xml_root.attrib['id']] = Lab(**data)
     # Removing nonexistent labs from DB
     labs_from_db = Lab.query.all()
     for lab_from_db in labs_from_db:
         if lab_from_db.id not in labs:
             db.session.delete(lab_from_db)
+            # TODO should use a single commit, but got an error
             db.session.commit()
     # Checking missing labs to DB
     for lab_id, lab in labs.items():
@@ -232,10 +263,14 @@ def refreshDb():
             if lab.name != lab_from_db.first().name:
                 lab_from_db.update({'name': lab.name})
                 commit = True
+            if lab.filename != lab_from_db.first().filename:
+                lab_from_db.update({'filename': lab.filename})
+                commit = True
             if lab.path != lab_from_db.first().path:
                 lab_from_db.update({'path': lab.path})
                 commit = True
         if commit:
+            # TODO should use a single commit (not one for each for), but got an error
             db.session.commit()
     response = {
         'code': 200,

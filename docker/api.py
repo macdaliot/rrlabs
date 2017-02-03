@@ -37,7 +37,7 @@ def http_401(err):
 @app.errorhandler(403)
 def http_403(err):
     response = {
-        'code': 401,
+        'code': 403,
         'status': 'forbidden',
         'message': str(err)
     }
