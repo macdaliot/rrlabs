@@ -41,6 +41,7 @@ class Role(db.Model):
     __tablename__ = 'roles'
     role = db.Column(db.String(255), primary_key = True)
     access_to = db.Column(db.String(255))
+    can_write = db.Column(db.Boolean())
     users = db.relationship('User', secondary = roles_to_users, back_populates = 'roles')
     def __repr__(self):
         return '<Role({})>'.format(self.role)
@@ -99,7 +100,7 @@ def checkAuthz(username, roles):
             return True
     return False
 
-def checkAuthzPath(username, path):
+def checkAuthzPath(username, path, would_write = False):
     import re
     users = User.query.filter(User.username == username)
     if users.count() != 1:
@@ -108,6 +109,8 @@ def checkAuthzPath(username, path):
         try:
             pattern = re.compile(role.access_to)
             if pattern.match(path) != None:
+                if would_write and not role.can_write:
+                    return False
                 return True
         except Exception as err:
             return False
@@ -132,6 +135,22 @@ def addUser():
         'code': 201,
         'status': 'success',
         'message': 'User "{}" added'.format(user.username)
+    }
+    return flask.jsonify(response), response['code']
+
+def deleteFolder(folder):
+    import flask, os, shutil
+    if not checkAuthzPath(flask.request.authorization.username, folder, True):
+        flask.abort(403)
+    if folder == '/':
+        flask.abort(403)
+    if not os.path.isdir('{}{}'.format(PATH_LABS, folder)):
+        flask.abort(404)
+    shutil.rmtree('{}{}'.format(PATH_LABS, folder))
+    response = {
+        'code': 200,
+        'status': 'success',
+        'message': 'Folder "{}" deleted'.format(folder)
     }
     return flask.jsonify(response), response['code']
 
@@ -177,11 +196,15 @@ def getFolder(folder):
         flask.abort(403)
     if not os.path.isdir('{}{}'.format(PATH_LABS, folder)):
         flask.abort(404)
-    response = {}
-    response['code'] = 200
-    response['status'] = 'success'
-    response['data'] = {'folders': {}, 'labs': {}}
-    response['message'] = 'Folder "{}" listed'.format(folder)
+    response = {
+        'code': 200,
+        'status': 'success',
+        'data': {
+            'folders': {},
+            'labs': {}
+        },
+        'message': 'Folder "{}" listed'.format(folder)
+    }
     labs = Lab.query.filter(Lab.path == folder)
     if folder == '/':
         for dir in os.walk('{}{}'.format(PATH_LABS, folder)).__next__()[1]:
