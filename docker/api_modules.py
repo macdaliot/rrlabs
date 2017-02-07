@@ -143,7 +143,7 @@ def deleteFolder(folder):
     if not checkAuthzPath(flask.request.authorization.username, folder, True):
         flask.abort(403)
     if folder == '/':
-        flask.abort(403)
+        flask.abort(400)
     if not os.path.isdir('{}{}'.format(PATH_LABS, folder)):
         flask.abort(404)
     shutil.rmtree('{}{}'.format(PATH_LABS, folder))
@@ -164,6 +164,25 @@ def deleteUser(username):
         'code': 200,
         'status': 'success',
         'message': 'User "{}" deleted'.format(username)
+    }
+    return flask.jsonify(response), response['code']
+
+def editFolder(folder):
+    import flask, json, os, shutil
+    data = json.loads(flask.request.data.decode('utf-8'))
+    if not checkAuthzPath(flask.request.authorization.username, folder, True) or not checkAuthzPath(flask.request.authorization.username, data['path'], True):
+        flask.abort(403)
+    if folder == '/' or data['path'] == '/':
+        flask.abort(400)
+    if not os.path.isdir('{}{}'.format(PATH_LABS, folder)) or not os.path.isdir('{}{}'.format(PATH_LABS, os.path.dirname(data['path']))):
+        flask.abort(404)
+    if os.path.isdir('{}{}'.format(PATH_LABS, data['path'])):
+        flask.abort(409)
+    shutil.move('{}{}'.format(PATH_LABS, folder), '{}{}'.format(PATH_LABS, data['path']))
+    response = {
+        'code': 200,
+        'status': 'success',
+        'message': 'Folder "{}" moved'.format(folder)
     }
     return flask.jsonify(response), response['code']
 

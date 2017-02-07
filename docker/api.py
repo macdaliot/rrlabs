@@ -9,6 +9,7 @@
     Return codes:
     - 200 success - Request ok
     - 201 success - New objects has been created
+    - 400 bad request - Input request not valid
     - 401 unauthorized - User not authenticated
     - 403 forbidden - User authenticated but not authorized
     - 404 fail - Url or object not found
@@ -24,6 +25,15 @@ __revision__ = '20170105'
 
 import flask, flask_sqlalchemy, functools, logging
 from api_modules import *
+
+@app.errorhandler(400)
+def http_401(err):
+    response = {
+        'code': 400,
+        'status': 'bad request',
+        'message': str(err)
+    }
+    return flask.jsonify(response), response['code']
 
 @app.errorhandler(401)
 def http_401(err):
@@ -79,14 +89,16 @@ def http_422(err):
     }
     return flask.jsonify(response), response['code']
 
-#@app.errorhandler(Exception)
+@app.errorhandler(Exception)
 def http_500(err):
+    import traceback
     response = {
         'code': 500,
         'status': 'error',
-        'message': str(err)
+        'message': traceback.format_exc()
     }
     logging.error(err)
+    logging.error(traceback.format_exc())
     return flask.jsonify(response), response['code']
 
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/auth
@@ -104,6 +116,7 @@ def apiAuth():
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/folders/
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/folders/Andrea
 # curl -s -D- -u admin:admin -X DELETE http://127.0.0.1:5000/api/folders/Andrea
+# curl -s -D- -u admin:admin -X PUT -d '{"path":"/Dainese"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/folders/Andrea
 @app.route('/api/folders/', defaults = {'folder': ''}, methods = ['DELETE', 'GET', 'PUT'])
 @app.route('/api/folders/<path:folder>', methods = ['DELETE', 'GET', 'PUT'])
 @requiresAuth
@@ -116,9 +129,7 @@ def apiFolders(folder = None):
     if flask.request.method == 'GET':
         return getFolder(folder)
     if flask.request.method == 'PUT':
-        return "ciao"
-
-
+        return editFolder(folder)
 
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users
 # curl -s -D- -u admin:admin -X POST -d '{"name":"andrea","email":"andrea.dainese@example.com","username":"andrea","password":"andrea"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users
