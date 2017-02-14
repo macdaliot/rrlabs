@@ -106,12 +106,13 @@ def http_500(err):
 @requiresAuth
 def apiAuth():
     auth = flask.request.authorization
-    print(auth)
     return getUsers(auth.username)
 
-# curl -s -D- -u admin:admin -X PUT -d '{"path":"/Andrea/Folder 3/Test Folder"}' -H 'Content-type: application/json' http://127.0.0.1/api/folders/Andrea/Folder%203/New%20Folder
 # curl -s -D- -u admin:admin -X POST -d '{"path":"/Andrea/Folder 3","name":"New Folder"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/folders
-
+@app.route('/api/folders', methods = ['POST'])
+@requiresAuth
+def apiFolders():
+    return addFolder()
 
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/folders/
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/folders/Andrea
@@ -120,7 +121,7 @@ def apiAuth():
 @app.route('/api/folders/', defaults = {'folder': ''}, methods = ['DELETE', 'GET', 'PUT'])
 @app.route('/api/folders/<path:folder>', methods = ['DELETE', 'GET', 'PUT'])
 @requiresAuth
-def apiFolders(folder = None):
+def apiFoldersPath(folder = None):
     import os
     # Avoid path traversal
     folder = os.path.join('/', folder)
@@ -131,12 +132,43 @@ def apiFolders(folder = None):
     if flask.request.method == 'PUT':
         return editFolder(folder)
 
+@app.route('/api/labs', methods = ['POST'])
+@requiresAuth
+def apiLabs():
+    return addLab()
+
+@app.route('/api/labs/<path:lab>', methods = ['DELETE', 'GET', 'POST', 'PUT'])
+@requiresAuth
+def apiLabsPath(lab = None):
+    import os
+    # Avoid path traversal
+    lab = os.path.join('/', lab)
+    return manageLab(lab, flask.request.method)
+
+# Create lab
+# curl -s -D- -u admin:admin -X POST -d '{"path":"/Andrea/Folder 3","name":"New Folder"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/folders
+# Open lab
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/Lab%201.unl
+# Read lab info -> SQL
+# Close lab
+# Delete lab
+# Edit lab
+
+#$app -> get('/api/labs/(:path+)', function($path = array()) use ($app, $db) {
+#$app -> put('/api/labs/(:path+)', function($path = array()) use ($app, $db) {
+#$app -> post('/api/labs', function() use ($app, $db) {
+#$app -> post('/api/labs/(:path+)', function($path = array()) use ($app, $db) {
+#$app -> delete('/api/labs/close', function() use ($app, $db) {
+#$app -> delete('/api/labs/(:path+)', function($path = array()) use ($app, $db)
+
+
+# curl -s -D- -u admin:admin -X PUT -d '{"path":"/Dainese"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/folders/Andrea
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users
 # curl -s -D- -u admin:admin -X POST -d '{"name":"andrea","email":"andrea.dainese@example.com","username":"andrea","password":"andrea"}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users
 @app.route('/api/users', methods = ['GET', 'POST'])
 @requiresAuth
 @requiresRoles('admin')
-def apiUsers(username = None):
+def apiUsers():
     if flask.request.method == 'GET':
         return getUsers()
     if flask.request.method == 'POST':

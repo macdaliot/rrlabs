@@ -12,6 +12,7 @@ DB_PASSWORD = 'eve-ng'
 DB_HOST = '127.0.0.1'
 DB_NAME = 'eve'
 PATH_LABS = '/opt/unetlab/labs'
+LAB_EXTENSION = 'unl'
 
 import flask, flask_sqlalchemy, functools, hashlib, logging
 
@@ -115,6 +116,26 @@ def checkAuthzPath(username, path, would_write = False):
         except Exception as err:
             return False
     return False
+
+def addFolder():
+    import json, os
+    data = json.loads(flask.request.data.decode('utf-8'))
+    if not 'path' in data.keys() or not 'name' in data.keys() or not isFolder(data['name']):
+        flask.abort(422)
+    data['path'] = os.path.join('/', data['path'])
+    if not checkAuthzPath(flask.request.authorization.username, data['path'], True):
+        flask.abort(403)
+    if os.path.isdir('{}{}/{}'.format(PATH_LABS, data['path'], data['name'])):
+        flask.abort(409)
+    if not os.path.isdir('{}{}'.format(PATH_LABS, data['path'])):
+        flask.abort(404)
+    os.mkdir('{}{}/{}'.format(PATH_LABS, data['path'], data['name']))
+    response = {
+        'code': 201,
+        'status': 'success',
+        'message': 'Folder "{}/{}" added'.format(data['path'], data['name'])
+    }
+    return flask.jsonify(response), response['code']
 
 def addUser():
     import json
@@ -250,7 +271,7 @@ def getUsers(username = None):
         response['message'] = 'User "{}" listed'.format(username)
         users = User.query.filter(User.username == username)
     if users.count() == 0:
-        flask.abort(404)
+        yyflask.abort(404)
     else:
         response['code'] = 200
         response['status'] = 'success'
@@ -264,6 +285,33 @@ def getUsers(username = None):
             'label_end': user.label_end
         }
     return flask.jsonify(response), response['code']
+
+def isFolder(folder):
+    import re
+    pattern = re.compile(r'^[A-Za-z0-9 +]+$')
+    if pattern.match(folder) != None:
+        return True
+    return False
+
+def manageLab(path, method):
+    import re
+    can_read = checkAuthzPath(flask.request.authorization.username, path)
+    can_write = checkAuthzPath(flask.request.authorization.username, path, True)
+    pattern = re.match(r'^(.+)\.unl(/([a-z]+)?)(/*([0-9]*)?)(/*([a-z]*)?)$', path, re.M|re.I)
+    if pattern:
+        lab_file = pattern.group(1)
+        lab_object = pattern.group(3)
+        lab_id = pattern.group(5)
+        lab_action = pattern.group(7)
+    else:
+        flask.abort(400)
+
+
+
+    #print(path)
+    #print(method)
+    #if not checkAuthzPath(flask.request.authorization.username, data['path'], True):
+    return "ciao"
 
 def refreshDb():
     import fnmatch, os, re
