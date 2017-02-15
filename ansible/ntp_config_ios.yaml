@@ -1,0 +1,127 @@
+--- 
+- 
+  connection: local
+  gather_facts: false
+  hosts: ios
+  vars_files: 
+    - "{{ config }}"
+  tasks: 
+    - 
+      name: "OBTAIN LOGIN CREDENTIALS"
+      include_vars: /usr/src/rrlabs/ansible/secrets.yaml
+    - 
+      name: "DEFINE PROVIDER"
+      set_fact: 
+        provider: 
+          host: "{{ inventory_hostname }}"
+          password: "{{ creds['password'] }}"
+          username: "{{ creds['username'] }}"
+    - 
+      name: "GET NTP CONFIGURATION"
+      register: get_ntp_config
+      ios_command: 
+        provider: "{{ provider }}"
+        commands: 
+          - "show running-config | include clock timezone"
+          - "show running-config | include clock summer-time"
+          - "show running-config | include ntp source"
+          - "show running-config | include ntp server"
+#    - 
+#      debug: var=get_ntp_config.stdout_lines
+    - 
+      name: "SET TIMEZONE"
+      when: "(timezone is defined) and (timezone != get_ntp_config.stdout_lines[0][0])"
+      register: set_timezone
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "{{ timezone }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(set_timezone.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "SET SUMMERTIME"
+      when: "(summertime is defined) and (summertime != get_ntp_config.stdout_lines[1][0])"
+      register: set_summertime
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "{{ summertime }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(set_timezone.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "REMOVE SUMMERTIME"
+      when: "(summertime is not defined) and (get_ntp_config.stdout_lines[1][0] != \"\")"
+      register: remove_summertime
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "no {{ get_ntp_config.stdout_lines[1][0] }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(remove_summertime.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "SET NTP SOURCE"
+      when: "(ntp_source is defined) and (ntp_source != get_ntp_config.stdout_lines[2][0])"
+      register: set_ntp_source
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "{{ ntp_source }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(set_ntp_source.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "REMOVE NTP SOURCE"
+      when: "(ntp_source is not defined) and (get_ntp_config.stdout_lines[2][0] != \"\")"
+      register: remove_ntp_source
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "no {{ get_ntp_config.stdout_lines[2][0] }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(remove_ntp_source.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "SET NTP SERVER"
+      when: "(item not in get_ntp_config.stdout_lines[3])"
+      with_items: "{{ ntp_servers }}"
+      register: set_ntp_server
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "{{ item }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(set_ntp_server.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "REMOVE NTP SERVER"
+      when: "(item not in ntp_servers)"
+      with_items: "{{ get_ntp_config.stdout_lines[3] }}"
+      register: remove_ntp_server
+      ios_config: 
+        provider: "{{ provider }}"
+        lines: 
+          - "no {{ item }}"
+    - 
+      name: "POSTPONE CONFIGURATION SAVE"
+      when: "(remove_ntp_server.changed == true)"
+      set_fact: configured=true
+    - 
+      name: "SAVE CONFIGURATION"
+      when: "(configured is defined) and (configured == true)"
+      register: save_config
+      ios_command: 
+        provider: "{{ provider }}"
+        commands: 
+          - "write memory"
+#    - 
+#      debug: var=save_config
+

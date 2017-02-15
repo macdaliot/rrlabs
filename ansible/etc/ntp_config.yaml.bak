@@ -1,0 +1,8 @@
+timezone: "clock timezone CET 1 0"
+summertime: "clock summer-time CEST recurring last Sun Mar 2:00 last Sun Oct 3:00"
+ntp_source: "ntp source Vlan1312"
+ntp_servers:
+- ntp_server1: "ntp server ntp1.infocert.it"
+- ntp_server2: "ntp server ntp2.infocert.it"
+- ntp_server3: "ntp server ntp3.infocert.it"
+- ntp_server4: "ntp server ntp4.infocert.it"
