@@ -104,7 +104,7 @@
       set_fact: configured=true
     - 
       name: "REMOVE NTP SERVER"
-      when: "(item not in ntp_servers)"
+      when: "(get_ntp_config.stdout_lines[3][0] != '') and (item not in ntp_servers)"
       with_items: "{{ get_ntp_config.stdout_lines[3] }}"
       register: remove_ntp_server
       ios_config: 
