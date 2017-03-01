@@ -1,0 +1,38 @@
+#!/bin/bash
+PID=0
+
+function nodeStop {
+	if [ ${PID} -ne 0 ]; then
+		pgrep httpd &> /dev/null && apachectl stop &> /dev/null
+		pgrep nginx &> /dev/null && nginx -s stop &> /dev/null
+		kill -SIGTERM ${PID}
+		wait ${PID}
+	fi
+}
+
+function waitProcesses {
+	while true; do
+		pgrep httpd &> /dev/null || pgrep nginx &> /dev/null || break
+		sleep 5
+	done
+}
+
+if [ -f /usr/sbin/sshd ]; then
+	/usr/bin/ssh-keygen -A &> /dev/null || exit 1
+	/usr/sbin/sshd || exit 1
+fi
+if [ -f /usr/sbin/nginx ]; then
+	for i in ${IP}; do
+		echo "server ${i};" > /etc/nginx/servers/${i}.conf
+	done
+	/usr/sbin/nginx &> /dev/null || exit 1
+fi
+if [ -f /usr/sbin/apachectl ]; then
+	/usr/sbin/apachectl graceful &> /dev/null || exit 1
+fi
+
+trap nodeStop SIGINT SIGTERM
+waitProcesses &
+PID=$!
+wait $PID
+exit $?
