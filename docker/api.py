@@ -137,6 +137,9 @@ def apiFoldersPath(folder = None):
 def apiLabs():
     return addLab()
 
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks/1
 @app.route('/api/labs/<path:lab>', methods = ['DELETE', 'GET', 'POST', 'PUT'])
 @requiresAuth
 def apiLabsPath(lab = None):
