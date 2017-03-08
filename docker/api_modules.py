@@ -45,6 +45,24 @@ class ActiveTopology(db.Model):
     def __repr__(self):
         return '<Topology(src={}, dst={}>'.format(src, dst)
 
+class Interface:
+    def __init__(self, id, name = None):
+        self.id = id
+        self.name = name
+
+class Ethernet(Interface):
+    type = 'ethernet'
+    def __repr__(self):
+        return '<Ethernet(id={}>'.format(id)
+    def __init__(self, mac = None, network_id = None):
+        self.mac = mac
+        self.network_id = network_id
+
+class Serial(Interface):
+    type = 'serial'
+    def __repr__(self):
+        return '<Ethernet(id={}>'.format(id)
+
 class Lab(db.Model):
     __tablename__ = 'labs'
     id = db.Column(db.String(255), primary_key = True)
@@ -58,17 +76,17 @@ class Lab(db.Model):
         import xml.etree.ElementTree as ElementTree
         xml = ElementTree.parse('{}{}/{}'.format(PATH_LABS, self.path, self.filename))
         xml_root = xml.getroot()
-        self.author = xml_root.attrib['author'] if 'author' in xml_root.attrib.keys() else ''
-        self.body = xml_root.attrib['body'] if 'body' in xml_root.attrib.keys() else ''
-        self.description = xml_root.attrib['description'] if 'description' in xml_root.attrib.keys() else ''
-        self.version = int(xml_root.attrib['version']) if 'version' in xml_root.attrib.keys() else 0
+        self.author = xml_root.attrib['author'] if 'author' in xml_root.attrib.keys() else None
+        self.body = xml_root.attrib['body'] if 'body' in xml_root.attrib.keys() else None
+        self.description = xml_root.attrib['description'] if 'description' in xml_root.attrib.keys() else None
+        self.version = int(xml_root.attrib['version']) if 'version' in xml_root.attrib.keys() else None
 
         self.networks = {}
         for network in xml_root.findall('./topology/networks/network'):
             network_id = network.attrib['id']
-            network_name = network.attrib['name'] if 'name' in xml_root.attrib.keys() else ''
-            network_left = network.attrib['left'] if 'left' in xml_root.attrib.keys() else 0
-            network_top = network.attrib['top'] if 'top' in xml_root.attrib.keys() else 0
+            network_name = network.attrib['name'] if 'name' in xml_root.attrib.keys() else None
+            network_left = int(network.attrib['left']) if 'left' in network.attrib.keys() else None
+            network_top = int(network.attrib['top']) if 'top' in network.attrib.keys() else None
             self.networks[network_id] = Network(
                 id = network_id,
                 name = network_name,
@@ -79,16 +97,15 @@ class Lab(db.Model):
         self.nodes = {}
         for node in xml_root.findall('./topology/nodes/node'):
             node_id = node.attrib['id']
-            node_name = node.attrib['name'] if 'name' in xml_root.attrib.keys() else ''
-            node_left = node.attrib['left'] if 'left' in xml_root.attrib.keys() else 0
-            node_top = node.attrib['top'] if 'top' in xml_root.attrib.keys() else 0
+            node_name = node.attrib['name'] if 'name' in node.attrib.keys() else None
+            node_left = node.attrib['left'] if 'left' in node.attrib.keys() else None
+            node_top = node.attrib['top'] if 'top' in node.attrib.keys() else None
             self.nodes[node_id] = Node(
                 id = node_id,
                 name = node_name,
                 left = node_left,
                 top = node_top
             )
-        #nodes
         #textobjects
         #pictures
         #tenant
@@ -97,18 +114,46 @@ class Lab(db.Model):
     #dainoke#
 
 class Network:
-    def __init__(self, id = None, name = '', left = 0, top = 0):
+    def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
         self.name = name
         self.left = left
         self.top = top
 
 class Node:
-    def __init__(self, id = None, name = '', left = 0, top = 0):
+    ethernets = {}
+    serials = {}
+    slots = {}
+    def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
         self.name = name
         self.left = left
         self.top = top
+        # $flags_eth;
+        # $flags_ser;
+        # $config;
+        # $config_data;
+        # $console;
+        # $cpu;
+        # $delay;
+        # $ethernet;
+        # $ethernets = Array();
+        # $firstmac;
+        # $host;
+        # $icon;
+        # $idlepc;
+        # $image;
+        # $lab_id;
+        # $nvram;
+        # $port;
+        # $ram;
+        # $serial;
+        # $serials = Array();
+        # $slots = Array();
+        # $template;
+        # $tenant;
+        # $type;
+        # $uuid;
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -433,40 +478,40 @@ def manageLab(path, method):
     return "ciao"
 
 def printLab(lab):
-    return {
-        'author': lab.author,
-        'body': lab.body,
-        'description': lab.description,
-        'filename': lab.filename,
-        'id': lab.id,
-        'name': lab.name,
-        'version': lab.version
-    }
+    output = {}
+    if lab.author: output['author'] = lab.author
+    if lab.body: output['body'] = lab.body
+    if lab.description: output['description'] = lab.description
+    output['filename'] = lab.filename
+    output['id'] = lab.id
+    output['name'] = lab.name
+    if lab.version: output['version'] = lab.version
+    return output
 
 def printNetwork(network):
-    return {
-        'id': network.id,
-        'name': network.name,
-        'left': network.left,
-        'top': network.top
-    }
+    output = {}
+    output['id'] = network.id
+    if network.name: output['name'] = network.name
+    if network.left: output['left'] = network.left
+    if network.top: output['top'] = network.top
+    return output
 
 def printNode(node):
-    return {
-        'id': node.id,
-        'name': node.name,
-        'left': node.left,
-        'top': node.top
-    }
+    output = {}
+    output['id'] = node.id
+    if node.name: output['name'] = node.name
+    if node.left: output['left'] = node.left
+    if node.top: output['top'] = node.top
+    return output
 
 def printUser(user):
-    return {
-        'email': user.email,
-        'name': user.name,
-        'username': user.username,
-        'label_start': user.label_start,
-        'label_end': user.label_end
-    }
+    output = {}
+    if user.email: output['email'] = user.email
+    if user.label_end: output['label_end'] = user.label_end
+    if user.label_start: output['label_start'] = user.label_start
+    if user.name: output['name'] = user.name
+    output['username'] = user.username
+    return output
 
 def refreshDb():
     import fnmatch, os, re
