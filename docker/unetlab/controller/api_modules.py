@@ -45,23 +45,15 @@ class ActiveTopology(db.Model):
     def __repr__(self):
         return '<Topology(src={}, dst={}>'.format(src, dst)
 
-class Interface:
-    def __init__(self, id, name = None):
-        self.id = id
-        self.name = name
-
-class Ethernet(Interface):
+class Ethernet:
     type = 'ethernet'
     def __repr__(self):
         return '<Ethernet(id={}>'.format(id)
-    def __init__(self, mac = None, network_id = None):
+    def __init__(self, id, name = None, mac = None, network_id = None):
+        self.id = id
+        self.name = name
         self.mac = mac
         self.network_id = network_id
-
-class Serial(Interface):
-    type = 'serial'
-    def __repr__(self):
-        return '<Ethernet(id={}>'.format(id)
 
 class Lab(db.Model):
     __tablename__ = 'labs'
@@ -106,6 +98,21 @@ class Lab(db.Model):
                 left = node_left,
                 top = node_top
             )
+            for interface in node.findall('./interface'):
+                interface_id = int(interface.attrib['id'])
+                interface_mac = interface.attrib['mac'] if 'mac' in interface.attrib.keys() else None
+                interface_name = interface.attrib['name'] if 'name' in interface.attrib.keys() else None
+                interface_type = interface.attrib['type']
+                if interface_type == 'ethernet':
+                    interface_network_id = int(interface.attrib['network_id']) if 'network_id' in interface.attrib.keys() else None
+                    self.nodes[node_id].setInterface(id = interface_id, type = interface_type, mac = interface_mac, name = interface_name, network_id = interface_network_id)
+                if interface_type == 'serial':
+                    interface_remote_id = int(interface.attrib['remote_id']) if 'remote_id' in interface.attrib.keys() else None
+                    interface_remote_if = int(interface.attrib['remote_if']) if 'remote_if' in interface.attrib.keys() else None
+                    self.nodes[node_id].setInterface(id = interface_id, type = interface_type, name = interface_name, remote_id = interface_remote_id, remote_if = interface_remote_if)
+
+
+
         #textobjects
         #pictures
         #tenant
@@ -121,8 +128,7 @@ class Network:
         self.top = top
 
 class Node:
-    ethernets = {}
-    serials = {}
+    interfaces = {}
     slots = {}
     def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
@@ -154,6 +160,9 @@ class Node:
         # $tenant;
         # $type;
         # $uuid;
+    def setInterface(self, id, type, mac = None, name = None, network_id = None, remote_id = None, remote_if = None):
+        if type == 'ethernet': self.interfaces[id] = Ethernet(id, mac, name, network_id)
+        if type == 'serial': self.interfaces[id] = Serial(id, name, remote_id, remote_if)
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -171,14 +180,21 @@ class Roles2Users(db.Model):
     def __repr__(self):
         return '<Role2User({}.{})>'.format(self.role, self.username)
 
+class Serial:
+    type = 'serial'
+    def __repr__(self):
+        return '<Serial(id={}>'.format(id)
+    def __init__(self, id = None, name = None, remote_id = None, remote_if = None):
+        self.mac = mac
+        self.network_id = network_id
+
 class User(db.Model):
     __tablename__ = 'users'
     username = db.Column(db.String(255), primary_key = True)
     password = db.Column(db.String(255))
     name = db.Column(db.String(255))
     email = db.Column(db.String(255), unique = True)
-    label_start = db.Column(db.Integer)
-    label_end = db.Column(db.Integer)
+    labels = db.Column(db.Integer)
     roles = db.relationship('Role', secondary = roles_to_users, back_populates = 'users')
     def __repr__(self):
         return '<User({})>'.format(self.username)
@@ -387,8 +403,12 @@ def isFolder(folder):
 
 def manageLab(path, method):
     import os, re
-    can_read = checkAuthzPath(flask.request.authorization.username, path)
-    can_write = checkAuthzPath(flask.request.authorization.username, path, True)
+    username = flask.request.authorization.username
+    can_read = checkAuthzPath(username, path)
+    can_write = checkAuthzPath(username, path, True)
+
+    if not can_read:
+        flask.abort(403)
 
     pattern = re.match(r'^(.+)\.{}(/([a-z]+))?(/*(all|[0-9]*))?$'.format(LAB_EXTENSION), path, re.M|re.I)
     if pattern:
@@ -404,7 +424,9 @@ def manageLab(path, method):
         flask.abort(404)
     lab = labs.one()
 
-    if method == 'DELETE':
+    if method == 'CLOSE':
+        print(method)
+    elif method == 'DELETE':
         print(method)
     elif method == 'GET':
         if lab_object == None:
@@ -450,10 +472,10 @@ def manageLab(path, method):
                 response['message'] = 'Lab "{}/{}": node "{}" displayed'.format(lab.path, lab.filename, object_id)
                 response['data'] = printNode(lab.nodes[object_id])
             return flask.jsonify(response), response['code']
-        elif lab_object == 'open':
-            print('open')
-        elif lab_object == 'close':
-            print('close')
+        else:
+            raise Exception('Object not recognized')
+    elif method == 'OPEN':
+        return openLab(lab, username)
     elif method == 'POST':
         print(method)
     elif method == 'PUT':
@@ -462,20 +484,30 @@ def manageLab(path, method):
         print(method)
     elif method == 'STOP':
         print(method)
+    raise Exception('Method not defined')
 
-    print(lab_filename)
-    print(lab_object)
-    print(object_id)
-    #print(object_action)
+def openLab(lab, username):
+    print(lab.id)
+    for node_id, node in lab.nodes.items():
+        print(node)
+    #    print(node.id)
+    # elenco nodi lab
+    # elenco int per nodo
+    # prima label libera
 
-    # Inner Label: destination docker instance
-    # Outer Label: destination docker server
+    # tables
+    # active_labels
+    # active_nodes
+    # active_topologies
 
-
-    #print(path)
-    #print(method)
-    #if not checkAuthzPath(flask.request.authorization.username, data['path'], True):
-    return "ciao"
+    # 1 assegno ad ogni nodo un node_id e lo inserisco su active_nodes
+    # 2 assegno ad ogni nodo le interfacce e le inserisco su active_labels
+    # 3 creo tutte le coppie src:dst e le inserisco su active_topologies
+    response = {
+        'code': 200,
+        'status': 'success',
+    }
+    return flask.jsonify(response), response['code']
 
 def printLab(lab):
     output = {}
@@ -502,13 +534,25 @@ def printNode(node):
     if node.name: output['name'] = node.name
     if node.left: output['left'] = node.left
     if node.top: output['top'] = node.top
+    if len(node.interfaces) > 0:
+        output['interfaces'] = {}
+        for interface_id, interface in node.interfaces.items():
+            output['interfaces'][interface_id] = {
+                'id': interface.id,
+                'type': interface.type
+            }
+            if interface.name: output['interfaces'][interface_id]['name'] = interface.name
+            if interface.mac: output['interfaces'][interface_id]['mac'] = interface.mac
+            if interface.type == 'ethernet' and interface.network_id: output['interfaces'][interface_id]['network_id'] = interface.network_id
+            if interface.type == 'serial' and interface.remote_id and interface.remote_if:
+                 output['interfaces'][interface_id]['remote_id'] = interface.remote_id
+                 output['interfaces'][interface_id]['remote_if'] = interface.remote_if
     return output
 
 def printUser(user):
     output = {}
     if user.email: output['email'] = user.email
-    if user.label_end: output['label_end'] = user.label_end
-    if user.label_start: output['label_start'] = user.label_start
+    if user.labels: output['labels'] = user.labels
     if user.name: output['name'] = user.name
     output['username'] = user.username
     return output

@@ -138,9 +138,15 @@ def apiLabs():
     return addLab()
 
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl
+# curl -s -D- -u admin:admin -X CLOSE http://127.0.0.1:5000/api/labs/Andrea/nat.unl
+# curl -s -D- -u admin:admin -X OPEN http://127.0.0.1:5000/api/labs/Andrea/nat.unl
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks/1
-@app.route('/api/labs/<path:lab>', methods = ['DELETE', 'GET', 'POST', 'PUT'])
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/nodes
+# curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/nodes/1
+# curl -s -D- -u admin:admin -X START http://127.0.0.1:5000/api/labs/Andrea/nat.unl/nodes/1
+# curl -s -D- -u admin:admin -X STOP http://127.0.0.1:5000/api/labs/Andrea/nat.unl/nodes/1
+@app.route('/api/labs/<path:lab>', methods = ['CLOSE', 'DELETE', 'GET', 'OPEN', 'POST', 'PUT', 'START', 'STOP'])
 @requiresAuth
 def apiLabsPath(lab = None):
     import os
@@ -179,7 +185,7 @@ def apiUsers():
 
 # curl -s -D- -u admin:admin -X DELETE http://127.0.0.1:5000/api/users/andrea
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/users/andrea
-# curl -s -D- -u admin:admin -X PUT -d '{"name":"dainese","email":"adainese@example.com","password":"dainese","label_start":200,"label_end":399}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users/andrea
+# curl -s -D- -u admin:admin -X PUT -d '{"name":"dainese","email":"adainese@example.com","password":"dainese","labels":200}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/users/andrea
 @app.route('/api/users/<username>', methods = ['DELETE', 'GET', 'PUT'])
 @requiresAuth
 @requiresRoles('admin')
