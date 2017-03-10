@@ -105,6 +105,30 @@ LOCK TABLES `active_topologies` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `controllers`
+--
+
+DROP TABLE IF EXISTS `controllers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `controllers` (
+  `id` int(11) NOT NULL,
+  `inside_ip` varchar(255) NOT NULL,
+  `outside_ip` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `controllers`
+--
+
+LOCK TABLES `controllers` WRITE;
+/*!40000 ALTER TABLE `controllers` DISABLE KEYS */;
+/*!40000 ALTER TABLE `controllers` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `labs`
 --
 
@@ -221,4 +245,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-03-09 10:36:14
+-- Dump completed on 2017-03-10  8:17:01

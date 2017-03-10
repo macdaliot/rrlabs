@@ -26,6 +26,12 @@ __revision__ = '20170105'
 import flask, flask_sqlalchemy, functools, logging
 from api_modules import *
 
+import configparser
+# could also use ENV
+config = configparser.ConfigParser()
+config.read('controller.ini')
+controller_id = int(config['controller']['id'])
+
 @app.errorhandler(400)
 def http_401(err):
     response = {
@@ -139,7 +145,7 @@ def apiLabs():
 
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl
 # curl -s -D- -u admin:admin -X CLOSE http://127.0.0.1:5000/api/labs/Andrea/nat.unl
-# curl -s -D- -u admin:admin -X OPEN http://127.0.0.1:5000/api/labs/Andrea/nat.unl
+# curl -s -D- -u admin:admin -X OPEN -d '{"name":"dainese","email":"adainese@example.com","password":"dainese","labels":200}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/labs/Andrea/nat.unl
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks/1
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/nodes

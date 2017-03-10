@@ -28,27 +28,24 @@ roles_to_users = db.Table(
 
 class ActiveNode(db.Model):
     __tablename__ = 'active_nodes'
-    user_id = db.Column(db.String, db.ForeignKey('users.username'))
+    username = db.Column(db.String, db.ForeignKey('users.username'))
     lab_id = db.Column(db.String, db.ForeignKey('labs.id'))
-    node_id = db.Column(db.Integer)
-    iface_id = db.Column(db.Integer)
-    label = db.Column(db.Integer, primary_key = True)
+    node_id = db.Column(db.Integer, primary_key = True)
     state = db.Column(db.String(255))
-    controller = db.Column(db.String(255))
     def __repr__(self):
-        return '<Node(label={})>'.format(label)
+        return '<Node(lab_id={}, node_id={})>'.format(self.lab_id, self.node_id)
 
 class ActiveTopology(db.Model):
     __tablename__ = 'active_topologies'
     src = db.Column(db.Integer, db.ForeignKey('active_nodes.label'), primary_key = True)
     dst = db.Column(db.Integer, db.ForeignKey('active_nodes.label'), primary_key = True)
     def __repr__(self):
-        return '<Topology(src={}, dst={}>'.format(src, dst)
+        return '<Topology(src={}, dst={}>'.format(self.src, self.dst)
 
 class Ethernet:
     type = 'ethernet'
     def __repr__(self):
-        return '<Ethernet(id={}>'.format(id)
+        return '<Ethernet(id={}>'.format(self.id)
     def __init__(self, id, name = None, mac = None, network_id = None):
         self.id = id
         self.name = name
@@ -62,7 +59,7 @@ class Lab(db.Model):
     filename = db.Column(db.String(255))
     path = db.Column(db.String(255))
     def __repr__(self):
-        return '<Lab(id={})>'.format(id)
+        return '<Lab(id={})>'.format(self.id)
     @flask_sqlalchemy.orm.reconstructor
     def init_on_load(self):
         import xml.etree.ElementTree as ElementTree
@@ -121,6 +118,8 @@ class Lab(db.Model):
     #dainoke#
 
 class Network:
+    def __repr__(self):
+        return '<Network(id={}>'.format(self.id)
     def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
         self.name = name
@@ -130,6 +129,8 @@ class Network:
 class Node:
     interfaces = {}
     slots = {}
+    def __repr__(self):
+        return '<Node(id={}>'.format(self.id)
     def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
         self.name = name
@@ -183,7 +184,7 @@ class Roles2Users(db.Model):
 class Serial:
     type = 'serial'
     def __repr__(self):
-        return '<Serial(id={}>'.format(id)
+        return '<Serial(id={}>'.format(self.id)
     def __init__(self, id = None, name = None, remote_id = None, remote_if = None):
         self.mac = mac
         self.network_id = network_id
@@ -448,6 +449,7 @@ def manageLab(path, method):
                 response['message'] = 'Lab "{}/{}": all networks displayed'.format(lab.path, lab.filename)
                 response['data'] = {}
                 for network_id, network in lab.networks.items():
+                    network_id = int(network_id)
                     response['data'][network_id] = printNetwork(network)
             else:
                 if not object_id in lab.networks.keys():
@@ -465,6 +467,7 @@ def manageLab(path, method):
                 response['message'] = 'Lab "{}/{}": all nodes displayed'.format(lab.path, lab.filename)
                 response['data'] = {}
                 for node_id, node in lab.nodes.items():
+                    node_id = int(node_id)
                     response['data'][node_id] = printNode(node)
             else:
                 if not object_id in lab.nodes.keys():
@@ -488,8 +491,24 @@ def manageLab(path, method):
 
 def openLab(lab, username):
     print(lab.id)
+    #active_nodes = ActiveNode.query.filter(ActiveNode.lab_id == lab.id, ActiveNode.user_id == username)
+    #print(active_nodes)
+    # Converting BaseQuery to dict
+    active_nodes = {}
+    for active_node in ActiveNode.query.filter(ActiveNode.lab_id == lab.id, ActiveNode.username == username):
+        active_nodes[active_node.node_id] = active_node
+
+    # Check if each node has a label
     for node_id, node in lab.nodes.items():
-        print(node)
+        node_id = int(node_id)
+        if node_id not in active_nodes:
+            # Add each node as active_node
+            active_node = ActiveNode(username = username, lab_id = lab.id, node_id = node_id, state = 'off')
+            db.session.add(active_node)
+            db.session.commit() # TODO should do a single commit
+
+    # Check for unused labels (deleted nodes)
+
     #    print(node.id)
     # elenco nodi lab
     # elenco int per nodo
@@ -537,6 +556,7 @@ def printNode(node):
     if len(node.interfaces) > 0:
         output['interfaces'] = {}
         for interface_id, interface in node.interfaces.items():
+            interface_id = int(interface_id)
             output['interfaces'][interface_id] = {
                 'id': interface.id,
                 'type': interface.type
@@ -585,6 +605,7 @@ def refreshDb():
             db.session.commit()
     # Checking missing labs to DB
     for lab_id, lab in labs.items():
+        lab_id = int(lab_id)
         commit = False
         lab_from_db = Lab.query.filter(Lab.id == lab.id)
         if lab_from_db.count() == 0:
