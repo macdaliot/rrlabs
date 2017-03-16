@@ -23,7 +23,7 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170105'
 
-import flask, flask_sqlalchemy, functools, logging
+import flask, functools, logging
 from api_modules import *
 
 import configparser

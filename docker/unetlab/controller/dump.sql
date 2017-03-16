@@ -16,40 +16,6 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `active_labels`
---
-
-DROP TABLE IF EXISTS `active_labels`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `active_labels` (
-  `username` varchar(255) NOT NULL,
-  `lab_id` varchar(255) NOT NULL,
-  `label` int(11) NOT NULL,
-  `node_id` int(11) NOT NULL,
-  `iface_id` int(11) NOT NULL,
-  `state` varchar(255) DEFAULT NULL,
-  `controller` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`label`),
-  KEY `lab_id` (`lab_id`),
-  KEY `node_id` (`node_id`),
-  KEY `username` (`username`),
-  CONSTRAINT `active_labels_ibfk_1` FOREIGN KEY (`lab_id`) REFERENCES `labs` (`id`),
-  CONSTRAINT `active_labels_ibfk_2` FOREIGN KEY (`node_id`) REFERENCES `active_nodes` (`node_id`),
-  CONSTRAINT `active_labels_ibfk_3` FOREIGN KEY (`username`) REFERENCES `users` (`username`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `active_labels`
---
-
-LOCK TABLES `active_labels` WRITE;
-/*!40000 ALTER TABLE `active_labels` DISABLE KEYS */;
-/*!40000 ALTER TABLE `active_labels` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `active_nodes`
 --
 
@@ -60,12 +26,17 @@ CREATE TABLE `active_nodes` (
   `username` varchar(255) NOT NULL,
   `lab_id` varchar(255) NOT NULL,
   `node_id` int(11) NOT NULL,
-  `state` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`node_id`),
+  `state` varchar(255) NOT NULL DEFAULT 'off',
+  `label` int(11) NOT NULL AUTO_INCREMENT,
+  `controller` int(11) NOT NULL,
+  PRIMARY KEY (`username`,`lab_id`,`node_id`),
+  UNIQUE KEY `label` (`label`),
+  UNIQUE KEY `label_2` (`label`),
   KEY `lab_id` (`lab_id`),
-  KEY `username` (`username`),
+  KEY `controller` (`controller`),
   CONSTRAINT `active_nodes_ibfk_1` FOREIGN KEY (`lab_id`) REFERENCES `labs` (`id`),
-  CONSTRAINT `active_nodes_ibfk_2` FOREIGN KEY (`username`) REFERENCES `users` (`username`)
+  CONSTRAINT `active_nodes_ibfk_2` FOREIGN KEY (`username`) REFERENCES `users` (`username`),
+  CONSTRAINT `active_nodes_ibfk_3` FOREIGN KEY (`controller`) REFERENCES `controllers` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -86,13 +57,15 @@ DROP TABLE IF EXISTS `active_topologies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `active_topologies` (
-  `src` int(11) NOT NULL,
-  `dst` int(11) NOT NULL,
-  PRIMARY KEY (`src`,`dst`),
-  KEY `dst` (`dst`),
-  CONSTRAINT `active_topologies_ibfk_1` FOREIGN KEY (`src`) REFERENCES `active_labels` (`label`),
-  CONSTRAINT `active_topologies_ibfk_2` FOREIGN KEY (`dst`) REFERENCES `active_labels` (`label`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `src_id` int(11) NOT NULL,
+  `src_if` int(11) NOT NULL,
+  `dst_id` int(11) NOT NULL,
+  `dst_if` int(11) NOT NULL,
+  PRIMARY KEY (`src_id`,`src_if`,`dst_id`,`dst_if`),
+  KEY `dst_id` (`dst_id`),
+  CONSTRAINT `active_topologies_ibfk_1` FOREIGN KEY (`src_id`) REFERENCES `active_nodes` (`label`),
+  CONSTRAINT `active_topologies_ibfk_2` FOREIGN KEY (`dst_id`) REFERENCES `active_nodes` (`label`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -115,6 +88,7 @@ CREATE TABLE `controllers` (
   `id` int(11) NOT NULL,
   `inside_ip` varchar(255) NOT NULL,
   `outside_ip` varchar(255) NOT NULL,
+  `master` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -125,6 +99,7 @@ CREATE TABLE `controllers` (
 
 LOCK TABLES `controllers` WRITE;
 /*!40000 ALTER TABLE `controllers` DISABLE KEYS */;
+INSERT INTO `controllers` VALUES (0,'172.17.0.1','10.113.8.57',1);
 /*!40000 ALTER TABLE `controllers` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -245,4 +220,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-03-10  8:17:01
+-- Dump completed on 2017-03-13 14:43:44

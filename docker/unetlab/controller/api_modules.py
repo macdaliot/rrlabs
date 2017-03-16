@@ -14,10 +14,13 @@ DB_NAME = 'eve'
 PATH_LABS = '/opt/unetlab/labs'
 LAB_EXTENSION = 'unl'
 
-import flask, flask_sqlalchemy, functools, hashlib, logging
+import flask, flask_sqlalchemy, functools, hashlib, logging, memcache, pickle
+cache = memcache.Client(['127.0.0.1:11211'], debug = 0)
 
 app = flask.Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@{}/{}'.format(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_NAME)
+# https://stackoverflow.com/questions/25176813/how-to-use-flask-cache-and-memcached
+#app.config["CACHE_TYPE"]="memcached"
 db = flask_sqlalchemy.SQLAlchemy(app)
 
 roles_to_users = db.Table(
@@ -28,25 +31,40 @@ roles_to_users = db.Table(
 
 class ActiveNode(db.Model):
     __tablename__ = 'active_nodes'
-    username = db.Column(db.String, db.ForeignKey('users.username'))
-    lab_id = db.Column(db.String, db.ForeignKey('labs.id'))
+    username = db.Column(db.String, db.ForeignKey('users.username'), primary_key = True)
+    lab_id = db.Column(db.String, db.ForeignKey('labs.id'), primary_key = True)
     node_id = db.Column(db.Integer, primary_key = True)
     state = db.Column(db.String(255))
+    label = db.Column(db.Integer, unique = True)
+    controller = db.Column(db.Integer, db.ForeignKey('controllers.id'))
     def __repr__(self):
-        return '<Node(lab_id={}, node_id={})>'.format(self.lab_id, self.node_id)
+        return '<ActiveNode(lab_id={},node_id={})>'.format(self.lab_id, self.node_id)
 
 class ActiveTopology(db.Model):
     __tablename__ = 'active_topologies'
-    src = db.Column(db.Integer, db.ForeignKey('active_nodes.label'), primary_key = True)
-    dst = db.Column(db.Integer, db.ForeignKey('active_nodes.label'), primary_key = True)
+    username = db.Column(db.String, db.ForeignKey('users.username'), db.ForeignKey('users.username'))
+    lab_id = db.Column(db.String, db.ForeignKey('users.username'), db.ForeignKey('labs.id'))
+    src_id = db.Column(db.Integer, db.ForeignKey('active_nodes.label'), primary_key = True)
+    src_if = db.Column(db.Integer)
+    dst_id = db.Column(db.Integer, db.ForeignKey('active_nodes.label'), primary_key = True)
+    dst_if = db.Column(db.Integer)
     def __repr__(self):
-        return '<Topology(src={}, dst={}>'.format(self.src, self.dst)
+        return '<Topology(src_id={}:{},dst_id={}:{}>'.format(self.src_id, self_src_if, self.dst_id, self.dst_if)
+
+class Controller(db.Model):
+    __tablename__ = 'controllers'
+    id = db.Column(db.String(255), primary_key = True)
+    inside_ip = db.Column(db.String(255))
+    outside_ip = db.Column(db.String(255))
+    master = db.Column(db.Boolean)
+    def __repr__(self):
+        return '<Controller(id={})>'.format(self.id)
 
 class Ethernet:
     type = 'ethernet'
     def __repr__(self):
         return '<Ethernet(id={}>'.format(self.id)
-    def __init__(self, id, name = None, mac = None, network_id = None):
+    def __init__(self, id = id, name = None, mac = None, network_id = None):
         self.id = id
         self.name = name
         self.mac = mac
@@ -61,6 +79,7 @@ class Lab(db.Model):
     def __repr__(self):
         return '<Lab(id={})>'.format(self.id)
     @flask_sqlalchemy.orm.reconstructor
+
     def init_on_load(self):
         import xml.etree.ElementTree as ElementTree
         xml = ElementTree.parse('{}{}/{}'.format(PATH_LABS, self.path, self.filename))
@@ -69,10 +88,11 @@ class Lab(db.Model):
         self.body = xml_root.attrib['body'] if 'body' in xml_root.attrib.keys() else None
         self.description = xml_root.attrib['description'] if 'description' in xml_root.attrib.keys() else None
         self.version = int(xml_root.attrib['version']) if 'version' in xml_root.attrib.keys() else None
+        self.topology = []
 
         self.networks = {}
         for network in xml_root.findall('./topology/networks/network'):
-            network_id = network.attrib['id']
+            network_id = int(network.attrib['id'])
             network_name = network.attrib['name'] if 'name' in xml_root.attrib.keys() else None
             network_left = int(network.attrib['left']) if 'left' in network.attrib.keys() else None
             network_top = int(network.attrib['top']) if 'top' in network.attrib.keys() else None
@@ -85,7 +105,7 @@ class Lab(db.Model):
 
         self.nodes = {}
         for node in xml_root.findall('./topology/nodes/node'):
-            node_id = node.attrib['id']
+            node_id = int(node.attrib['id'])
             node_name = node.attrib['name'] if 'name' in node.attrib.keys() else None
             node_left = node.attrib['left'] if 'left' in node.attrib.keys() else None
             node_top = node.attrib['top'] if 'top' in node.attrib.keys() else None
@@ -95,47 +115,90 @@ class Lab(db.Model):
                 left = node_left,
                 top = node_top
             )
-            for interface in node.findall('./interface'):
+            for interface in node.findall('./interface'.format(node_id)):
                 interface_id = int(interface.attrib['id'])
                 interface_mac = interface.attrib['mac'] if 'mac' in interface.attrib.keys() else None
                 interface_name = interface.attrib['name'] if 'name' in interface.attrib.keys() else None
                 interface_type = interface.attrib['type']
                 if interface_type == 'ethernet':
                     interface_network_id = int(interface.attrib['network_id']) if 'network_id' in interface.attrib.keys() else None
-                    self.nodes[node_id].setInterface(id = interface_id, type = interface_type, mac = interface_mac, name = interface_name, network_id = interface_network_id)
+                    self.nodes[node_id].addInterface(id = interface_id, type = interface_type, mac = interface_mac, name = interface_name, network_id = interface_network_id)
+                    self.networks[interface_network_id].addDestination(node_id = node_id, interface_id = interface_id)
                 if interface_type == 'serial':
                     interface_remote_id = int(interface.attrib['remote_id']) if 'remote_id' in interface.attrib.keys() else None
                     interface_remote_if = int(interface.attrib['remote_if']) if 'remote_if' in interface.attrib.keys() else None
-                    self.nodes[node_id].setInterface(id = interface_id, type = interface_type, name = interface_name, remote_id = interface_remote_id, remote_if = interface_remote_if)
+                    self.nodes[node_id].addInterface(id = interface_id, type = interface_type, name = interface_name, remote_id = interface_remote_id, remote_if = interface_remote_if)
+                    self.topology.append({
+                        'src_id': node_id,
+                        'src_if': interface_id,
+                        'dst_id': interface_remote_id,
+                        'dst_if': interface_remote_if,
+                        'type': 'serial'
+                    })
 
-
-
+        for network_id, network in self.networks.items():
+            network_id = int(network_id)
+            for source in network.destinations:
+                for destination in network.destinations:
+                    if source['node_id'] != destination['node_id']:
+                        self.topology.append({
+                            'src_id': source['node_id'],
+                            'src_if': source['interface_id'],
+                            'dst_id': destination['node_id'],
+                            'dst_if': destination['interface_id'],
+                            'type': 'ethernet'
+                        })
+            
         #textobjects
         #pictures
         #tenant
         #version
         #scripttimeout
-    #dainoke#
+
+    def open(self, username):
+        print("open")
+    #    import xml.etree.ElementTree as ElementTree
+    #    for interface in xml_root.findall('./topology/nodes/node/interface[@network_id="1"]'):
+    #        interface_id = int(interface.attrib['id'])
+    #        print(interface_id)
+        #for node in xml_root.findall('./topology/nodes/node'):
+        #    node_id = int(node.attrib['id'])
+        #    for interface in node.findall('./topology/nodes/node/interface'):
+        #        interface_id = int(interface.attrib['id'])
+        #        interface_type = interface.attrib['type']
+        #        if interface_type == 'ethernet':
+        #            interface_network_id = int(interface.attrib['network_id']) if 'network_id' in interface.attrib.keys() else None
+        #        if interface_type == 'serial':
+        #            interface_remote_id = int(interface.attrib['remote_id']) if 'remote_id' in interface.attrib.keys() else None
+        #            interface_remote_if = int(interface.attrib['remote_if']) if 'remote_if' in interface.attrib.keys() else None
+        return 'ciao'
+
 
 class Network:
     def __repr__(self):
-        return '<Network(id={}>'.format(self.id)
+        return '<Network(id={})>'.format(self.id)
     def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
         self.name = name
         self.left = left
         self.top = top
+        self.destinations = []
+    def addDestination(self, node_id, interface_id):
+        self.destinations.append({
+            'node_id': node_id,
+            'interface_id': interface_id
+        })
 
 class Node:
-    interfaces = {}
-    slots = {}
     def __repr__(self):
-        return '<Node(id={}>'.format(self.id)
+        return '<Node(id={})>'.format(self.id)
     def __init__(self, id = None, name = None, left = None, top = None):
         self.id = id
         self.name = name
         self.left = left
         self.top = top
+        self.interfaces = {}
+        self.slots = {}
         # $flags_eth;
         # $flags_ser;
         # $config;
@@ -161,9 +224,9 @@ class Node:
         # $tenant;
         # $type;
         # $uuid;
-    def setInterface(self, id, type, mac = None, name = None, network_id = None, remote_id = None, remote_if = None):
-        if type == 'ethernet': self.interfaces[id] = Ethernet(id, mac, name, network_id)
-        if type == 'serial': self.interfaces[id] = Serial(id, name, remote_id, remote_if)
+    def addInterface(self, id = id, type = type, mac = None, name = None, network_id = None, remote_id = None, remote_if = None):
+        if type == 'ethernet': self.interfaces[id] = Ethernet(id = id, mac = mac, name = name, network_id = network_id)
+        if type == 'serial': self.interfaces[id] = Serial(id = id, name = name, remote_id = remote_id, remote_if = remote_if)
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -184,10 +247,11 @@ class Roles2Users(db.Model):
 class Serial:
     type = 'serial'
     def __repr__(self):
-        return '<Serial(id={}>'.format(self.id)
+        return '<Serial(id={})>'.format(self.id)
     def __init__(self, id = None, name = None, remote_id = None, remote_if = None):
         self.mac = mac
-        self.network_id = network_id
+        self.remote_id = remote_id
+        self.remote_if = remote_if
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -420,10 +484,14 @@ def manageLab(path, method):
     else:
         flask.abort(400)
 
-    labs = Lab.query.filter(Lab.path == lab_path, Lab.filename == lab_filename)
-    if labs.count() == 0:
-        flask.abort(404)
-    lab = labs.one()
+    lab = cache.get('{}/{}'.format(lab_path, lab_filename))
+    if not lab:
+        # Cache is empty
+        labs = Lab.query.filter(Lab.path == lab_path, Lab.filename == lab_filename)
+        if labs.count() == 0:
+            flask.abort(404)
+        lab = labs.one()
+        #cache.set('{}/{}'.format(lab_path, lab_filename), lab) # TODO enable for production
 
     if method == 'CLOSE':
         print(method)
@@ -490,9 +558,10 @@ def manageLab(path, method):
     raise Exception('Method not defined')
 
 def openLab(lab, username):
-    print(lab.id)
-    #active_nodes = ActiveNode.query.filter(ActiveNode.lab_id == lab.id, ActiveNode.user_id == username)
-    #print(active_nodes)
+    return lab.open(username = username)
+
+    controller_id = 0 # TODO
+
     # Converting BaseQuery to dict
     active_nodes = {}
     for active_node in ActiveNode.query.filter(ActiveNode.lab_id == lab.id, ActiveNode.username == username):
@@ -503,25 +572,47 @@ def openLab(lab, username):
         node_id = int(node_id)
         if node_id not in active_nodes:
             # Add each node as active_node
-            active_node = ActiveNode(username = username, lab_id = lab.id, node_id = node_id, state = 'off')
+            active_node = ActiveNode(username = username, lab_id = lab.id, node_id = node_id, state = 'off', controller = controller_id)
             db.session.add(active_node)
             db.session.commit() # TODO should do a single commit
 
     # Check for unused labels (deleted nodes)
+    for active_node_id, active_node in active_nodes.items():
+        active_node_id = int(active_node_id)
+        if active_node_id not in lab.nodes.items():
+            # Delete unused label
+            db.session.delete(active_node)
+            db.session.commit() # TODO should do a single commit
+            for label in ActiveTopology.query.filter((ActiveTopology.src_id == active_node.label) | (ActiveTopology.dst_id == active_node.label)):
+                db.session.delete(label)
+                db.session.commit() # TODO should do a single commit
 
-    #    print(node.id)
-    # elenco nodi lab
-    # elenco int per nodo
-    # prima label libera
+    # Populate active_topologies
+    for src_node_id, src_node in lab.nodes.items():
+        src_node_id = int(src_node_id)
+        # For each node
+        src_node_id = int(src_node_id)
+        for src_node_if_id, src_node_if in src_node.interfaces.items():
+            src_node_if_id = int(src_node_if_id)
+            # For each Ethernet interface
+            if src_node_if.type == 'ethernet' and src_node_if.network_id:
+                for dst_node_id, dst_node in lab.nodes.items():
+                    dst_node_id = int(dst_node_id)
+                    # Find destination node
+                    if src_node_id != dst_node_id:
+                        for dst_node_if_id, dst_node_if in dst_node.interfaces.items():
+                            if src_node_if.network_id == dst_node_if.network_id:
+                                active_topologies = ActiveTopology.query.filter((ActiveTopology.src_id == src_node_id) & (ActiveTopology.src_if == src_node_if_id) & (ActiveTopology.dst_id == dst_node_id) & (ActiveTopology.dst_if == dst_node_if_id))
+                                if active_topologies.count() == 0:
+                                    active_topology = ActiveTopology(src_id = src_node_id, src_if = src_node_if_id, dst_id = dst_node_id, dst_if = dst_node_if_id)
+                                    db.session.add(active_topology)
+                                    db.session.commit() # TODO should commit once
+                                    # dainok
 
-    # tables
-    # active_labels
-    # active_nodes
-    # active_topologies
 
-    # 1 assegno ad ogni nodo un node_id e lo inserisco su active_nodes
-    # 2 assegno ad ogni nodo le interfacce e le inserisco su active_labels
-    # 3 creo tutte le coppie src:dst e le inserisco su active_topologies
+
+
+    # Fields: controller_id 1 byte, label 4 byte, interface 1 byte
     response = {
         'code': 200,
         'status': 'success',
@@ -578,6 +669,7 @@ def printUser(user):
     return output
 
 def refreshDb():
+    #TODO: after folder delete should invalidate cache
     import fnmatch, os, re
     import xml.etree.ElementTree as ElementTree
     labs = {}
@@ -600,9 +692,15 @@ def refreshDb():
     labs_from_db = Lab.query.all()
     for lab_from_db in labs_from_db:
         if lab_from_db.id not in labs:
+            # Delete the lab
             db.session.delete(lab_from_db)
-            # TODO should use a single commit, but got an error
-            db.session.commit()
+            # Delete the active nodes
+            db.session.add_all(ActiveNode.query.filter(ActiveNode.lab_id == lab_from_db.id))
+            # Delete the active topologies
+            db.session.add_all(ActiveTopology.query.filter(ActiveTopology.lab_id == lab_from_db.id))
+            db.session.commit() # TODO should use a single commit, but got an error
+            # Delete the cache
+            cache.delete('{}/{}'.format(lab_from_db.path, lab_from_db.filename))
     # Checking missing labs to DB
     for lab_id, lab in labs.items():
         lab_id = int(lab_id)
