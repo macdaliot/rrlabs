@@ -88,7 +88,7 @@ class Lab(db.Model):
         self.body = xml_root.attrib['body'] if 'body' in xml_root.attrib.keys() else None
         self.description = xml_root.attrib['description'] if 'description' in xml_root.attrib.keys() else None
         self.version = int(xml_root.attrib['version']) if 'version' in xml_root.attrib.keys() else None
-        self.topology = []
+        self.flows = []
 
         self.networks = {}
         for network in xml_root.findall('./topology/networks/network'):
@@ -128,7 +128,7 @@ class Lab(db.Model):
                     interface_remote_id = int(interface.attrib['remote_id']) if 'remote_id' in interface.attrib.keys() else None
                     interface_remote_if = int(interface.attrib['remote_if']) if 'remote_if' in interface.attrib.keys() else None
                     self.nodes[node_id].addInterface(id = interface_id, type = interface_type, name = interface_name, remote_id = interface_remote_id, remote_if = interface_remote_if)
-                    self.topology.append({
+                    self.flows.append({
                         'src_id': node_id,
                         'src_if': interface_id,
                         'dst_id': interface_remote_id,
@@ -141,7 +141,7 @@ class Lab(db.Model):
             for source in network.destinations:
                 for destination in network.destinations:
                     if source['node_id'] != destination['node_id']:
-                        self.topology.append({
+                        self.flows.append({
                             'src_id': source['node_id'],
                             'src_if': source['interface_id'],
                             'dst_id': destination['node_id'],
@@ -265,28 +265,28 @@ class User(db.Model):
         return '<User({})>'.format(self.username)
 
 def checkAuth(username, password):
-    users = User.query.filter(User.username == username)
-    if users.count() != 1:
+    user = User.query.get(username)
+    if not user:
         return False
-    if users.one().password != hashlib.sha256(password.encode('utf-8')).hexdigest():
+    if user.password != hashlib.sha256(password.encode('utf-8')).hexdigest():
         return False
     return True
 
 def checkAuthz(username, roles):
-    users = User.query.filter(User.username == username)
-    if users.count() != 1:
+    user = User.query.get(username)
+    if not user:
         return False
-    for role in users.first().roles:
+    for role in user.roles:
         if role.role in roles:
             return True
     return False
 
 def checkAuthzPath(username, path, would_write = False):
     import re
-    users = User.query.filter(User.username == username)
-    if users.count() != 1:
+    user = User.query.get(username)
+    if not user:
         return False
-    for role in users.first().roles:
+    for role in user.roles:
         try:
             pattern = re.compile(role.access_to)
             if pattern.match(path) != None:
@@ -323,8 +323,8 @@ def addUser():
     if not 'username' in data.keys() or not 'password' in data.keys():
         flask.abort(422)
     data['password'] = hashlib.sha256(data['password'].encode('utf-8')).hexdigest()
-    users = User.query.filter(User.username == data['username'])
-    if users.count() != 0:
+    user = User.query.get(data['username'])
+    if not user:
         flask.abort(409)
     try:
         user = User(**data)
@@ -332,6 +332,7 @@ def addUser():
         flask.abort(422)
     db.session.add(user)
     db.session.commit()
+    cache.set(user.username, user)
     response = {
         'code': 201,
         'status': 'success',
@@ -357,11 +358,12 @@ def deleteFolder(folder):
     return flask.jsonify(response), response['code']
 
 def deleteUser(username):
-    user = User.query.filter(User.username == username)
-    if user.count() == 0:
+    user = User.query.get(username)
+    if not user:
         flask.abort(404)
-    db.session.delete(user.first())
+    db.session.delete(user)
     db.session.commit()
+    cache.delete(username)
     response = {
         'code': 200,
         'status': 'success',
@@ -396,10 +398,9 @@ def editUser(username):
         flask.abort(422)
     if 'password' in data.keys():
         data['password'] = hashlib.sha256(data['password'].encode('utf-8')).hexdigest()
-    users = User.query.filter(User.username == username)
-    if users.count() == 0:
+    user = User.query.get(username)
+    if not user:
         flask.abort(404)
-    user = users.first()
     for key, value in data.items():
         if not hasattr(user, key):
             flask.abort(422)
@@ -453,10 +454,10 @@ def getUsers(username = None):
             response['data'][user.username] = printUser(user)
     else:
         response['message'] = 'User "{}" displayed'.format(username)
-        users = User.query.filter(User.username == username)
-        if users.count() == 0:
+        user = User.query.get(username)
+        if not user:
             flask.abort(404)
-        response['data'] = printUser(users.one())
+        response['data'] = printUser(user)
     return flask.jsonify(response), response['code']
 
 def isFolder(folder):
@@ -705,8 +706,8 @@ def refreshDb():
     for lab_id, lab in labs.items():
         lab_id = int(lab_id)
         commit = False
-        lab_from_db = Lab.query.filter(Lab.id == lab.id)
-        if lab_from_db.count() == 0:
+        lab_from_db = Lab.query.get(lab.id)
+        if not lab_from_db:
             # Lab need to be added
             commit = True
             db.session.add(lab)
