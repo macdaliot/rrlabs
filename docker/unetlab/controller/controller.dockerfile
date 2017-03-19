@@ -15,9 +15,13 @@ EXPOSE :80 :443 :5005
 
 # Installing dependencies
 RUN apk update || exit 1
-RUN apk add bash mariadb mariadb-client nginx openssh python3 || exit 1
+RUN apk add bash mariadb mariadb-client memcached nginx openssh python3 || exit 1
+RUN pip3 install --upgrade pip || exit 1
+RUN pip3 install Flask-SQLAlchemy python3-memcached || exit 1
 
 # Configuring
+COPY api.py /usr/bin
+COPY api_modules.py /usr/lib/python3.5/
 #COPY bootstrap.py /sbin/bootstrap.py
 
 # Cleaning

@@ -23,13 +23,17 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170105'
 
-import flask, functools, logging
+import configparser, flask, functools, logging, os.path
 from api_modules import *
 
-import configparser
-# could also use ENV
 config = configparser.ConfigParser()
-config.read('controller.ini')
+config_file = '/data/etc/controller.ini'
+if os.path.isfile(config_file):
+    config.read(config_file)
+else:
+    config.add_section('controller')
+    config.set('controller', 'id', 0)
+    config.write(config_file)
 controller_id = int(config['controller']['id'])
 
 @app.errorhandler(400)
