@@ -37,7 +37,7 @@ CREATE TABLE `active_nodes` (
   CONSTRAINT `active_nodes_ibfk_1` FOREIGN KEY (`lab_id`) REFERENCES `labs` (`id`),
   CONSTRAINT `active_nodes_ibfk_2` FOREIGN KEY (`username`) REFERENCES `users` (`username`),
   CONSTRAINT `active_nodes_ibfk_3` FOREIGN KEY (`controller`) REFERENCES `controllers` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=245 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -46,6 +46,7 @@ CREATE TABLE `active_nodes` (
 
 LOCK TABLES `active_nodes` WRITE;
 /*!40000 ALTER TABLE `active_nodes` DISABLE KEYS */;
+INSERT INTO `active_nodes` VALUES ('admin','a9a500e0-bab3-4801-90ae-2260b29724e5',2,'off',244,0);
 /*!40000 ALTER TABLE `active_nodes` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -61,10 +62,16 @@ CREATE TABLE `active_topologies` (
   `src_if` int(11) NOT NULL,
   `dst_id` int(11) NOT NULL,
   `dst_if` int(11) NOT NULL,
+  `lab_id` varchar(255) NOT NULL,
+  `username` varchar(255) NOT NULL,
   PRIMARY KEY (`src_id`,`src_if`,`dst_id`,`dst_if`),
   KEY `dst_id` (`dst_id`),
+  KEY `active_topologies_ibfk_3` (`lab_id`),
+  KEY `active_topologies_ibfk_4` (`username`),
   CONSTRAINT `active_topologies_ibfk_1` FOREIGN KEY (`src_id`) REFERENCES `active_nodes` (`label`),
-  CONSTRAINT `active_topologies_ibfk_2` FOREIGN KEY (`dst_id`) REFERENCES `active_nodes` (`label`)
+  CONSTRAINT `active_topologies_ibfk_2` FOREIGN KEY (`dst_id`) REFERENCES `active_nodes` (`label`),
+  CONSTRAINT `active_topologies_ibfk_3` FOREIGN KEY (`lab_id`) REFERENCES `labs` (`id`),
+  CONSTRAINT `active_topologies_ibfk_4` FOREIGN KEY (`username`) REFERENCES `users` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -220,4 +227,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2017-03-13 14:43:44
+-- Dump completed on 2017-03-22 11:29:09

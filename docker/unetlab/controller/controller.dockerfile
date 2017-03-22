@@ -24,7 +24,7 @@ RUN pip3 install --no-cache-dir Flask-SQLAlchemy python3-memcached || exit 1
 RUN mkdir /etc/unetlab
 COPY api.py /usr/bin
 COPY api_modules.py /usr/lib/python3.5/
-COPY schema.sql /etc/unetlab/
+COPY schema-*.sql /etc/unetlab/
 COPY bootstrap.sh /sbin/bootstrap.sh
 
 # Cleaning
