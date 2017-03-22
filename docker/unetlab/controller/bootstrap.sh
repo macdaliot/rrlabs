@@ -2,7 +2,7 @@
 
 shutdown() {
 	echo -n "Shutting down..."
-	killall -s SIGTERM mysqld memcached &> /data/logs/shutdown.log
+	killall -s SIGTERM mysqld memcached nginx pytyon3 &> /data/logs/shutdown.log
 	# Double check for critical processes
 	while pgrep mysqld &> /dev/null; do
 		echo -n "."
@@ -64,10 +64,10 @@ if [ ! -d /data/database/unetlab ]; then
 		echo "ERROR: failed to create database \"unetlab\""
 		exit 1
 	fi
-	echo "10000000" > /data/database/unetlab/version
+	echo "10000000" > /data/database/version
 fi
 for SCHEMA in $(ls -1 /etc/unetlab/schema-*.sql); do
-	VERSION=$(cat /data/database/unetlab/version | sed 's/schema-\([0-9]*\)\.sql/\1/g')
+	VERSION=$(cat /data/database/version | sed 's/schema-\([0-9]*\)\.sql/\1/g')
 	SCHEMA_VERSION=$(echo ${SCHEMA} | sed 's/.*\/schema-\([0-9]*\)\.sql/\1/g')
 	if [ ${VERSION} -lt ${SCHEMA_VERSION} ]; then
 		mysql -u root unetlab < ${SCHEMA}
@@ -76,7 +76,7 @@ for SCHEMA in $(ls -1 /etc/unetlab/schema-*.sql); do
 			echo "ERROR: failed to upgrade database to ${SCHEMA_VERSION}"
 			exit 1
 		fi
-		echo ${SCHEMA_VERSION} > /data/database/unetlab/version
+		echo ${SCHEMA_VERSION} > /data/database/version
 	fi
 done
 
@@ -84,8 +84,18 @@ done
 /usr/bin/memcached -m 64 -p 11211 -u memcached -l 127.0.0.1 &> /data/logs/memcached.log &
 MEMCACHED_PID=$!
 
+# Starting NGINX
+mkdir -m 755 -p /run/nginx &> /dev/null
+chown nginx:root /run/nginx &> /dev/null
+/usr/sbin/nginx &> /data/logs/nginx.conf &
+NGINX_PID=$!
+
+# Starting API
+/usr/bin/api.py &> /data/logs/api.log &
+API_PID=$!
+
 echo " done"
 
-wait $MARIADB_PID $MEMCACHED_PID
+wait ${MARIADB_PID} ${MEMCACHED_PID} ${NGINX_PID} ${API_PID}
 
 echo "Exiting..."

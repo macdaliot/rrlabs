@@ -22,6 +22,7 @@ RUN pip3 install --no-cache-dir Flask-SQLAlchemy python3-memcached || exit 1
 
 # Configuring
 RUN mkdir /etc/unetlab
+COPY nginx.conf /etc/nginx/
 COPY api.py /usr/bin
 COPY api_modules.py /usr/lib/python3.5/
 COPY schema-*.sql /etc/unetlab/
