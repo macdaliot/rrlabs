@@ -23,18 +23,8 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170105'
 
-import configparser, flask, functools, logging, os.path
+import flask, functools, logging
 from api_modules import *
-
-config = configparser.ConfigParser()
-config_file = '/data/etc/controller.ini'
-if os.path.isfile(config_file):
-    config.read(config_file)
-else:
-    config.add_section('controller')
-    config.set('controller', 'id', 0)
-    config.write(config_file)
-controller_id = int(config['controller']['id'])
 
 @app.errorhandler(400)
 def http_401(err):
@@ -215,5 +205,5 @@ def apiRefresh():
     return refreshDb()
 
 if __name__ == '__main__':
-    app.run(host = '0.0.0.0', port = 5000, debug = True)
+    app.run(host = '0.0.0.0', port = 5000, extra_files = [CONFIG_FILE], debug = True)
 

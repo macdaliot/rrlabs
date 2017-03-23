@@ -5,23 +5,40 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170105'
 
-DEFAULT_API_USERNAME = 'admin'
-DEFAULT_API_PASSWORD = 'unetlab'
-DB_USERNAME = 'root'
-DB_PASSWORD = 'unetlab'
-DB_HOST = '127.0.0.1'
-DB_NAME = 'unetlab'
-PATH_LABS = '/opt/unetlab/labs'
-LAB_EXTENSION = 'unl'
+import configparser, flask, flask_sqlalchemy, functools, hashlib, logging, memcache, os.path, pickle
 
-import flask, flask_sqlalchemy, functools, hashlib, logging, memcache, pickle
-cache = memcache.Client(['127.0.0.1:11211'], debug = 0)
+CONFIG_FILE = '/data/etc/controller.ini'
+
+# Loading config file
+config = configparser.ConfigParser()
+if os.path.isfile(CONFIG_FILE):
+    config.read(CONFIG_FILE)
+else:
+    config['controller'] = {
+        'id': 0,
+        'db_host': '127.0.0.1',
+        'db_username': 'root',
+        'db_password': '',
+        'db_name': 'unetlab',
+        'path_labs': '/data/labs',
+        'lab_extension': 'unl'
+    }
+    with open(CONFIG_FILE, 'w') as config_fd:
+        config.write(config_fd)
+
+# Setting environment
+CONTROLLER_ID = int(config['controller']['id'])
+DB_HOST = config['controller']['db_host']
+DB_USERNAME = config['controller']['db_username']
+DB_PASSWORD = config['controller']['db_password']
+DB_NAME = config['controller']['db_name']
+PATH_LABS = config['controller']['path_labs']
+LAB_EXTENSION = config['controller']['lab_extension']
 
 app = flask.Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@{}/{}'.format(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_NAME)
-# https://stackoverflow.com/questions/25176813/how-to-use-flask-cache-and-memcached
-#app.config["CACHE_TYPE"]="memcached"
 db = flask_sqlalchemy.SQLAlchemy(app)
+cache = memcache.Client(['127.0.0.1:11211'], debug = 0)
 
 roles_to_users = db.Table(
     'roles_to_users',
@@ -156,7 +173,12 @@ class Lab(db.Model):
         #scripttimeout
 
     def open(self, username):
+        max_labels = User.query.get(username).labels
+        active_labels = ActiveNode.query.filter(ActiveNode.username == username).count()
+        print(max_labels)
+        print(active_labels)
         print("open")
+
     #    import xml.etree.ElementTree as ElementTree
     #    for interface in xml_root.findall('./topology/nodes/node/interface[@network_id="1"]'):
     #        interface_id = int(interface.attrib['id'])
@@ -249,7 +271,6 @@ class Serial:
     def __repr__(self):
         return '<Serial(id={})>'.format(self.id)
     def __init__(self, id = None, name = None, remote_id = None, remote_if = None):
-        self.mac = mac
         self.remote_id = remote_id
         self.remote_if = remote_if
 
@@ -704,7 +725,6 @@ def refreshDb():
             cache.delete('{}/{}'.format(lab_from_db.path, lab_from_db.filename))
     # Checking missing labs to DB
     for lab_id, lab in labs.items():
-        lab_id = int(lab_id)
         commit = False
         lab_from_db = Lab.query.get(lab.id)
         if not lab_from_db:
@@ -714,13 +734,13 @@ def refreshDb():
         else:
             # Lab already exist, check name and path
             commit = False
-            if lab.name != lab_from_db.first().name:
+            if lab.name != lab_from_db.name:
                 lab_from_db.update({'name': lab.name})
                 commit = True
-            if lab.filename != lab_from_db.first().filename:
+            if lab.filename != lab_from_db.filename:
                 lab_from_db.update({'filename': lab.filename})
                 commit = True
-            if lab.path != lab_from_db.first().path:
+            if lab.path != lab_from_db.path:
                 lab_from_db.update({'path': lab.path})
                 commit = True
         if commit:

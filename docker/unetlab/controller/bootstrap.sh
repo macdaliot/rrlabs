@@ -91,6 +91,7 @@ chown nginx:root /run/nginx &> /dev/null
 NGINX_PID=$!
 
 # Starting API
+mkdir -m 755 -p /data/etc &> /dev/null
 /usr/bin/api.py &> /data/logs/api.log &
 API_PID=$!
 

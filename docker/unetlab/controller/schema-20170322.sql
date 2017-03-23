@@ -34,7 +34,7 @@ CREATE TABLE `users` (
   PRIMARY KEY (`username`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-INSERT INTO `users` VALUES ('admin','admin@example.com',-1,'Default Administrator','8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',0);
+INSERT INTO `users` VALUES ('admin','admin@example.com',-1,'Default Administrator','8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918',-1);
 
 CREATE TABLE `active_nodes` (
   `username` varchar(255) NOT NULL,
