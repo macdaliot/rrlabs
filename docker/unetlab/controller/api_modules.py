@@ -23,6 +23,12 @@ else:
         'path_labs': '/data/labs',
         'lab_extension': 'unl'
     }
+    config['advanced'] = {
+        'label_length': 2,
+        'interface_length': 1,
+        'controller_length': 1
+    }
+
     with open(CONFIG_FILE, 'w') as config_fd:
         config.write(config_fd)
 
@@ -34,6 +40,9 @@ DB_PASSWORD = config['controller']['db_password']
 DB_NAME = config['controller']['db_name']
 PATH_LABS = config['controller']['path_labs']
 LAB_EXTENSION = config['controller']['lab_extension']
+LAST_LABEL = 2 ** (8 * int(config['advanced']['label_length'])) - 1
+LAST_INTERFACE_ID = 2 ** (8 * int(config['advanced']['interface_length'])) - 1
+LAST_CONTROLLER_ID = 2 ** (8 * int(config['advanced']['controller_length'])) - 1
 
 app = flask.Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@{}/{}'.format(DB_USERNAME, DB_PASSWORD, DB_HOST, DB_NAME)
@@ -128,6 +137,7 @@ class Lab(db.Model):
             node_top = node.attrib['top'] if 'top' in node.attrib.keys() else None
             self.nodes[node_id] = Node(
                 id = node_id,
+                controller_id = 0,
                 name = node_name,
                 left = node_left,
                 top = node_top
@@ -173,11 +183,45 @@ class Lab(db.Model):
         #scripttimeout
 
     def open(self, username):
+        nodes = {}
         max_labels = User.query.get(username).labels
-        active_labels = ActiveNode.query.filter(ActiveNode.username == username).count()
-        print(max_labels)
-        print(active_labels)
-        print("open")
+        for node_id, node in self.nodes.items():
+            active_node = ActiveNode.query.get((username, self.id, node_id))
+            if not active_node:
+                # Finding the first free label
+                free_label = 1 # Must start from 1 or auto_increment is used
+                while True:
+                    if ActiveNode.query.filter(ActiveNode.label == free_label).count() == 0:
+                        break
+                    else:
+                        free_label = free_label + 1
+                active_nodes = ActiveNode.query.filter(ActiveNode.username == username).count()
+                if free_label > LAST_LABEL or (max_labels >= 0 and max_labels <= active_nodes):
+                    # Not enough labels
+                    response = {
+                        'code': 406,
+                        'status': 'fail',
+                        'message': 'not enough labels'
+                    }
+                    return flask.jsonify(response), response['code']
+                # Setting the label
+                print("interting node_id {} with label {}".format(node_id, free_label))
+                active_node = ActiveNode(username = username, lab_id = self.id, node_id = node_id, state = 'off', label = free_label, controller = node.controller_id)
+                db.session.add(active_node)
+                db.session.commit() # TODO should do a single commit
+            # Label has been configured caching for later
+            nodes[node_id] = active_node
+        # All labels have been configured, now adding flows as ActiveTopology
+        for flow in self.flows:
+            active_topology = ActiveTopology.query.filter(ActiveTopology.src_id == nodes[flow['src_id']].label, ActiveTopology.src_if == flow['src_if'], ActiveTopology.dst_id == nodes[flow['dst_id']].label, ActiveTopology.dst_if == flow['dst_if'])
+            if active_topology.count() > 1:
+                break
+            break
+            active_topology = ActiveTopology(username = username, lab_id = self.id, src_id = nodes[flow['src_id']].label, src_if = flow['src_if'], dst_id = nodes[flow['dst_id']].label, dst_if = flow['dst_if'])
+            db.session.add(active_topology)
+            db.session.commit()
+
+        # dainok
 
     #    import xml.etree.ElementTree as ElementTree
     #    for interface in xml_root.findall('./topology/nodes/node/interface[@network_id="1"]'):
@@ -214,8 +258,9 @@ class Network:
 class Node:
     def __repr__(self):
         return '<Node(id={})>'.format(self.id)
-    def __init__(self, id = None, name = None, left = None, top = None):
+    def __init__(self, id = None, controller_id = 0, name = None, left = None, top = None):
         self.id = id
+        self.controller_id = controller_id
         self.name = name
         self.left = left
         self.top = top

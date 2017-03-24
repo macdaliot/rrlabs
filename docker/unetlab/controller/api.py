@@ -14,6 +14,7 @@
     - 403 forbidden - User authenticated but not authorized
     - 404 fail - Url or object not found
     - 405 fail - Method not allowed
+    - 406 fail - Not acceptable
     - 409 fail - Object already exists, cannot create another one
     - 422 fail - Input data missing or not valid
     - 500 error - Server error, maybe a bug/exception or a backend/database error
@@ -139,7 +140,7 @@ def apiLabs():
 
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl
 # curl -s -D- -u admin:admin -X CLOSE http://127.0.0.1:5000/api/labs/Andrea/nat.unl
-# curl -s -D- -u admin:admin -X OPEN -d '{"name":"dainese","email":"adainese@example.com","password":"dainese","labels":200}' -H 'Content-type: application/json' http://127.0.0.1:5000/api/labs/Andrea/nat.unl
+# curl -s -D- -u admin:admin -X OPEN http://127.0.0.1:5000/api/labs/Andrea/nat.unl
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/networks/1
 # curl -s -D- -u admin:admin -X GET http://127.0.0.1:5000/api/labs/Andrea/nat.unl/nodes
