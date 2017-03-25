@@ -16,9 +16,9 @@ EXPOSE :80 :443 :5005
 # Installing dependencies
 RUN apk update || exit 1
 RUN apk upgrade || exit 1
-RUN apk add bash mariadb mariadb-client memcached nginx openssh python3 || exit 1
+RUN apk add bash gcc libc-dev mariadb mariadb-client mariadb-dev memcached nginx openssh python3 python3-dev || exit 1
 RUN pip3 install --no-cache-dir --upgrade pip || exit 1
-RUN pip3 install --no-cache-dir Flask-SQLAlchemy python3-memcached || exit 1
+RUN pip3 install --no-cache-dir Flask-MySQLdb Flask-SQLAlchemy python3-memcached || exit 1
 
 # Configuring
 RUN mkdir /etc/unetlab

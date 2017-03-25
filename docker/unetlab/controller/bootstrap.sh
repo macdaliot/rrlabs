@@ -87,7 +87,7 @@ MEMCACHED_PID=$!
 # Starting NGINX
 mkdir -m 755 -p /run/nginx &> /dev/null
 chown nginx:root /run/nginx &> /dev/null
-/usr/sbin/nginx &> /data/logs/nginx.conf &
+/usr/sbin/nginx &> /data/logs/nginx.log &
 NGINX_PID=$!
 
 # Starting API
