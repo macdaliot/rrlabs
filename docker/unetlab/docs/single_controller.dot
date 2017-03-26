@@ -1,0 +1,11 @@
+digraph {
+	{
+		Controller [
+			shape = record
+		]
+	}
+	Controller -> NodeA;
+	Controller -> NodeB;
+	NodeA -> Controller;
+	NodeB -> Controller;
+}
