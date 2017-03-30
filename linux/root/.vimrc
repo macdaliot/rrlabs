@@ -16,11 +16,12 @@ set hlsearch
 set spell spelllang=en_us
 
 autocmd FileType make set noexpandtab
-autocmd Filetype html setlocal ts=2 sw=2 expandtab
-autocmd Filetype ruby setlocal ts=2 sw=2 expandtab
+autocmd Filetype html setlocal ts=4 sw=4 sts=0 expandtab
+autocmd Filetype ruby setlocal ts=2 sw=2 sts=0 expandtab
 autocmd Filetype javascript setlocal ts=4 sw=4 sts=0 expandtab
 autocmd Filetype coffeescript setlocal ts=4 sw=4 sts=0 expandtab
 autocmd Filetype jade setlocal ts=4 sw=4 sts=0 expandtab
+autocmd FileType yaml setlocal ts=2 sw=2 sts=2 expandtab
 
 "Restore last position
 function! ResCur()
@@ -35,4 +36,3 @@ augroup resCur
   autocmd BufWinEnter * call ResCur()
 augroup END
 
-autocmd FileType yaml setlocal ts=2 sts=2 sw=2 expandtab

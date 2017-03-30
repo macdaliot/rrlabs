@@ -109,6 +109,7 @@ export COOKIE=/tmp/cookie
 export USERNAME=admin
 export PASSWORD=unl
 export LD_LIBRARY_PATH=/opt/unetlab/addons/iol/lib
+export ISTTIMEFORMAT="%d/%m/%y %T "
 alias docker="/usr/bin/docker -H=tcp://127.0.0.1:4243"
 alias unetlab_update="apt-get update -o Dir::Etc::sourcelist=\"sources.list.d/unetlab.list\" -o Dir::Etc::sourceparts=\"-\""
 
