@@ -196,6 +196,6 @@ for node_id, node in jlab['topology']['nodes'].items():
     print(node_id)
     print(node['name'])
     print(node['label'])
-    print('docker run --name node_0 --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], image))
+    print('docker run --name node_{} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['label'], image))
 
 
