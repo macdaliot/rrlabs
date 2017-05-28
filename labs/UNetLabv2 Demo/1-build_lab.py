@@ -23,23 +23,28 @@ jlab = {
                 'name': 'Client',
                 'type': 'iol',
                 'image': image,
-                'ethernet': 2,
+                'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
+                        'description': 'Management',
+                        'management': True
+                    },
+                    '0': {
+                        'name': 'e0/1',
                         'description': 'To ISP A',
                         'connection': 0,
                         'ipv4': '192.168.0.1/24'
                     },
                     '1': {
-                        'name': 'e0/1',
+                        'name': 'e0/2',
                         'description': 'To ISP B',
                         'connection': 1,
                         'ipv4': '192.168.1.1/24'
                     },
-                    '2': {
+                    '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
                         'ipv4': '192.168.255.0/32'
@@ -50,23 +55,28 @@ jlab = {
                 'name': 'ISPA',
                 'type': 'iol',
                 'image': image,
-                'ethernet': 2,
+                'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
+                        'description': 'Management',
+                        'management': True
+                    },
+                    '1': {
+                        'name': 'e0/1',
                         'description': 'To Client',
                         'connection': 0,
                         'ipv4': '192.168.0.254/24'
                     },
-                    '1': {
-                        'name': 'e0/1',
+                    '2': {
+                        'name': 'e0/2',
                         'description': 'To Internet',
                         'connection': 2,
                         'ipv4': '192.168.2.1/24'
                     },
-                    '2': {
+                    '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
                         'ipv4': '192.168.255.1/32'
@@ -77,23 +87,28 @@ jlab = {
                 'name': 'ISPB',
                 'type': 'iol',
                 'image': image,
-                'ethernet': 2,
+                'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
+                        'description': 'Management',
+                        'management': True
+                    },
+                    '1': {
+                        'name': 'e0/1',
                         'description': 'To Client',
                         'connection': 1,
                         'ipv4': '192.168.1.254/24'
                     },
-                    '1': {
-                        'name': 'e0/1',
+                    '2': {
+                        'name': 'e0/2',
                         'description': 'To Internet',
                         'connection': 3,
                         'ipv4': '192.168.3.254/24'
                     },
-                    '2': {
+                    '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
                         'ipv4': '192.168.255.2/32'
@@ -104,23 +119,28 @@ jlab = {
                 'name': 'Internet',
                 'type': 'iol',
                 'image': image,
-                'ethernet': 2,
+                'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
+                        'description': 'Management',
+                        'management': True
+                    },
+                    '1': {
+                        'name': 'e0/1',
                         'description': 'To ISPA',
                         'connection': 2,
                         'ipv4': '192.168.2.254/24'
                     },
-                    '1': {
-                        'name': 'e0/1',
+                    '2': {
+                        'name': 'e0/2',
                         'description': 'To ISPB',
                         'connection': 3,
                         'ipv4': '192.168.3.254/24'
                     },
-                    '2': {
+                    '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
                         'ipv4': '1.1.1.1/32'
