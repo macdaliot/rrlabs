@@ -162,7 +162,7 @@ except:
 try:
     r = http.request('GET', '{}/'.format(docker_url))
 except:
-    logging.error('UNetLabv2 master controller is not available. Please start it using run_controller.py runserver --host=0.0.0.0')
+    logging.error('Docker Remote API server is not available. Please start it on port 4243')
     sys.exit(1)
 
 # Checking controller authentication
