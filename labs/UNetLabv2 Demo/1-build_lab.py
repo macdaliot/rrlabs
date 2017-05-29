@@ -23,6 +23,7 @@ jlab = {
                 'name': 'Client',
                 'type': 'iol',
                 'image': image,
+                'iol_id': 1,
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
@@ -55,6 +56,7 @@ jlab = {
                 'name': 'ISPA',
                 'type': 'iol',
                 'image': image,
+                'iol_id': 2,
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
@@ -87,6 +89,7 @@ jlab = {
                 'name': 'ISPB',
                 'type': 'iol',
                 'image': image,
+                'iol_id': 3,
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
@@ -119,6 +122,7 @@ jlab = {
                 'name': 'Internet',
                 'type': 'iol',
                 'image': image,
+                'iol_id': 4,
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
@@ -216,6 +220,6 @@ for node_id, node in jlab['topology']['nodes'].items():
     print(node_id)
     print(node['name'])
     print(node['label'])
-    print('docker run --name node_{} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['label'], image))
+    print('docker run --privileged --name node_{} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['label'], image))
 
 
