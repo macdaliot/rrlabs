@@ -1,3 +1,0 @@
-ps2pdf -dEPSCrop infile.eps
-pdf2svg infile.eps outfile.svg
-

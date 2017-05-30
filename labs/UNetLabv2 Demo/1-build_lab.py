@@ -8,8 +8,9 @@ master_url = 'http://127.0.0.1:5000'
 master_key = '?api_key=zqg81ge585t0bt3qe0sjj1idvw7hv7vfgc11dsq6'
 docker_url = 'http://127.0.0.1:4243'
 
-import json, logging, sys, urllib3
+import json, logging, os, subprocess, sys, urllib3
 
+logging.basicConfig(level = logging.DEBUG)
 headers = {'Content-Type': 'application/json'}
 image = 'L3-ADVENTERPRISEK9-M-15.5-2T'
 jlab = {
@@ -217,9 +218,20 @@ jlab = data['data']
 
 # Starting nodes
 for node_id, node in jlab['topology']['nodes'].items():
-    print(node_id)
-    print(node['name'])
-    print(node['label'])
-    print('docker run --privileged --name node_{} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['label'], image))
+    cmd = 'docker run -d --privileged --name node_{} --hostname {} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['name'], node['label'], image)
+    p = subprocess.Popen(cmd.split(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
+    p.wait()
+    jlab['topology']['nodes'][node_id]['docker_id'] = p.stdout.read().decode("utf-8")
 
+# Getting IP
+for node_id, node in jlab['topology']['nodes'].items():
+    r = http.request('GET', '{}/containers/node_{}/json'.format(docker_url, node['label']))
+    if r.status != 200:
+        logging.error('Cannot inspect node_{} ({})'.format(node['label'], data['message']))
+        sys.exit(1)
+    jlab['topology']['nodes'][node_id]['docker_ip'] = json.loads(r.data.decode('utf-8'))['NetworkSettings']['IPAddress']
+
+# Writing lab to file for next scripts
+with open('lab.json', 'w') as outfile:
+    json.dump(jlab, outfile)
 
