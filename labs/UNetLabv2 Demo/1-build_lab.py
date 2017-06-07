@@ -10,7 +10,7 @@ docker_url = 'http://127.0.0.1:4243'
 
 import json, logging, os, subprocess, sys, urllib3
 
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level = logging.INFO)
 headers = {'Content-Type': 'application/json'}
 image = 'L3-ADVENTERPRISEK9-M-15.5-2T'
 jlab = {
@@ -28,28 +28,56 @@ jlab = {
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
+                'ospf': {
+                    'process': 1,
+                    'default-passive': True
+                },
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
                         'description': 'Management',
                         'management': True
                     },
-                    '0': {
+                    '16': {
                         'name': 'e0/1',
                         'description': 'To ISP A',
                         'connection': 0,
-                        'ipv4': '192.168.0.1/24'
+                        'ipv4': '192.168.0.1/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
-                    '1': {
+                    '32': {
                         'name': 'e0/2',
                         'description': 'To ISP B',
                         'connection': 1,
-                        'ipv4': '192.168.1.1/24'
+                        'ipv4': '192.168.1.1/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
                     '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
-                        'ipv4': '192.168.255.0/32'
+                        'ipv4': '192.168.255.0/32',
+                        'ospf': {
+                            'passive': True,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -61,19 +89,31 @@ jlab = {
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
+                'ospf': {
+                    'process': 1,
+                    'default-passive': True
+                },
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
                         'description': 'Management',
                         'management': True
                     },
-                    '1': {
+                    '16': {
                         'name': 'e0/1',
                         'description': 'To Client',
                         'connection': 0,
-                        'ipv4': '192.168.0.254/24'
+                        'ipv4': '192.168.0.254/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
-                    '2': {
+                    '32': {
                         'name': 'e0/2',
                         'description': 'To Internet',
                         'connection': 2,
@@ -82,7 +122,15 @@ jlab = {
                     '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
-                        'ipv4': '192.168.255.1/32'
+                        'ipv4': '192.168.255.1/32',
+                        'ospf': {
+                            'passive': True,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -94,19 +142,31 @@ jlab = {
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
+                'ospf': {
+                    'process': 1,
+                    'default-passive': True
+                },
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
                         'description': 'Management',
                         'management': True
                     },
-                    '1': {
+                    '16': {
                         'name': 'e0/1',
                         'description': 'To Client',
                         'connection': 1,
-                        'ipv4': '192.168.1.254/24'
+                        'ipv4': '192.168.1.254/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
-                    '2': {
+                    '32': {
                         'name': 'e0/2',
                         'description': 'To Internet',
                         'connection': 3,
@@ -115,7 +175,15 @@ jlab = {
                     '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
-                        'ipv4': '192.168.255.2/32'
+                        'ipv4': '192.168.255.2/32',
+                        'ospf': {
+                            'passive': True,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -133,13 +201,13 @@ jlab = {
                         'description': 'Management',
                         'management': True
                     },
-                    '1': {
+                    '16': {
                         'name': 'e0/1',
                         'description': 'To ISPA',
                         'connection': 2,
                         'ipv4': '192.168.2.254/24'
                     },
-                    '2': {
+                    '32': {
                         'name': 'e0/2',
                         'description': 'To ISPB',
                         'connection': 3,
@@ -217,19 +285,19 @@ if r.status != 200:
 jlab = data['data']
 
 # Starting nodes
-for node_id, node in jlab['topology']['nodes'].items():
-    cmd = 'docker run -d --privileged --name node_{} --hostname {} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['name'], node['label'], image)
-    p = subprocess.Popen(cmd.split(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
-    p.wait()
-    jlab['topology']['nodes'][node_id]['docker_id'] = p.stdout.read().decode("utf-8")
+#for node_id, node in jlab['topology']['nodes'].items():
+#    cmd = 'docker run -d --privileged --name node_{} --hostname {} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['name'], node['label'], image)
+#    p = subprocess.Popen(cmd.split(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
+#    p.wait()
+#    jlab['topology']['nodes'][node_id]['docker_id'] = p.stdout.read().decode("utf-8")
 
 # Getting IP
-for node_id, node in jlab['topology']['nodes'].items():
-    r = http.request('GET', '{}/containers/node_{}/json'.format(docker_url, node['label']))
-    if r.status != 200:
-        logging.error('Cannot inspect node_{} ({})'.format(node['label'], data['message']))
-        sys.exit(1)
-    jlab['topology']['nodes'][node_id]['docker_ip'] = json.loads(r.data.decode('utf-8'))['NetworkSettings']['IPAddress']
+#for node_id, node in jlab['topology']['nodes'].items():
+#    r = http.request('GET', '{}/containers/node_{}/json'.format(docker_url, node['label']))
+#    if r.status != 200:
+#        logging.error('Cannot inspect node_{} ({})'.format(node['label'], data['message']))
+#        sys.exit(1)
+#    jlab['topology']['nodes'][node_id]['docker_ip'] = json.loads(r.data.decode('utf-8'))['NetworkSettings']['IPAddress']
 
 # Writing lab to file for next scripts
 with open('lab.json', 'w') as outfile:

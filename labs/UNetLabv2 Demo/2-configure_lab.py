@@ -17,7 +17,7 @@ password = 'UNetLabv2!'
 
 import ipaddress, logging, napalm, sys, os
 
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level = logging.INFO)
 
 if not os.path.isfile('lab.json'):
     logging.error('File lab.json not found, run 1-build_lab.py before')
