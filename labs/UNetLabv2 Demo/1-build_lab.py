@@ -4,7 +4,7 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170526'
 
-master_url = 'https://172.16.0.2'
+master_url = 'https://172.16.0.1'
 master_key = '?api_key=zqg81ge585t0bt3qe0sjj1idvw7hv7vfgc11dsq6'
 
 import json, logging, os, requests, subprocess, sys, urllib3
