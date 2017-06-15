@@ -4,11 +4,11 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170526'
 
-master_url = 'http://127.0.0.1:5000'
+master_url = 'https://172.16.0.2'
 master_key = '?api_key=zqg81ge585t0bt3qe0sjj1idvw7hv7vfgc11dsq6'
-docker_url = 'http://127.0.0.1:4243'
 
-import json, logging, os, subprocess, sys, urllib3
+import json, logging, os, requests, subprocess, sys, urllib3
+urllib3.disable_warnings()
 
 logging.basicConfig(level = logging.INFO)
 headers = {'Content-Type': 'application/json'}
@@ -242,49 +242,35 @@ jlab = {
     }
 }
 
-http = urllib3.PoolManager()
-
 # Checking if controller is available
 try:
-    r = http.request('GET', '{}/'.format(master_url))
+    r = requests.get('{}/'.format(master_url), verify = False)
 except:
-    logging.error('UNetLabv2 master controller is not available. Please start it using run_controller.py runserver --host=0.0.0.0')
-    sys.exit(1)
-
-# Checking if Docker is available
-try:
-    r = http.request('GET', '{}/'.format(docker_url))
-except:
-    logging.error('Docker Remote API server is not available. Please start it on port 4243')
+    logging.error('UNetLabv2 controller is not available')
     sys.exit(1)
 
 # Checking controller authentication
-r = http.request('GET', '{}/api/v1/auth{}'.format(master_url, master_key))
-if r.status != 200:
+r = requests.get('{}/api/v1/auth{}'.format(master_url, master_key), verify = False)
+if r.status_code != 200:
     logging.error('Cannot authenticate to UNetLabv2 master controller')
     sys.exit(1)
 
-# Checking Docker API
-r = http.request('GET', '{}/containers/json'.format(docker_url))
-if r.status != 200:
-    logging.error('Cannot list Docker nodes, something wrong with API')
-    sys.exit(1)
-
-# Checking Docker image
-r = http.request('GET', '{}/images/dainok/node-iol:{}/json'.format(docker_url, image))
-if r.status != 200:
-    logging.error('Cannot list Docker image node-iol:{}, please pull it'.format(image))
-    sys.exit(1)
-
 # Adding the lab
-r = http.request('POST', '{}/api/v1/labs{}&commit=true'.format(master_url, master_key), body = json.dumps(jlab).encode('utf-8'), headers = headers)
-data = json.loads(r.data.decode('utf-8'))
-if r.status != 200:
+r = requests.post('{}/api/v1/labs{}&commit=true'.format(master_url, master_key), json = jlab, verify = False)
+data = r.json()
+if r.status_code != 200:
     logging.error('Cannot create lab ({})'.format(data['message']))
     sys.exit(1)
 jlab = data['data']
 
 # Starting nodes
+for node_id, node in jlab['topology']['nodes'].items():
+    r = requests.get('{}/api/v1/nodes/{}/start{}'.format(master_url, node['label'], master_key), verify = False)
+    if r.status_code != 200:
+        logging.error('Cannot start node "{}" (label "{}")'.format(node['name'], node['label']))
+        sys.exit(1)
+
+
 #for node_id, node in jlab['topology']['nodes'].items():
 #    cmd = 'docker run -d --privileged --name node_{} --hostname {} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['name'], node['label'], image)
 #    p = subprocess.Popen(cmd.split(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
