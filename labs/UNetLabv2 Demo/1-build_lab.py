@@ -4,11 +4,11 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20170526'
 
-master_url = 'https://172.16.0.1'
-master_key = '?api_key=zqg81ge585t0bt3qe0sjj1idvw7hv7vfgc11dsq6'
-
 import json, logging, os, requests, subprocess, sys, urllib3
 urllib3.disable_warnings()
+
+master_url = 'https://172.16.0.1'
+master_key = '?api_key=zqg81ge585t0bt3qe0sjj1idvw7hv7vfgc11dsq6'
 
 logging.basicConfig(level = logging.INFO)
 headers = {'Content-Type': 'application/json'}
@@ -29,8 +29,11 @@ jlab = {
                 'serial': 0,
                 'ram': 1024,
                 'ospf': {
-                    'process': 1,
-                    'default-passive': True
+                    'process': {
+                        '1': {
+                            'default-passive': True
+                        }
+                    }
                 },
                 'interfaces': {
                     '0': {
@@ -90,8 +93,11 @@ jlab = {
                 'serial': 0,
                 'ram': 1024,
                 'ospf': {
-                    'process': 1,
-                    'default-passive': True
+                    'process': {
+                        '1': {
+                            'default-passive': True
+                        }
+                    }
                 },
                 'interfaces': {
                     '0': {
@@ -143,8 +149,11 @@ jlab = {
                 'serial': 0,
                 'ram': 1024,
                 'ospf': {
-                    'process': 1,
-                    'default-passive': True
+                    'process': {
+                        '1': {
+                            'default-passive': True
+                        }
+                    }
                 },
                 'interfaces': {
                     '0': {
@@ -269,21 +278,6 @@ for node_id, node in jlab['topology']['nodes'].items():
     if r.status_code != 200:
         logging.error('Cannot start node "{}" (label "{}")'.format(node['name'], node['label']))
         sys.exit(1)
-
-
-#for node_id, node in jlab['topology']['nodes'].items():
-#    cmd = 'docker run -d --privileged --name node_{} --hostname {} --env CONTROLLER=172.17.0.1 --env LABEL={} dainok/node-iol:{}'.format(node['label'], node['name'], node['label'], image)
-#    p = subprocess.Popen(cmd.split(), stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE, bufsize = 0)
-#    p.wait()
-#    jlab['topology']['nodes'][node_id]['docker_id'] = p.stdout.read().decode("utf-8")
-
-# Getting IP
-#for node_id, node in jlab['topology']['nodes'].items():
-#    r = http.request('GET', '{}/containers/node_{}/json'.format(docker_url, node['label']))
-#    if r.status != 200:
-#        logging.error('Cannot inspect node_{} ({})'.format(node['label'], data['message']))
-#        sys.exit(1)
-#    jlab['topology']['nodes'][node_id]['docker_ip'] = json.loads(r.data.decode('utf-8'))['NetworkSettings']['IPAddress']
 
 # Writing lab to file for next scripts
 with open('lab.json', 'w') as outfile:
