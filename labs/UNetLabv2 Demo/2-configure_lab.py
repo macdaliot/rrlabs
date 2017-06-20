@@ -70,14 +70,10 @@ for node_id, node in jlab['topology']['nodes'].items():
                 config = config + 'interface {}\n'.format(interface['name'])
                 config = config + 'ip ospf {} area {}\n'.format(process_id, process['area'])
                 config = config + 'router ospf {}\n'.format(process_id)
-                print(interface['ospf']['passive'])
-                print(type(interface['ospf']['passive']))
                 if 'passive' in interface['ospf'] and interface['ospf']['passive'] == True:
                     config = config + 'passive-interface {}\n'.format(interface['name'])
                 elif 'passive' in interface['ospf'] and interface['ospf']['passive'] == False:
                     config = config + 'no passive-interface {}\n'.format(interface['name'])
-    logging.info(config)
-    sys.exit(0)
     device.load_merge_candidate(config = config)
     diff = device.compare_config()
     device.commit_config()

@@ -165,7 +165,7 @@ jlab = {
                         'name': 'e0/1',
                         'description': 'To Client',
                         'connection': 1,
-                        'ipv4': '192.168.1.254/24',
+                        'ipv4': '192.168.1.1/24',
                         'ospf': {
                             'passive': False,
                             'process': {
@@ -204,6 +204,13 @@ jlab = {
                 'ethernet': 3,
                 'serial': 0,
                 'ram': 1024,
+                'ospf': {
+                    'process': {
+                        '1': {
+                            'default-passive': True
+                        }
+                    }
+                },
                 'interfaces': {
                     '0': {
                         'name': 'e0/0',
@@ -214,18 +221,42 @@ jlab = {
                         'name': 'e0/1',
                         'description': 'To ISPA',
                         'connection': 2,
-                        'ipv4': '192.168.2.254/24'
+                        'ipv4': '192.168.2.254/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
                     '32': {
                         'name': 'e0/2',
                         'description': 'To ISPB',
                         'connection': 3,
-                        'ipv4': '192.168.3.254/24'
+                        'ipv4': '192.168.3.254/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
                     '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
                         'ipv4': '1.1.1.1/32'
+                        'ospf': {
+                            'passive': True,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     }
                 }
             }
