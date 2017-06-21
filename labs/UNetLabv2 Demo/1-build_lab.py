@@ -123,7 +123,15 @@ jlab = {
                         'name': 'e0/2',
                         'description': 'To Internet',
                         'connection': 2,
-                        'ipv4': '192.168.2.1/24'
+                        'ipv4': '192.168.2.1/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
                     '100': {
                         'name': 'lo0',
@@ -165,7 +173,7 @@ jlab = {
                         'name': 'e0/1',
                         'description': 'To Client',
                         'connection': 1,
-                        'ipv4': '192.168.1.1/24',
+                        'ipv4': '192.168.1.254/24',
                         'ospf': {
                             'passive': False,
                             'process': {
@@ -179,7 +187,15 @@ jlab = {
                         'name': 'e0/2',
                         'description': 'To Internet',
                         'connection': 3,
-                        'ipv4': '192.168.3.254/24'
+                        'ipv4': '192.168.3.1/24',
+                        'ospf': {
+                            'passive': False,
+                            'process': {
+                                '1': {
+                                    'area': 0
+                                }
+                            }
+                        }
                     },
                     '100': {
                         'name': 'lo0',
@@ -248,7 +264,7 @@ jlab = {
                     '100': {
                         'name': 'lo0',
                         'description': 'Loopback',
-                        'ipv4': '1.1.1.1/32'
+                        'ipv4': '1.1.1.1/32',
                         'ospf': {
                             'passive': True,
                             'process': {
