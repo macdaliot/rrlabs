@@ -26,5 +26,5 @@ device = driver(hostname = router_name, username = router_username, password = r
 device.open()
 output = device.ping(remote_name)
 device.close()
-print(output)
+print(json.dumps(output))
 
