@@ -1,0 +1,18 @@
+---
+hostname: "R2"
+interfaces:
+  - description: "Management"
+    test_if: "Ethernet0/0"
+    prod_if: "Ethernet0/0"
+    ipv4_addr: "192.0.2.254"
+    ipv4_mask: "255.255.255.0"
+  - description: "To R1"
+    test_if: "Ethernet1/1"
+    prod_if: "Ethernet0/1"
+    ipv4_addr: "10.0.12.2"
+    ipv4_mask: "255.255.255.0"
+  - description: "To R3"
+    test_if: "Ethernet1/2"
+    prod_if: "Ethernet0/2"
+    ipv4_addr: "10.0.23.2"
+    ipv4_mask: "255.255.255.0"

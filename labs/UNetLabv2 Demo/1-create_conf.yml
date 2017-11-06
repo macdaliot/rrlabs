@@ -1,0 +1,39 @@
+---
+- name: CONFIGURE DEVICES
+  hosts: all
+  connection: local
+  gather_facts: no
+  vars_files:
+    - "config.yml"
+    - "secrets.yml"
+    - "common.yml"
+
+  pre_tasks:
+    - name: CREATE CONFIGURATION DIRECTORY
+      file: path={{base_dir}}/{{configs}} state=directory
+    - name: CREATE NODE CONFIGURATION DIRECTORY
+      file: path={{base_dir}}/{{configs}}/{{inventory_hostname}} state=directory
+
+  tasks:
+    - name: LOAD PARAMETERS
+      include_vars:
+        file: "{{base_dir}}/{{devices}}/{{inventory_hostname}}.yml"
+
+    - name: CREATE CONFIGURATIONS
+      template: src={{item.src}} dest={{base_dir}}/{{configs}}/{{inventory_hostname}}/{{inventory_hostname}}-{{(item.src | basename | splitext)[0]}}.conf
+      with_filetree: "{{base_dir}}/{{templates}}"
+      when: item.state == 'file'
+
+    - name: MERGE IN A SINGLE FILE
+      assemble:
+        src: "{{base_dir}}/{{configs}}/{{inventory_hostname}}"
+        dest: "{{base_dir}}/{{configs}}/{{inventory_hostname}}-startup-config"
+
+
+
+
+
+  #  roles:
+  #  - baseconf
+  #  - { role: baseconf_pci, when: "fw_role == 'PCI'" }
+  #  - { role: baseconf_dmz, when: "fw_role == 'DMZ'" }

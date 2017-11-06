@@ -1,0 +1,16 @@
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R1
+!
+logging buffered 4096
+logging host 172.16.0.1
+!
+no aaa new-model
+interface Ethernet0/0
+  description Management
+  ip address 192.0.2.254 255.255.255.0
+interface Ethernet0/1
+  description To R2
+  ip address 10.0.12.1 255.255.255.0
