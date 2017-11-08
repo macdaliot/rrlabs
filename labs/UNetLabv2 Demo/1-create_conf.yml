@@ -47,17 +47,18 @@
       when: os == "ios"
       # only when above file diff
 
-      #    - name: REPLACE CURRENT CONFIG WITH CANDIDATE CONFIG
-      #ios_config:
-      #  provider: "{{ provider }}"
-      #  commands:
-      #    - "configure replace {{dest_device}}:/candidate-config force"
-      #  authorize: yes
-      #  timeout: 120
-      #register: replace_config_output
+    - name: REPLACE CURRENT CONFIG WITH CANDIDATE CONFIG
+      ios_command:
+        provider: "{{ provider }}"
+        commands:
+          - "do configure replace {{dest_device}}:/candidate-config force"
+          - "write memory"
+        authorize: yes
+        timeout: 120
+      when: os == "ios"
   
-#    - name: DEBUG
-#      debug:
-#        var: replace_config_output
+    - name: DEBUG
+      debug:
+        var: replace_config_output
 
 
