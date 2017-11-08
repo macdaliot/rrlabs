@@ -24,16 +24,40 @@
       with_filetree: "{{base_dir}}/{{templates}}"
       when: item.state == 'file'
 
+    - name: SET MASTER CONFIG NAME
+      set_fact: master_config={{base_dir}}/{{configs}}/{{inventory_hostname}}-{{target | default('test')}}-startup-config
+
     - name: MERGE IN A SINGLE FILE
       assemble:
         src: "{{base_dir}}/{{configs}}/{{inventory_hostname}}"
-        dest: "{{base_dir}}/{{configs}}/{{inventory_hostname}}-startup-config"
+        dest: "{{master_config}}"
+    #track if diff
+
+    - name: DEFINE IOS PROVIDER
+      set_fact:
+        provider:
+          host: "{{hostvars[inventory_hostname]['ansible_host']}}"
+          username: "{{creds['username']}}"
+          password: "{{creds['password']}}"
+      when: os == "ios"
+
+    - name: UPLOAD CANDIDATE CONFIG TO IOS DEVICE
+      local_action: >
+        command /usr/bin/sshpass -p {{creds['password']}} /usr/bin/scp "{{master_config}}" {{creds['username']}}@{{hostvars[inventory_hostname]['ansible_host']}}:{{dest_device}}:/candidate-config
+      when: os == "ios"
+      # only when above file diff
+
+      #    - name: REPLACE CURRENT CONFIG WITH CANDIDATE CONFIG
+      #ios_config:
+      #  provider: "{{ provider }}"
+      #  commands:
+      #    - "configure replace {{dest_device}}:/candidate-config force"
+      #  authorize: yes
+      #  timeout: 120
+      #register: replace_config_output
+  
+#    - name: DEBUG
+#      debug:
+#        var: replace_config_output
 
 
-
-
-
-  #  roles:
-  #  - baseconf
-  #  - { role: baseconf_pci, when: "fw_role == 'PCI'" }
-  #  - { role: baseconf_dmz, when: "fw_role == 'DMZ'" }

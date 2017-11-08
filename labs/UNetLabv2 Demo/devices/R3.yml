@@ -1,5 +1,7 @@
 ---
 hostname: "R3"
+os: "ios"
+dest_device: "unix"
 interfaces:
   - description: "Management"
     test_if: "Ethernet0/0"
@@ -7,7 +9,7 @@ interfaces:
     ipv4_addr: "192.0.2.254"
     ipv4_mask: "255.255.255.0"
   - description: "To R2"
-    test_if: "Ethernet1/1"
+    test_if: "Ethernet0/1"
     prod_if: "Ethernet0/1"
     ipv4_addr: "10.0.23.3"
     ipv4_mask: "255.255.255.0"

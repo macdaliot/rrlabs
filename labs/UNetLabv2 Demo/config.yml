@@ -1,4 +1,4 @@
-base_dir: "/root"
+base_dir: "/usr/src/rrlabs/labs/UNetLabv2 Demo"
 templates: "templates"
 devices: "devices"
 configs: "configs"

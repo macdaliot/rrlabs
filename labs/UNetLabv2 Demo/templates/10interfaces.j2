@@ -4,6 +4,7 @@ interface {{interface.prod_if}}
 {% else %}
 interface {{interface.test_if}}
 {% endif %}
-  description {{interface.description}}
-  ip address {{interface.ipv4_addr}} {{interface.ipv4_mask}}
+ description {{interface.description}}
+ ip address {{interface.ipv4_addr}} {{interface.ipv4_mask}}
+!
 {% endfor %}
