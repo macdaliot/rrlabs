@@ -36,7 +36,7 @@
 
     - name: EXITING IF NOTHING CHANGED
       meta: end_play
-      when: not config_create.changed and not config_merge.changed
+      when: not config_merge.changed
 
     - name: DEFINE IOS PROVIDER
       set_fact:
