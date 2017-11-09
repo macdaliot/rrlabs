@@ -6,4 +6,7 @@ interface {{interface.test_if}}
 {% endif %}
  description {{interface.description}}
  ip address {{interface.ipv4_addr}} {{interface.ipv4_mask}}
+{% if interface.ospf_area is defined %}
+ ip ospf 1 area {{interface.ospf_area}}
+{% endif %}
 {% endfor %}

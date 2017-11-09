@@ -1,0 +1,76 @@
+version 15.5
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R2
+!
+boot-start-marker
+boot-end-marker
+!
+!
+!
+no aaa new-model
+!
+!
+!
+bsd-client server url https://cloudsso.cisco.com/as/token.oauth2
+clock timezone CET 1 0
+mmi polling-interval 60
+no mmi auto-configure
+no mmi pvc
+mmi snmp-timeout 180
+!
+!
+ip domain name example.com
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+!
+cts logging verbose
+!
+!
+username admin privilege 15 password 0 UNetLabv2!
+!
+redundancy
+!
+!
+ip ssh version 2
+ip scp server enable
+interface Ethernet0/0
+ description Management
+ ip address 192.0.2.254 255.255.255.0
+interface Ethernet0/1
+ description To R1
+ ip address 10.0.12.2 255.255.255.0
+ ip ospf 1 area 0
+interface Ethernet0/2
+ description To R3
+ ip address 10.0.23.2 255.255.255.0
+ ip ospf 1 area 0
+interface Loopback0
+ description Loopback
+ ip address 10.255.255.2 255.255.255.255
+ ip ospf 1 area 0
+router ospf 1
+alias exec replace configure replace
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
+!
+logging host 172.16.0.1
+!
+control-plane
+!
+line con 0
+ logging synchronous
+line aux 0
+line vty 0 4
+ login local
+ transport input ssh
+!
+end

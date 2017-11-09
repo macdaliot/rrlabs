@@ -23,6 +23,7 @@
       template: src={{item.src}} dest={{base_dir}}/{{configs}}/{{inventory_hostname}}/{{inventory_hostname}}-{{(item.src | basename | splitext)[0]}}.conf
       with_filetree: "{{base_dir}}/{{templates}}"
       when: item.state == 'file'
+      register: config_create
 
     - name: SET MASTER CONFIG NAME
       set_fact: master_config={{base_dir}}/{{configs}}/{{inventory_hostname}}-{{target | default('test')}}-startup-config
@@ -31,7 +32,11 @@
       assemble:
         src: "{{base_dir}}/{{configs}}/{{inventory_hostname}}"
         dest: "{{master_config}}"
-    #track if diff
+      register: config_merge
+
+    - name: EXITING IF NOTHING CHANGED
+      meta: end_play
+      when: not config_create.changed and not config_merge.changed
 
     - name: DEFINE IOS PROVIDER
       set_fact:
@@ -41,24 +46,27 @@
           password: "{{creds['password']}}"
       when: os == "ios"
 
+    - name: ENABLE SCP AND CONFIGURATION REPLACEMENT
+      ios_config:
+        provider: "{{ provider }}"
+        lines:
+          - "ip scp server enable"
+          - "alias exec replace configure replace"
+        match: line
+      when: os == "ios"
+
     - name: UPLOAD CANDIDATE CONFIG TO IOS DEVICE
       local_action: >
-        command /usr/bin/sshpass -p {{creds['password']}} /usr/bin/scp "{{master_config}}" {{creds['username']}}@{{hostvars[inventory_hostname]['ansible_host']}}:{{dest_device}}:/candidate-config
+        command /usr/bin/sshpass -p {{creds['password']}} /usr/bin/scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "{{master_config}}" {{creds['username']}}@{{hostvars[inventory_hostname]['ansible_host']}}:{{dest_device}}:/candidate-config
       when: os == "ios"
-      # only when above file diff
 
     - name: REPLACE CURRENT CONFIG WITH CANDIDATE CONFIG
       ios_command:
         provider: "{{ provider }}"
         commands:
-          - "do configure replace {{dest_device}}:/candidate-config force"
+          - "replace {{dest_device}}:/candidate-config force"
           - "write memory"
         authorize: yes
-        timeout: 120
       when: os == "ios"
   
-    - name: DEBUG
-      debug:
-        var: replace_config_output
-
 

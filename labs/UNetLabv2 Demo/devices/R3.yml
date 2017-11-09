@@ -13,3 +13,12 @@ interfaces:
     prod_if: "Ethernet0/1"
     ipv4_addr: "10.0.23.3"
     ipv4_mask: "255.255.255.0"
+    ospf_area: "0"
+  - description: "Loopback"
+    test_if: "Loopback0"
+    prod_if: "Loopback0"
+    ipv4_addr: "10.255.255.3"
+    ipv4_mask: "255.255.255.255"
+    ospf_area: "0"
+
+
