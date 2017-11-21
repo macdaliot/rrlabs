@@ -1,0 +1,8 @@
+---
+- name: SET IOS PROVIDER
+  set_fact:
+    provider:
+      host: "{{hostvars[inventory_hostname]['ansible_host']}}"
+      username: "{{ansible_username}}"
+      password: "{{ansible_password}}"
+      timeout: 120

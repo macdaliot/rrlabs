@@ -1,0 +1,2 @@
+base_dir: "/usr/src/rrlabs/ansible/discovery"
+templates: "templates"
