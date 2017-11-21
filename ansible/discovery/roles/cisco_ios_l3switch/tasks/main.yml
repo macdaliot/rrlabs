@@ -1,0 +1,35 @@
+---
+- name: EXECUTE CISCO_IOS_L3SWITCH ROLE
+  connection: local
+  ios_command:
+    provider: "{{provider}}"
+    commands:
+      - "show version"
+      - "show vlan"
+      - "show vtp status"
+      - "show cdp neighbors"
+      - "show ip alias"
+      - "show ip interface brief"
+      - "show interfaces description"
+      - "show interfaces status"
+      - "show ip route"
+      - "show inventory"
+      - "show ip protocols"
+      - "show running-config"
+      - "show tech-support password"
+    authorize: yes
+  register: result
+- local_action: copy content="{{result.stdout[0]}}\n" dest={{repo}}/show_version
+- local_action: copy content="{{result.stdout[1]}}\n" dest={{repo}}/show_vlan
+- local_action: copy content="{{result.stdout[2]}}\n" dest={{repo}}/show_vtp_status
+- local_action: copy content="{{result.stdout[3]}}\n" dest={{repo}}/show_cdp_neighbors
+- local_action: copy content="{{result.stdout[4]}}\n" dest={{repo}}/show_ip_alias
+- local_action: copy content="{{result.stdout[5]}}\n" dest={{repo}}/show_ip_interface_brief
+- local_action: copy content="{{result.stdout[6]}}\n" dest={{repo}}/show_interfaces_description
+- local_action: copy content="{{result.stdout[7]}}\n" dest={{repo}}/show_interfaces_status
+- local_action: copy content="{{result.stdout[8]}}\n" dest={{repo}}/show_ip_route
+- local_action: copy content="{{result.stdout[9]}}\n" dest={{repo}}/show_inventory
+- local_action: copy content="{{result.stdout[10]}}\n" dest={{repo}}/show_ip_protocols
+- local_action: copy content="{{result.stdout[11]}}\n" dest={{repo}}/running-config
+- local_action: copy content="{{result.stdout[12]}}\n" dest={{repo}}/tech-support
+
