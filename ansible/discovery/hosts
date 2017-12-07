@@ -1,4 +1,4 @@
 [cisco_l2_switches]
-switch1  ansible_host=10.1.1.4 ansible_username=admin ansible_password=cisco
-switch2  ansible_host=10.1.1.5 ansible_username=admin ansible_password=cisco
+switch1 ansible_host=10.1.1.4 ansible_username=admin ansible_password=cisco napalm_driver=ios
+switch2 ansible_host=10.1.1.5 ansible_username=admin ansible_password=cisco napalm_driver=ios
 
