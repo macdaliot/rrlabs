@@ -16,16 +16,18 @@ apic_host = None
 vrf_name = None
 vrf_description = None
 tenat = None
+enforced = 'unenforced'
 
 def usage_local():
     print('    -t tenant      Tenant name')
     print('    -n vrfname     VRF name')
     print('    -i description VRF description')
+    print('    -e             Set the VRF as enforced')
 
     sys.exit(255)
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'du:p:h:n:i:')
+    opts, args = getopt.getopt(sys.argv[1:], 'du:p:h:n:i:e')
 except getopt.GetoptError as err:
     logging.error(err)
     usage()
@@ -45,6 +47,8 @@ for opt, arg in opts:
         vrf_name = arg
     elif opt == '-i':
         vrf_description = arg
+    elif opt == '-e':
+        enforced = 'enforced'
     else:
         assert False, 'unhandled option'
 
@@ -90,7 +94,7 @@ data = {
 			"dn": "uni/tn-{}/ctx-{}".format(tenant_name. vrf_name),
 			"knwMcastAct": "permit",
 			"pcEnfDir": "ingress",
-			"pcEnfPref": "unenforced"
+			"pcEnfPref": enforced
 		}
 	}
 }
