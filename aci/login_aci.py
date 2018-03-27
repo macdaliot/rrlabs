@@ -17,7 +17,6 @@ def usage():
     print('    -u username    the username for the APIC controller')
     print('    -p password    the password for the APIC controller')
     print('    -h hostname    the hostname or IP of the APIC controller')
-    sys.exit(255)
 
 def login(url = None, username = None, password = None):
     if not url or not username or not password:

@@ -46,9 +46,6 @@ if apic_host == None:
     usage()
     sys.exit(255)
 
-username = 'admin'
-password = 'rfc1918!'
-apic_host = '172.25.82.1'
 login_url = 'https://{}/api/aaaLogin.json?gui-token-request=yes'.format(apic_host)
 
 token, cookies, response_code = login(url = login_url, username = username, password = password)
@@ -133,149 +130,6 @@ policies = {
 	}
 }
 
-policy_groups = {
-	"Connect_EndPoint_with_individual_ports": {
-		"infraAccPortGrp": {
-			"attributes": {
-				"descr": "Connect an endpoint device without aggregation.",
-				"dn": "uni/infra/funcprof/accportgrp-Connect_EndPoint_with_individual_ports"
-			},
-			"children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}} # LLDP_on
-			]
-		}
-	},
-	"Connect_Switch_with_individual_ports": {
-		"infraAccPortGrp": {
-			"attributes": {
-				"descr": "Connect a L2 switch without aggregation.",
-				"dn": "uni/infra/funcprof/accportgrp-Connect_Switch_with_individual_ports"
-			},
-			"children": [
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}} # LLDP_on
-			]
-		}
-	},
-	"Connect_EndPoint_with_PC_static": {
-		"infraAccBndlGrp": {
-			"attributes": {
-				"descr": "Connect an endpoint device using a static port-channel.",
-				"dn": "uni/infra/funcprof/accbundle-Connect_EndPoint_with_PC_static"
-			},
-			"children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_static"}}} # PC_static
-			]
-		}
-	},
-	"Connect_Switch_with_PC_static": {
-		"infraAccBndlGrp": {
-			"attributes": {
-				"descr": "Connect a L2 switch using a static port-channel.",
-				"dn": "uni/infra/funcprof/accbundle-Connect_Switch_with_PC_static"
-			},
-			"children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_static"}}} # PC_static
-			]
-		}
-	},
-	"Connect_EndPoint_with_PC_LACP": {
-		"infraAccBndlGrp": {
-			"attributes": {
-				"descr": "Connect an endpoint device using a LACP port-channel.",
-				"dn": "uni/infra/funcprof/accbundle-Connect_EndPoint_with_PC_LACP"
-			},
-			"children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_LACP"}}} # PC_LACP
-			]
-		}
-	},
-	"Connect_EndPoint_with_PC_LACP_no_suspend": {
-		"infraAccBndlGrp": {
-			"attributes": {
-				"descr": "Connect an endpoint device using a LACP port-channel. Individual interfaces are not suspended.",
-				"dn": "uni/infra/funcprof/accbundle-Connect_EndPoint_with_PC_LACP_no_suspend"
-			},
-			"children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_LACP_no_suspend"}}} # PC_LACP_no_suspend
-			]
-		}
-	},
-	"Connect_Switch_with_PC_LACP": {
-		"infraAccBndlGrp": {
-			"attributes": {
-				"descr": "Connect a L2 switch using a LACP port-channel.",
-				"dn": "uni/infra/funcprof/accbundle-Connect_Switch_with_PC_LACP"
-			},
-			"children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-			    {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_LACP"}}} # PC_LACP
-			]
-		}
-	},
-    "Connect_EndPoint_with_vPC_LACP": {
-        "infraAccBndlGrp": {
-            "attributes": {
-                "descr": "Connect an endpoint device using a LACP virtual port-channel.",
-                "dn": "uni/infra/funcprof/accbundle-Connect_EndPoint_with_vPC_LACP",
-                "lagT": "node"
-            },
-            "children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-                {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_LACP"}}} # PC_LACP
-            ]
-        }
-    },
-    "Connect_EndPoint_with_vPC_LACP_no_suspend": {
-        "infraAccBndlGrp": {
-            "attributes": {
-                "descr": "Connect an endpoint device using a LACP virtual port-channel. Individual interfaces are not suspended.",
-                "dn": "uni/infra/funcprof/accbundle-Connect_EndPoint_with_vPC_LACP_no_suspend",
-                "lagT": "node"
-            },
-            "children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-                {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_LACP_no_suspend"}}} # PC_LACP_no_suspend
-            ]
-        }
-    },
-    "Connect_Switch_with_vPC_LACP": {
-        "infraAccBndlGrp": {
-            "attributes": {
-                "descr": "Connect a L2 switch using a LACP virtual port-channel.",
-                "dn": "uni/infra/funcprof/accbundle-Connect_Switch_with_vPC_LACP",
-                "lagT": "node"
-            },
-            "children": [
-                {"infraRsStpIfPol": {"attributes": {"tnStpIfPolName": "BPDU_guard"}}}, # BPDU_guard
-                {"infraRsCdpIfPol": {"attributes": {"tnCdpIfPolName": "CDP_on"}}}, # CDP_on
-                {"infraRsLldpIfPol": {"attributes": {"tnLldpIfPolName": "LLDP_on"}}}, # LLDP_on
-                {"infraRsLacpPol": {"attributes": {"tnLacpLagPolName": "PC_LACP"}}} # PC_LACP
-            ]
-        }
-    }
-}
-
 url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
 
 for policy_name in policies:
@@ -284,10 +138,3 @@ for policy_name in policies:
     response_code = r.status_code
     if response_code != 200:
         logging.error('failed to add interface policy "{}"'.format(policy_name))
-
-for policy_group_name in policy_groups:
-    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(policy_groups[policy_group_name]))
-    response = r.json()
-    response_code = r.status_code
-    if response_code != 200:
-        logging.error('failed to add interface policy group "{}"'.format(policy_group_name))
