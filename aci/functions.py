@@ -319,7 +319,7 @@ def checkOpts():
     return username, password, apic_host
 
 def fixDescription(description = ""):
-    description = textwrap.shorten(description, width = 128)
+    description = textwrap.shorten(description, width = 125, placeholder = '...')
     description = description.replace("'", ' ')
     return description
 
