@@ -18,6 +18,35 @@ def usage():
     print('    -p password    the password for the APIC controller')
     print('    -h hostname    the hostname or IP of the APIC controller')
 
+def addApplicationProfile(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None):
+    url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
+    if not tenant_name:
+        tenant_name = 'common'
+    if not description:
+        description = 'Application Profile {}'.format(tenant_name)
+    else:
+        description = fixDescription(description)
+
+    data = {
+    	"fvAp": {
+    		"attributes": {
+    			"descr": description,
+    			"dn": "uni/tn-{}/ap-{}".format(tenant_name, name),
+    			"prio": "unspecified"
+    		}
+    	}
+    }
+    try:
+        r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(data))
+        response = r.json()
+        response_code = r.status_code
+    except Exception as err:
+        logging.error(err)
+        response_code = 0;
+        response = {}
+        pass
+    return response_code, response
+
 def addBridgeDomain(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None, mac_address = None, igmp_snooping = False, vrf = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     if not tenant_name:
