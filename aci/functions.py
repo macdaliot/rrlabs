@@ -5,7 +5,7 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20180320'
 
-import getopt, json, logging, requests, urllib3, sys
+import getopt, json, logging, random, requests, urllib3, sys, textwrap
 
 urllib3.disable_warnings()
 
@@ -18,15 +18,97 @@ def usage():
     print('    -p password    the password for the APIC controller')
     print('    -h hostname    the hostname or IP of the APIC controller')
 
+def addBridgeDomain(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None, mac_address = None, igmp_snooping = False, vrf = None):
+    url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
+    if not tenant_name:
+        tenant_name = 'common'
+    if not description:
+        description = 'Bridge Domain {}'.format(name)
+    else:
+        description = fixDescription(description)
+    if not mac_address:
+        mac_address = '00:22:BD:{:X}:{:X}:{:X}'.format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+    if igmp_snooping:
+        igmp_snoop_policy = 'IGMP_Snoop_on'
+    else:
+        igmp_snoop_policy = 'IGMP_Snoop_off'
+    if not vrf:
+        vrf = 'default'
+
+    data = {
+    	"totalCount": "1",
+    	"imdata": [{
+    		"fvBD": {
+    			"attributes": {
+    				"OptimizeWanBandwidth": "no",
+    				"arpFlood": "yes",
+    				"descr": description,
+    				"dn": "uni/tn-{}/BD-{}".format(tenant_name, name),
+    				"epClear": "no",
+    				"intersiteBumTrafficAllow": "no",
+    				"intersiteL2Stretch": "no",
+    				"ipLearning": "yes",
+    				"limitIpLearnToSubnets": "yes",
+    				"mac": mac_address,
+    				"mcastAllow": "no",
+    				"multiDstPktAct": "bd-flood",
+    				"type": "regular",
+    				"unicastRoute": "yes",
+    				"unkMacUcastAct": "flood",
+    				"unkMcastAct": "flood",
+    				"vmac": "not-applicable"
+    			},
+    			"children": [{
+    				"fvRsIgmpsn": {
+    					"attributes": {
+    						"tnIgmpSnoopPolName": igmp_snoop_policy
+    					}
+    				}
+    			}, {
+                    "fvRsCtx": {
+                        "attributes": {
+                            "tnFvCtxName": vrf
+                        }
+                    }
+                }, {
+    				"fvRsBdToEpRet": {
+    					"attributes": {
+    						"resolveAct": "resolve",
+    						"tnFvEpRetPolName": ""
+    					}
+    				}
+    			}, {
+    				"fvRsBDToNdP": {
+    					"attributes": {
+    						"tnNdIfPolName": ""
+    					}
+    				}
+    			}]
+    		}
+    	}]
+    }
+
+    try:
+        r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(data))
+        response = r.json()
+        response_code = r.status_code
+    except Exception as err:
+        logging.error(err)
+        response_code = 0;
+        response = {}
+        pass
+    return response_code, response
+
+
 def addDefaultPolicies(apic_host = None, token = None, cookies = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     policies = {
-        "IGMP_Snoop_OFF": {
+        "IGMP_Snoop_off": {
     		"igmpSnoopPol": {
     			"attributes": {
     				"adminSt": "disabled",
     				"descr": "Disable IGMP Snooping.",
-    				"dn": "uni/tn-common/snPol-no_igmp_snooping",
+    				"dn": "uni/tn-common/snPol-IGMP_Snoop_off",
     				"lastMbrIntvl": "1",
     				"queryIntvl": "125",
     				"rspIntvl": "10",
@@ -35,12 +117,12 @@ def addDefaultPolicies(apic_host = None, token = None, cookies = None):
     			}
     		}
         },
-        "IGMP_Snoop_ON": {
+        "IGMP_Snoop_on": {
     		"igmpSnoopPol": {
     			"attributes": {
     				"adminSt": "enabled",
     				"descr": "Enable IGMP Snooping.",
-    				"dn": "uni/tn-common/snPol-no_igmp_snooping",
+    				"dn": "uni/tn-common/snPol-IGMP_Snoop_on",
     				"lastMbrIntvl": "1",
     				"queryIntvl": "125",
     				"rspIntvl": "10",
@@ -130,7 +212,7 @@ def addDefaultPolicies(apic_host = None, token = None, cookies = None):
             response = r.json()
             response_code = r.status_code
         except Exception as err:
-            logging.error(err)
+            logging.error('{}: {}', policy_name, err)
             response_code = 0;
             response = {}
             return False
@@ -140,6 +222,8 @@ def addTenant(apic_host = None, token = None, cookies = None, name = None, descr
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     if not description:
         description = 'Tenant {}'.format(tenant)
+    else:
+        description = fixDescription(description)
 
     data = {
     	"fvTenant": {
@@ -166,6 +250,8 @@ def addVRF(apic_host = None, token = None, cookies = None, tenant_name = None, n
         tenant_name = 'common'
     if not description:
         description = 'VRF {}'.format(name)
+    else:
+        description = fixDescription(description)
     if enforced:
         enforced = 'enforced'
     else:
@@ -231,6 +317,11 @@ def checkOpts():
         usage()
         sys.exit(255)
     return username, password, apic_host
+
+def fixDescription(description = ""):
+    description = textwrap.shorten(description, width = 128)
+    description = description.replace("'", ' ')
+    return description
 
 def login(username = None, password = None, apic_host = None):
     url = 'https://{}/api/aaaLogin.json?gui-token-request=yes'.format(apic_host)
