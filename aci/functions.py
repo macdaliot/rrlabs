@@ -5,7 +5,7 @@ __copyright__ = 'Andrea Dainese <andrea.dainese@gmail.com>'
 __license__ = 'https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode'
 __revision__ = '20180320'
 
-import getopt, json, logging, random, requests, urllib3, sys, textwrap
+import getopt, ipaddress, json, logging, random, requests, urllib3, sys, textwrap
 
 urllib3.disable_warnings()
 
@@ -21,7 +21,11 @@ def usage():
 def addApplicationProfile(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     if not tenant_name:
-        tenant_name = 'common'
+        logging.error('missing tenant name')
+        return 0, {}
+    if not name:
+        logging.error('missing applicattion profile name')
+        return 0, {}
     if not description:
         description = 'Application Profile {}'.format(tenant_name)
     else:
@@ -50,7 +54,11 @@ def addApplicationProfile(apic_host = None, token = None, cookies = None, tenant
 def addBridgeDomain(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None, mac_address = None, igmp_snooping = False, vrf = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     if not tenant_name:
-        tenant_name = 'common'
+        logging.error('missing tenant name')
+        return 0, {}
+    if not name:
+        logging.error('missing bridge domain name')
+        return 0, {}
     if not description:
         description = 'Bridge Domain {}'.format(name)
     else:
@@ -127,7 +135,6 @@ def addBridgeDomain(apic_host = None, token = None, cookies = None, tenant_name 
         response = {}
         pass
     return response_code, response
-
 
 def addDefaultPolicies(apic_host = None, token = None, cookies = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
@@ -241,14 +248,102 @@ def addDefaultPolicies(apic_host = None, token = None, cookies = None):
             response = r.json()
             response_code = r.status_code
         except Exception as err:
-            logging.error('{}: {}', policy_name, err)
+            logging.error('failed to add policy "{}" ({})', policy_name, err)
             response_code = 0;
             response = {}
             return False
     return True
 
+def addEPG(apic_host = None, token = None, cookies = None, tenant_name = None, app_name = None, name = None, description = None):
+    url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
+    if not tenant_name:
+        logging.error('missing tenant name')
+        return 0, {}
+    if not app_name:
+        logging.error('missing application profile name')
+        return 0, {}
+    if not name:
+        logging.error('missing EPG name')
+        return 0, {}
+    if not description:
+        description = 'EPG {}'.format(name)
+    else:
+        description = fixDescription(description)
+
+    data = {
+		"fvAEPg": {
+			"attributes": {
+				"descr": description,
+				"dn": "uni/tn-{}/ap-{}/epg-{}".format(tenant_name, app_name, name),
+				"floodOnEncap": "disabled",
+				"isAttrBasedEPg": "no",
+				"matchT": "AtleastOne",
+				"pcEnfPref": "unenforced",
+				"prefGrMemb": "exclude",
+				"prio": "unspecified"
+			}
+		}
+	}
+    try:
+        r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(data))
+        response = r.json()
+        response_code = r.status_code
+    except Exception as err:
+        logging.error(err)
+        response_code = 0;
+        response = {}
+        pass
+    return response_code, response
+
+def addSubnet(apic_host = None, token = None, cookies = None, tenant_name = None, bd_name = None, subnet = None, description = None):
+    url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
+    if not tenant_name:
+        logging.error('missing tenant name')
+        return 0, {}
+    if not bd_name:
+        logging.error('missing bridge domain name')
+        return 0, {}
+    if not subnet:
+        logging.error('missing subnet')
+        return 0, {}
+    try:
+        ipv4 = str(ipaddress.IPv4Interface(subnet))
+    except:
+        logging.error('invalid subnet')
+        return 0, {}
+    if not description:
+        description = 'Address {}'.format(ipv4)
+    else:
+        description = fixDescription(description)
+
+    data = {
+    	"fvSubnet": {
+    		"attributes": {
+    			"descr": description,
+    			"dn": "uni/tn-{}/BD-{}/subnet-[{}]".format(tenant_name, bd_name, ipv4),
+    			"ip": subnet,
+    			"preferred": "no",
+    			"scope": "private",
+    			"virtual": "no"
+    		}
+    	}
+    }
+    try:
+        r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(data))
+        response = r.json()
+        response_code = r.status_code
+    except Exception as err:
+        logging.error(err)
+        response_code = 0;
+        response = {}
+        pass
+    return response_code, response
+    
 def addTenant(apic_host = None, token = None, cookies = None, name = None, description = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
+    if not name:
+        logging.error('missing tenant name')
+        return 0, {}
     if not description:
         description = 'Tenant {}'.format(tenant)
     else:
@@ -276,7 +371,8 @@ def addTenant(apic_host = None, token = None, cookies = None, name = None, descr
 def addVRF(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None, enforced = False):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     if not tenant_name:
-        tenant_name = 'common'
+        logging.error('missing tenant name')
+        return 0, {}
     if not description:
         description = 'VRF {}'.format(name)
     else:
