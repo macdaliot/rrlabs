@@ -338,7 +338,7 @@ def addSubnet(apic_host = None, token = None, cookies = None, tenant_name = None
         response = {}
         pass
     return response_code, response
-    
+
 def addTenant(apic_host = None, token = None, cookies = None, name = None, description = None):
     url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
     if not name:
@@ -366,6 +366,23 @@ def addTenant(apic_host = None, token = None, cookies = None, name = None, descr
         response_code = 0;
         response = {}
         pass
+    return response_code, response
+
+def deleteTenant(apic_host = None, token = None, cookies = None, name = None):
+    if not name:
+        logging.error('missing tenant name')
+        return 0, {}
+    url = 'https://{}/api/mo/uni/tn-{}.json?challenge={}'.format(apic_host, name, token)
+    r = requests.delete(url, verify = False, cookies = cookies)
+    response = r.json()
+    response_code = r.status_code
+    return response_code, response
+
+def getTenants(apic_host = None, token = None, cookies = None):
+    url = 'https://{}/api/class/fvTenant.json?challenge={}'.format(apic_host, token)
+    r = requests.get(url, verify = False, cookies = cookies)
+    response = r.json()
+    response_code = r.status_code
     return response_code, response
 
 def addVRF(apic_host = None, token = None, cookies = None, tenant_name = None, name = None, description = None, enforced = False):
@@ -403,6 +420,84 @@ def addVRF(apic_host = None, token = None, cookies = None, tenant_name = None, n
         response_code = 0;
         response = {}
         pass
+    return response_code, response
+
+def addUser(apic_host = None, token = None, cookies = None, username = None, description = None, email = None, expires = 0, first_name = None, last_name = None, password = None):
+    url = 'https://{}/api/mo/uni.json?challenge={}'.format(apic_host, token)
+    if not username:
+        logging.error('missing username')
+        return 0, {}
+    if not password:
+        logging.error('missing password')
+        return 0, {}
+    if not description:
+        description = 'User {}'.format(username)
+    else:
+        description = fixDescription(description)
+    if expires:
+        user_expires = "yes"
+        expiration = ""
+    else:
+        user_expires = "no"
+        expiration = ""
+    data = {
+		"aaaUser": {
+			"attributes": {
+				"accountStatus": "active",
+				"descr": "",
+				"dn": "uni/userext/user-{}".format(username),
+				"expiration": "2018-04-25T00:00:00.000+00:00",
+				"expires": user_expires,
+				"firstName": "{}".format(first_name),
+				"lastName": "{}".format(last_name),
+				"otpenable": "no",
+                "pwd": password,
+				"pwdLifeTime": "no-password-expire",
+				"pwdUpdateRequired": "no",
+			},
+			"children": [{
+				"aaaUserDomain": {
+					"attributes": {
+						"name": "all",
+					},
+					"children": [{
+						"aaaUserRole": {
+							"attributes": {
+								"name": "admin",
+								"privType": "writePriv"
+							}
+						}
+					}]
+				}
+			}]
+		}
+	}
+    if email:
+        data["aaaUser"]["attributes"]["email"] = email
+
+    try:
+        r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(data))
+        response = r.json()
+        response_code = r.status_code
+    except Exception as err:
+        logging.error(err)
+        response_code = 0;
+        response = {}
+        pass
+    return response_code, response
+
+def deleteUser(apic_host = None, token = None, cookies = None, username = None):
+    url = 'https://{}/api/mo/uni/userext/user-{}.json?challenge={}'.format(apic_host, username, token)
+    r = requests.delete(url, verify = False, cookies = cookies)
+    response = r.json()
+    response_code = r.status_code
+    return response_code, response
+
+def getUsers(apic_host = None, token = None, cookies = None):
+    url = 'https://{}/api/class/aaaUser.json?challenge={}'.format(apic_host, token)
+    r = requests.get(url, verify = False, cookies = cookies)
+    response = r.json()
+    response_code = r.status_code
     return response_code, response
 
 def checkOpts():
