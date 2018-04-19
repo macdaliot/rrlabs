@@ -15,7 +15,7 @@ logging.basicConfig(level = logging.INFO)
 
 # Variables
 total_users = 10
-user_prefix = 'labuser'
+user_prefix = 'user'
 tenant_prefix = 'tenant'
 
 # Reading options
