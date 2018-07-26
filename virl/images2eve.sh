@@ -80,7 +80,7 @@ for image in $(glance image-list | tail -n +4 | head -n -1 | cut -d'|' -f2 | sed
 			file=hda.qcow2
 			;;
 		"CSR1000v")
-			type=csr1000v
+			type=csr1000vng
 			file=virtioa.qcow2
 			;;
 		"ASAv")
