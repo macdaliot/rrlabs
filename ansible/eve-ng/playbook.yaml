@@ -1,10 +1,15 @@
 ---
--
-  hosts: all
+- hosts: all
   tasks:
     - name: UPDATING LOCALE
       shell: "update-locale LANG=en_US.UTF-8"
       when: ansible_env.LANG != "en_US.UTF-8"
+    - name: SETTING MYSQL PASSWORD
+      shell: "{{item.cmd}}"
+      with_items:
+        - {cmd: "echo 'mysql-server mysql-server/root_password password eve-ng' | debconf-set-selections"}
+        - {cmd: "echo 'mysql-server mysql-server/root_password_again password eve-ng' | debconf-set-selections"}
+      changed_when: false
     - name: "ADDING EVE-NG APT REPOSITORY"
       lineinfile:
         dest: "/etc/apt/sources.list"
@@ -30,7 +35,7 @@
       shell: "userdel -r {{item.pw_name}}"
       with_items: "{{non_root_users.files}}"
       when: non_root_users.files.0 is defined
-    - name: UPLOADING HOSTS AND HOSTNAME FILES
+    - name: UPLOADING CONFIGURATIONS
       copy:
         src: "{{item.src}}"
         dest: "{{item.dest}}"
@@ -40,25 +45,30 @@
       with_items:
         - {src: "files/hosts", dest: "/etc/hosts", owner: "root", group: "root", mode: "0644"}
         - {src: "files/hostname", dest: "/etc/hostname", owner: "root", group: "root", mode: "0644"}
+        - {src: "files/interfaces", dest: "/etc/network/interfaces", owner: "root", group: "root", mode: "0644"}
+# Preinstalling EVE-NG because of a bug in presint script from eve-ng-guacamole package)
+    - name: WORKAROUND PREINSTALLING EVE-NG SCHEMAS
+      apt:
+        name: eve-ng-schema
+        allow_unauthenticated: yes
+        update_cache: yes
+        force_apt_get: yes
+    - stat: path=/opt/unetlab/schema/guacamole-update.sql
+      register: schema_update
+    - stat: path=/opt/unetlab/schema/guacamole-002-create-admin-user.sql
+      register: schema_002
+    - name: WORKAROUND REORDERING SCHEMAS
+      shell: "{{item.cmd}}"
+      with_items:
+        - {cmd: "mv /opt/unetlab/schema/guacamole-update.sql /opt/unetlab/schema/guacamole-002-update.sql"}
+        - {cmd: "mv /opt/unetlab/schema/guacamole-002-create-admin-user.sql /opt/unetlab/schema/guacamole-003-create-admin-user.sql"}
+      when: (schema_update.stat.exists == True) and (schema_002.stat.exists == True)
     - name: INSTALLING EVE-NG
       apt:
         name: eve-ng
         allow_unauthenticated: yes
         update_cache: yes
         force_apt_get: yes
-    - name: UPDATING ALL PACKAGES
-      apt:
-        autoremove: yes
-        allow_unauthenticated: yes
-        upgrade: yes
-        force_apt_get: yes
-    - name: UPLOADING NETWORK CONFIGURATION
-      copy:
-        src: "files/interfaces"
-        dest: "/etc/network/interfaces"
-        owner: "root"
-        group: "root"
-        mode: "0644"
     - name: GETTING NON EVE-NG INSTALLED KERNELS
       register: kernels_to_be_removed
       shell: "dpkg-query -f='${binary:Package}\n' -W 'linux-image*' | sed '/.*-generic/p; t; d;'"
@@ -130,10 +140,3 @@
     - name: REBOOT
       shell: "reboot"
       when: current_hostname.stdout_lines.0 != "eve-ng"
-
-    #- name: UPLOADING EVE-NG IMAGES (IOL)
-
-      # deb-src [arch=amd64] http://www.eve-ng.net/repo xenial main
-
-#    -
-#      debug: var=save_config
