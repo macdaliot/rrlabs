@@ -6,12 +6,12 @@ This playbook validates an Ubuntu 16.04 installation, installs EVE-NG and all re
 
 By default Ubuntu server does not come up with SSH and root user is not allowed to login. Prepare the system with the following commands:
 
-⁓⁓⁓
+~~~
 sudo apt-get -y install openssh-server python
 sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 sudo systemctl reload sshd
 sudo usermod -p $(echo eve | openssl passwd -1 -stdin) root
-⁓⁓⁓
+~~~
 
 Python is also required for Ansible.
 
@@ -26,7 +26,7 @@ Of course images and licenses are not included. Create the following directories
 
 Check the following example:
 
-⁓⁓⁓
+~~~
 images/iol/iourc
 images/iol/L2-ADVENTERPRISEK9-M-15.2-IRON-20151103.bin
 images/iol/L3-ADVIPSERVICES-M-15.1-2.9S.bin
@@ -50,4 +50,4 @@ images/qemu/csr1000v-universalk9-15.4-3S/hda.qcow2
 images/qemu/viosl2-15.2/virtioa.qcow2
 images/qemu/asav-961/virtioa.qcow2
 images/qemu/nxosv9k-7.0.3.I7.1/sataa.qcow2
-⁓⁓⁓
+~~~
