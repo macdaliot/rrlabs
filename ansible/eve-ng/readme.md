@@ -19,7 +19,6 @@ Python is also required for Ansible.
 
 Of course images and licenses are not included. Create the following directories:
 
-- images
 - images/iol
 - images/dynamips
 - images/qemu
