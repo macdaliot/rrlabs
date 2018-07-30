@@ -1,0 +1,7 @@
+---
+hostname: 'R2'
+domain-test: 'test.example.com'
+domain-prod: 'prod.example.com'
+interface-test: 'Ethernet0/0'
+interface-prod: 'Ethernet0/1'
+ip: '192.168.0.2'

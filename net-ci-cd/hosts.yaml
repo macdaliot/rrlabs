@@ -1,0 +1,13 @@
+---
+R1-test:
+  nornir_host: 192.168.102.142
+  groups: ["ios", "test"]
+R2-test:
+  nornir_host: 192.168.102.145
+  groups: ["ios", "test"]
+R1-prod:
+  nornir_host: 192.168.102.144
+  groups: ["ios", "prod"]
+R2-prod:
+  nornir_host: 192.168.102.143
+  groups: ["ios", "prod"]
