@@ -1,0 +1,22 @@
+# With SNMPv2c:
+#   snmp_community must be set
+#
+# With SNMPv3:
+#   if snmp_auth is set:
+#     snmp_auth == md5|sha
+#     snmp_username must be set
+#     snmp_password must be set
+#   if snmp_priv is set:
+#     snmp_auth must be set
+#     snmp_auth == des|3des|aes128|aes192|aes256
+#     snmp_privpassword must be set
+#
+# With Napalm:
+#    napalm_driver must be set
+#    ansible_username must be set
+#    ansible_password must be set
+
+[switches]
+SW1 ansible_host=192.168.102.132 snmp_version=2c snmp_community=public ansible_username=admin ansible_password=cisco napalm_driver=ios
+SW2 ansible_host=192.168.102.133 snmp_version=2c snmp_community=public ansible_username=admin ansible_password=cisco napalm_driver=ios
+SW3 ansible_host=192.168.102.139 snmp_version=2c snmp_community=public ansible_username=admin ansible_password=cisco napalm_driver=ios
