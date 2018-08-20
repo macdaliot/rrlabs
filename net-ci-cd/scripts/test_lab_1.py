@@ -18,7 +18,7 @@ def main():
                 logging.error('failed to get right neighbors on {}'.format(device_name))
                 testing_ok = False
         if device_name == 'R2-test':
-            if device_output[0].result['get_lldp_neighbors']['Ethernet0/0'][0]['hostname'] != 'Ra1.test.example.com':
+            if device_output[0].result['get_lldp_neighbors']['Ethernet0/0'][0]['hostname'] != 'R1.test.example.com':
                 logging.error('failed to get right neighbors on {}'.format(device_name))
                 testing_ok = False
 
