@@ -4,14 +4,14 @@ import glob, jinja2, yaml
 def main():
     templateLoader = jinja2.FileSystemLoader(searchpath = "./")
     templateEnv = jinja2.Environment(loader = templateLoader)
-    for template_file in glob.glob("*.template"):
-        device_name = template_file.split('.')[0]
+    for template_file in glob.glob("configs/*.template"):
+        device_name = template_file.split('-')[0]
         config_data = yaml.load(open('{}.yaml'.format(device_name)))
-        for environment in ['test', 'prod']:
+        for environment in ['test']:
             template_data = {
                 'hostname': config_data['hostname'],
                 'domain': config_data['domain-{}'.format(environment)],
-                'interfaces': 'interface {}\n ip address {} 255.255.255.0\n ip ospf 1 area 0\n!\ninterface Ethernet0/3\n ip address dhcp\n'.format(config_data['interface-{}'.format(environment)], config_data['ip'])
+                'interfaces': 'lldp run\ninterface {}\n ip address {} 255.255.255.0\n ip ospf 1 area 0\n!\ninterface Ethernet0/3\n ip address dhcp\n'.format(config_data['interface-{}'.format(environment)], config_data['ip'])
             }
             template = templateEnv.get_template(template_file)
             outputText = template.render(template_data)

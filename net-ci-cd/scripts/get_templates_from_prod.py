@@ -2,7 +2,9 @@
 from nornir.core import InitNornir
 from nornir.plugins.functions.text import print_result
 from nornir.plugins.tasks.networking import napalm_get
-import re
+import os, re
+
+pwd = os.path.dirname(os.path.realpath(__file__))
 
 def clean_config(config):
     # Remove non config lines
@@ -17,6 +19,8 @@ def config_to_template(config):
     # Remove domain name
     marker = '{{domain}}'
     template = re.sub(re.compile(r'^ip domain name .*$', re.MULTILINE), 'ip domain name {}'.format(marker), template)
+    # Remove LLDP
+    template = re.sub(re.compile(r'^lldp .*$', re.MULTILINE), '!', template)
     # Remove Ethernet interfaces (Loopback and management interfaces are excluded)
     marker = '{{interfaces}}'
     template = re.sub(re.compile(r'^interface [^Loopback]*$[^!]*', re.MULTILINE), '!\n{}\n'.format(marker), template)
@@ -25,11 +29,12 @@ def config_to_template(config):
 
 def main():
     nr = InitNornir(host_file = 'hosts.yaml', group_file = 'groups.yaml', num_workers = 20)
-    result = nr.run(task = napalm_get, getters = ['get_config'])
+    test = nr.filter(site = 'prod')
+    result = test.run(task = napalm_get, getters = ['get_config'])
 
     # Store startup configurations
     for device_name, device_output in result.items():
-        f = open('{}.cfg'.format(device_name), 'w' )
+        f = open('configs/{}.cfg'.format(device_name), 'w')
         f.write(clean_config(device_output[0].result['get_config']['startup']))
         f.close()
 
@@ -38,7 +43,7 @@ def main():
     for device_name, device_output in result.items():
         template_name = device_name.split('-')[0]
         if template_name not in templates:
-            f = open('{}.template'.format(template_name), 'w' )
+            f = open('configs/{}-prod.template'.format(template_name), 'w')
             f.write(config_to_template(device_output[0].result['get_config']['startup']))
             f.close()
             templates.append(template_name)

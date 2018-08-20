@@ -1,0 +1,4 @@
+*.log
+configs/*.cfg
+configs/*.template
+.DS_Store

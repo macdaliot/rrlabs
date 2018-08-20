@@ -9,7 +9,7 @@ import glob
 
 def load_data(task):
     task.run(task = napalm_connection, name = 'Setting up NAPALM', timeout = 60, optional_args = {'port': 22, 'dest_file_system': 'unix:'})
-    task.run(task = napalm_configure, filename = '{}-new.cfg'.format(task.host['name']), replace = True)
+    task.run(task = napalm_configure, filename = 'configs/{}-new.cfg'.format(task.host['name']), replace = True)
 
 def main():
     nr = InitNornir(host_file = 'hosts.yaml', group_file = 'groups.yaml', num_workers = 20)

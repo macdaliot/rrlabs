@@ -1,0 +1,37 @@
+stages:
+  - test
+  - deploy
+
+before_test:
+  stage: test
+  script:
+    - scripts/destroy_lab.py
+    - scripts/prepare_lab.py
+  when: always
+
+test:
+  stage: test
+  script:
+    - scripts/get_templates_from_test.py
+    - scripts/make_configs_for_test.py
+    - scripts/push_to_test.py
+    - echo Waiting for network convergence
+    - sleep 60
+    - scripts/test_lab_1.py
+    - scripts/test_lab_2.py
+
+after_test:
+  stage: test
+  script:
+    - scripts/destroy_lab.py
+  when: always
+
+deploy:
+  stage: deploy
+  script:
+    - scripts/get_templates_from_prod.py
+    - scripts/make_configs_for_prod.py
+    - scripts/push_to_prod.py
+  only:
+    - master
+  when: manual
