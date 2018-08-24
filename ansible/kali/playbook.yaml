@@ -41,6 +41,7 @@
       with_items:
         - {name: "ssh.service"}
         - {name: "snapd"}
+        - {name: "postgresql"}
     - name: "KALI: DISABLING POWER SAVING"
       shell: "{{item.cmd}}"
       with_items:
@@ -210,6 +211,12 @@
         state: link
     - name: "AMASS: UPGRADING"
       shell: "snap refresh amass"
+      changed_when: false
+
+    - name: "METASPLOIT: DATABASE INIT"
+      shell: "msfdb init"
+      changed_when: false
+    - shell: "msfconsole -q -x 'db_rebuild_cache; exit'"
       changed_when: false
 
 # TODO
