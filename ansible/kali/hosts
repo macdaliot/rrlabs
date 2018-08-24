@@ -1,0 +1,2 @@
+[all]
+192.168.102.146 ansible_user=root ansible_password=password

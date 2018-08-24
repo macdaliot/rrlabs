@@ -1,0 +1,240 @@
+---
+- hosts: all
+  tasks:
+    - name: "KALI: UPGRADING (SAFE UPGRADE)"
+      apt:
+        upgrade: yes
+        update_cache: yes
+        force_apt_get: yes
+        autoremove: yes
+    - name: "KALI: INSTALLING AND UPGRADING PACKAGES"
+      apt:
+        name: "{{item}}"
+        update_cache: no
+        force_apt_get: yes
+        state: latest
+      with_items:
+        - apt-transport-https
+        - golang
+        - eyewitness
+        - kali-linux-full
+        - libldns-dev
+        - libimage-exiftool-perl
+        - metasploit-framework
+        - ncat
+        - nmap
+        - openssh-server
+        - pipsi
+        - python
+        - python-pip
+        - python3
+        - python3-pip
+        - snapd
+        - vim
+        - virtualenv
+    - name: "KALI: ENABLING SERVICES ON BOOT"
+      systemd:
+        name: "{{item.name}}"
+        enabled: yes
+        masked: no
+        state: started
+      with_items:
+        - {name: "ssh.service"}
+        - {name: "snapd"}
+    - name: "KALI: DISABLING POWER SAVING"
+      shell: "{{item.cmd}}"
+      with_items:
+        - {cmd: "gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 0"}
+        - {cmd: "gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-battery-timeout 0"}
+      changed_when: false
+    - name: "KALI: CREATING DIRECTORIES"
+      file:
+        path: "{{item.path}}"
+        state: directory
+        mode: "{{item.mode}}"
+        owner: "{{item.owner}}"
+        group: "{{item.group}}"
+      with_items:
+        - {path: "/root/aquatone", mode: "0755", owner: "root", group: "root"}
+        - {path: "/root/bin", mode: "0755", owner: "root", group: "root"}
+        - {path: "/root/Pentest", mode: "0755", owner: "root", group: "root"}
+        - {path: "/root/Pentest/Lists", mode: "0755", owner: "root", group: "root"}
+    - name: "KALI: UPLOADING FILES"
+      copy:
+        src: "{{item.src}}"
+        dest: "{{item.dest}}"
+        owner: "{{item.owner}}"
+        group: "{{item.group}}"
+        mode: "{{item.mode}}"
+      with_items:
+        - {src: "files/.bash_aliases", dest: "/root/.bash_aliases", owner: "root", group: "root", mode: "0644"}
+        - {src: "files/.bash_profile", dest: "/root/.bash_profile", owner: "root", group: "root", mode: "0644"}
+        - {src: "files/.bashrc", dest: "/root/.bashrc", owner: "root", group: "root", mode: "0644"}
+        - {src: "files/.vimrc", dest: "/root/.vimrc", owner: "root", group: "root", mode: "0644"}
+    - name: "KALI: READING API KEYS"
+      set_fact:
+          api_keys: "{{api_keys | default({}) | combine({item | basename | splitext | first: lookup('file', item)})}}"
+      with_fileglob:
+        - api_keys/*txt
+
+    - name: "NMAP: UPDATING SCRIPTS"
+      shell: "nmap -v0 --script-updatedb"
+      changed_when: false
+
+    - stat: path=/usr/local/bin/aquatone-discover
+      register: aquatone_installed
+    - name: "AQUATONE: INSTALLING AND UPGRADING"
+      # - http://michenriksen.com/blog/aquatone-tool-for-domain-flyovers/
+      # - https://github.com/michenriksen/aquatone.git
+      gem:
+        name: "aquatone"
+        state: latest
+        user_install: no
+    - name: "AQUATONE: DELETING KEYS"
+      file:
+        state: absent
+        path: "/root/aquatone/.keys.yml"
+      changed_when: false
+    - name: "AQUATONE: ADDING API KEYS"
+      shell: "aquatone-discover --set-key {{item}} {{api_keys[item]}}"
+      with_items: "{{api_keys}}"
+      changed_when: false
+
+    - stat: path=/root/.local/bin/aiodnsbrute
+      register: aiodnsbrute_installed
+    - name: "AIODNSBRUTE: CLONING GIT REPOSITORY"
+      # - https://github.com/blark/aiodnsbrute
+      register: aiodnsbrute_git
+      git:
+        repo: "https://github.com/blark/aiodnsbrute"
+        dest: "/usr/src/aiodnsbrute"
+    - name: "AIODNSBRUTE: INSTALLING"
+      shell: "pipsi install /usr/src/aiodnsbrute"
+      when: aiodnsbrute_installed.stat.exists == False
+    - name: "AIODNSBRUTE: UPGRADING"
+      shell: "pipsi upgrade /usr/src/aiodnsbrute"
+      when: aiodnsbrute_git.changed == True or aiodnsbrute_git.remote_url_changed == True
+
+    - stat: path=/usr/src/domained/domained.py
+      register: domained_installed
+    - name: "DOMAINED: CLONING GIT REPOSITORY"
+      # - https://github.com/cakinney/domained
+      register: domained_git
+      git:
+        repo: "https://github.com/cakinney/domained"
+        dest: "/usr/src/domained"
+        force: yes
+    - file:
+        path: "/usr/src/domained/domained.py"
+        mode: "0755"
+        state: file
+    - name: "DOMAINED: INSTALLING DEPENDENCIES"
+      pip:
+        executable: pip3
+        requirements: "/usr/src/domained/ext/requirements.txt"
+        extra_args: --user
+      when: domained_git.changed == True or domained_git.remote_url_changed == True
+    - name: "DOMAINED: INSTALLING"
+      shell: "/usr/src/domained/domained.py -q --install"
+      when: domained_git.changed == True or domained_git.remote_url_changed == True
+    - file:
+        src: "/usr/src/domained/domained.py"
+        dest: "/usr/local/bin/domained"
+        state: link
+    - name: "DOMAINED: UPGRADING"
+      shell: "/usr/local/bin/domained -q --upgrade"
+
+    - name: "SECLISTS: CLONING GIT REPOSITORY"
+      # - https://github.com/danielmiessler/SecLists
+      register: seclists_git
+      git:
+        repo: "https://github.com/danielmiessler/SecLists"
+        dest: "/root/PenTest/Lists/SecLists"
+        force: yes
+
+    - stat: path=/usr/src/nikto/program/nikto.pl
+      register: nikto_installed
+    - name: "NIKTO: CLONING GIT REPOSITORY"
+      # - https://github.com/sullo/nikto
+      # - https://cirt.net/Nikto2
+      # - https://cirt.net/nikto2-docs/
+      register: nikto_git
+      git:
+        repo: "https://github.com/sullo/nikto"
+        dest: "/usr/src/nikto"
+        force: yes
+    - file:
+        src: "/usr/src/nikto/program/nikto.pl"
+        dest: "/usr/local/bin/nikto"
+        state: link
+    - name: "NIKTO: UPLOADING CONFIGURATION"
+      copy:
+        src: "files/nikto.conf"
+        dest: "/etc/nikto.conf"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - stat: path=/usr/src/theHarvester/theHarvester.py
+      register: theHarvester_installed
+    - name: "THEHARVESTER: CLONING GIT REPOSITORY"
+      # - https://github.com/opsdisk/theHarvester
+      register: theharvester_git
+      git:
+        repo: "https://github.com/opsdisk/theHarvester"
+        dest: "/usr/src/theHarvester"
+        force: yes
+    - file:
+        path: "/usr/src/theHarvester/theHarvester.py"
+        mode: "0755"
+        state: file
+    - file:
+        src: "/usr/src/theHarvester/theHarvester.py"
+        dest: "/usr/local/bin/theharvester"
+        state: link
+    - name: "THEHARVESTER: INSTALLING DEPENDENCIES"
+      pip:
+        executable: pip
+        requirements: "/usr/src/theHarvester/requirements.txt"
+        extra_args: --user
+      when: theharvester_git.changed == True or theharvester_git.remote_url_changed == True
+
+    - stat: path=/snap/amass/current/bin/amass
+      register: amass_installed
+    - name: "AMASS: INSTALLING"
+      shell: "snap install amass"
+      when: amass_installed.stat.exists == False
+    - file:
+        src: "/snap/amass/current/bin/amass"
+        dest: "/usr/local/bin/amass"
+        state: link
+    - name: "AMASS: UPGRADING"
+      shell: "snap refresh amass"
+      changed_when: false
+
+# TODO
+# An updated version of metagoofil: https://github.com/opsdisk/metagoofil
+# METADATA EXTRACTION NOT IMPLEMENTED
+#git clone -q https://github.com/opsdisk/metagoofil.git
+
+# pagodo (Passive Google Dork) - Automate Google Hacking Database scraping: https://github.com/opsdisk/pagodo
+#git clone -q https://github.com/opsdisk/pagodo.git
+
+# doork automates the process of searching on Google information about specific website based on dorks: https://github.com/AeonDave/doork
+#git clone -q https://github.com/AeonDave/doork.git
+
+# Information gathering and service enumeration, building directory structures to store results, along with writing out recommendations for further testing.
+#git clone -q https://github.com/codingo/Reconnoitre.git
+
+# vanquish - Super tool: https://github.com/frizb/Vanquish
+#git clone -q https://github.com/frizb/Vanquish.git
+
+# gobuster
+#git clone -q https://github.com/OJ/gobuster.git
+
+# Elasticsearch
+# https://www.elastic.co/guide/en/elasticsearch/reference/6.3/deb.html
+# Logstash
+# https://www.elastic.co/guide/en/logstash/6.3/installing-logstash.html
+# /usr/share/logstash/bin/logstash-plugin install logstash-codec-nmap
+# update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java

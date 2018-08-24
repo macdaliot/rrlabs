@@ -9,25 +9,27 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.inventory.manager import InventoryManager
 from ansible.vars.manager import VariableManager
 
-logging.basicConfig(level = logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('nornir')
 
-ignore_snmp_interfaces = [
+ignore_interfaces = [
     'Null0',
     'VoIP-Null0'
 ]
 
 def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
-    print('  -i STRING  inventory file')
+    print('  -h STRING  hosts file')
+    print('  -g STRING  groups file')
     print('  -d         enable debug')
     sys.exit(1)
 
 def checkOpts():
-    inventory_file = None
+    host_file = None
+    group_file = None
+
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'di:')
+        opts, args = getopt.getopt(sys.argv[1:], 'dh:g:')
     except getopt.GetoptError as err:
         logger.error('cannot parse options', exc_info = True)
         usage()
@@ -35,30 +37,31 @@ def checkOpts():
     for opt, arg in opts:
         if opt == '-d':
             logger.setLevel(logging.DEBUG)
-        elif opt == '-i':
-            inventory_file = arg
+        elif opt == '-h':
+            host_file = arg
             working_dir = '{}/working/{}/devices'.format(os.path.dirname(os.path.abspath(arg)), os.environ.get('NETDOC_FOLDER', 'default'))
+        elif opt == '-g':
+            group_file = arg
         else:
             logger.error('unhandled option ({})'.format(opt))
             usage()
             sys.exit(1)
 
     # Checking options and environment
-    if not inventory_file:
-        logger.error('inventory file not specified')
+    if not host_file:
+        logger.error('hosts file not specified')
         usage()
-    if not os.path.isfile(inventory_file):
-        logger.error('inventory file "{}" does not exist'.format(inventory_file))
+    if not os.path.isfile(host_file):
+        logger.error('hosts file "{}" does not exist'.format(host_file))
+        sys.exit(1)
+    if not group_file:
+        logger.error('groups file not specified')
+        usage()
+    if not os.path.isfile(group_file):
+        logger.error('groups file "{}" does not exist'.format(group_file))
         sys.exit(1)
 
-    # Loading Ansible inventory
-    ansible_loader = DataLoader()
-    try:
-        ansible_inventory = InventoryManager(loader = ansible_loader, sources = inventory_file)
-    except Exception as err:
-        logger.error('cannot read inventory file "{}"'.format(inventory_file), exc_info = True)
-    variable_manager = VariableManager(loader = ansible_loader, inventory = ansible_inventory)
-    return ansible_inventory.get_hosts(), working_dir
+    return host_file, group_file, working_dir
 
 def writeDeviceInfo(device_info, path):
     for key, value in device_info.items():
