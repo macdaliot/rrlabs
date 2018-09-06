@@ -1,0 +1,25 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: pi_gateway
+  gather_facts: False
+  roles:
+     - raspbian
+     - debian
+     - gateway
+
+  pre_tasks:
+    - name: "pre_task : VERIFY ANSIBLE VERSION"
+      delegate_to: localhost
+      assert:
+        that: "ansible_version.full is version_compare('2.6.0', '>=')"
+        msg: "This playbook has been tested with Ansible >= 2.6.0, please upgrade."
+
+    - name: "pre_task : TEST REACHABILITY"
+      wait_for:
+        port: 22
+        host: "{{ansible_host}}"
+        timeout: 3
+      connection: local
+
+    - name: "pre_task : LOAD VARIABLES"
+      include_vars: secrets.yaml

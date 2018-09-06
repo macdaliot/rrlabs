@@ -1,0 +1,40 @@
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+COMMIT
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+:Services - [0:0]
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -m state --state INVALID -j DROP
+-A INPUT -i lo -j ACCEPT
+-A INPUT -s fe80::/10 -i ppp0 -p udp -m udp --dport 546 -j ACCEPT
+-A INPUT -p ipv6-icmp -j ACCEPT
+-A INPUT -m state --state NEW -j Services
+-A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A FORWARD -m state --state INVALID -j DROP
+-A FORWARD -p ipv6-icmp -j ACCEPT
+-A FORWARD -i {{gateway.networks.internal.interface}} -m state --state NEW -j ACCEPT
+-A FORWARD -j REJECT --reject-with icmp6-port-unreachable
+-A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A OUTPUT -m state --state INVALID -j DROP
+-A OUTPUT -s ::1/128 -d ::1/128 -o lo -j ACCEPT
+-A OUTPUT -p ipv6-icmp -j ACCEPT
+-A OUTPUT -o ppp0 -p udp -m udp --dport 546 -j ACCEPT
+-A OUTPUT -m owner --uid-owner 0 -j ACCEPT -m comment --comment "Allow outgoing traffic from user root"
+-A OUTPUT -m owner --uid-owner 106 -j ACCEPT -m comment --comment "Allow outgoing traffic from user ntp"
+-A OUTPUT -m owner --uid-owner 109 -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
+-A OUTPUT -j REJECT --reject-with icmp6-port-unreachable
+-A Services -p icmp -j ACCEPT
+-A Services -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "Allow incoming DNS traffic (from internal network)"
+-A Services -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 123 -j ACCEPT -m comment --comment "Allow incoming NTP traffic (from internal network)"
+-A Services -s fe80::/10 -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 547 -j ACCEPT -m comment --comment "Allow incoming DHCP traffic (from internal network)"
+-A Services -p tcp -m tcp --dport 22 -j ACCEPT -m comment --comment "Allow incoming SSH traffic"
+-A Services -p tcp -m multiport --dports 80,443 -j ACCEPT -m comment --comment "Allow incoming web traffic"
+-A Services -i {{gateway.networks.internal.interface}} -p tcp -m tcp --dport 19999 -j ACCEPT -m comment --comment "Allow incoming NetData (monitoring) connections (internal)"
+-A Services -j REJECT --reject-with icmp6-port-unreachable
+COMMIT

@@ -1,0 +1,117 @@
+---
+# tasks file for gateway
+- name: "INSTALLING AND UPGRADING PACKAGES"
+  apt:
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  with_items:
+    - ddclient
+    - dnsmasq
+    - dnsutils
+    - iptables
+    - iptables-persistent
+    - pppoeconf
+    - tcpdump
+    - wide-dhcpv6-client
+
+- name: "CONFIGURING THE FIREWALL"
+  template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "rules.v4", dest: "/etc/iptables/rules.v4", owner: "root", group: "root", mode: "0640"}
+    - {src: "rules.v6", dest: "/etc/iptables/rules.v6", owner: "root", group: "root", mode: "0640"}
+  register: cfg_templates
+- shell: "{{item.cmd}}"
+  with_items:
+    - {cmd: "iptables-restore < /etc/iptables/rules.v4"}
+    - {cmd: "ip6tables-restore < /etc/iptables/rules.v6"}
+  changed_when: cfg_templates.changed == True
+
+- name: "CONFIGURING SYSTEM OPTIONS"
+  lineinfile:
+    dest: "{{item.dest}}"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {dest: "/etc/sysctl.conf", regexp: "^[#]?net.ipv4.ip_forward", line: "net.ipv4.ip_forward=1"}
+    - {dest: "/etc/sysctl.conf", regexp: "^[#]?net.ipv6.conf.all.forwarding", line: "net.ipv6.conf.all.forwarding=1"}
+  register: cfg_options
+
+- name: "CONFIGURING NETWORKS"
+  template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "eth0-cfg", dest: "/etc/network/interfaces.d/eth0-cfg", owner: "root", group: "root", mode: "0644"}
+    - {src: "eth1-cfg", dest: "/etc/network/interfaces.d/eth1-cfg", owner: "root", group: "root", mode: "0644"}
+    - {src: "ppp0-cfg", dest: "/etc/network/interfaces.d/ppp0-cfg", owner: "root", group: "root", mode: "0644"}
+  register: cfg_networks
+- systemd:
+    name: dhcpcd.service
+    enabled: False
+    state: stopped
+
+- name: "REBOOTING"
+  shell: "sleep 5 && reboot"
+  async: 1
+  poll: 0
+  when: cfg_networks.changed == True
+
+- name: "CONFIGURING DDCLIENT"
+  template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "ddclient.conf", dest: "/etc/ddclient.conf", owner: "root", group: "root", mode: "0600"}
+  register: cfg_ddclient
+- systemd:
+    name: ddclient.service
+    state: restart
+  when: cfg_ddclient.changed == True
+- systemd:
+    name: ddclient.service
+    enabled: yes
+    masked: no
+    state: started
+
+- name: "CONFIGURING DNSMASQ"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "update_dnsmasq.cron", dest: "/etc/cron.d/update_dnsmasq", owner: "root", group: "root", mode: "0644"}
+    - {src: "update_dnsmasq.sh", dest: "/usr/local/sbin/update_dnsmasq.sh", owner: "root", group: "root", mode: "0755"}
+  register: cfg_dnsmasq_1
+- template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "dnsmasq.conf", dest: "/etc/dnsmasq.conf", owner: "root", group: "root", mode: "0644"}
+  register: cfg_dnsmasq_2
+- systemd:
+    name: dnsmasq.service
+    state: restarted
+  when: cfg_dnsmasq_1.changed == True or cfg_dnsmasq_2.changed == True
+- systemd:
+    name: ddclient.service
+    enabled: yes
+    masked: no
+    state: started

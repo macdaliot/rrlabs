@@ -1,0 +1,8 @@
+#auto ppp0
+iface ppp0 inet ppp
+        provider telecom-ipv6
+{% if gateway.networks.external.interface == "eth0" %}
+        pre-up /bin/ip link set eth0 up
+{% else %}
+        pre-up /bin/ip link set eth1 up
+{% endif %}

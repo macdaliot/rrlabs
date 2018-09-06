@@ -1,0 +1,62 @@
+---
+- name: "TESTING ROOT SSH AUTHENTICATION"
+  command: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no {{ansible_user}}@{{ansible_host}}
+  connection: local
+  ignore_errors: yes
+  changed_when: False
+  failed_when: False
+  register: test_ssh
+
+- name: "ENABLING ROOT SSH AUTHENTICATION VIA KEY"
+  set_fact: ansible_ssh_user=pi
+  when: test_ssh.rc != 0
+- become: True
+  become_user: root
+  become_method: sudo
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "^[#]?PermitRootLogin"
+    line: "PermitRootLogin without-password"
+  when: test_ssh.rc != 0
+  register: cfg_ssh
+- systemd:
+    name: ssh.service
+    state: reloaded
+  become: True
+  become_user: root
+  become_method: sudo
+  when: test_ssh.rc != 0 and cfg_ssh.changed == True
+- systemd:
+    name: ssh.service
+    enabled: yes
+    masked: no
+    state: started
+  become: True
+  become_user: root
+  become_method: sudo
+  when: test_ssh.rc != 0
+- authorized_key:
+    user: root
+    key: '{{ item }}'
+    state: present
+    exclusive: True
+  with_file:
+    - files/keys.pub
+  become: True
+  become_user: root
+  become_method: sudo
+  when: test_ssh.rc != 0
+- set_fact: ansible_ssh_user={{ansible_user}}
+  when: test_ssh.rc != 0
+
+- name: "SETTING ROOT PASSWORD"
+  user:
+    name: root
+    password: "{{root.hash}}"
+
+- name: "REMOVING PI USER"
+  user:
+    name: pi
+    state: absent
+    remove: yes
+    force: yes
