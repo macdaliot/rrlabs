@@ -1,0 +1,2 @@
+[pi_gateway]
+darkgate.mydomain.local ansible_host=192.168.2.1 ansible_user=root ansible_password=raspberry
