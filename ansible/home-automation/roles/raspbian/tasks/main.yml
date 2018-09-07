@@ -37,7 +37,7 @@
   when: test_ssh.rc != 0
 - authorized_key:
     user: root
-    key: '{{ item }}'
+    key: "{{ item }}"
     state: present
     exclusive: True
   with_file:
@@ -56,7 +56,7 @@
 
 - name: "REMOVING UNPRIVILEGED USER"
   user:
-    name: {{ansible_unprivuser}}
+    name: "{{ansible_unprivuser}}"
     state: absent
     remove: yes
     force: yes
