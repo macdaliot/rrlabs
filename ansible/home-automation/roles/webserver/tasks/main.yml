@@ -1,0 +1,44 @@
+---
+# tasks file for customization
+- name: "INSTALLING AND UPGRADING PACKAGES"
+  apt:
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  with_items:
+    - apache2
+
+- name: "CONFIGURING WEBSERVER"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "000-default.conf", dest: "/etc/apache2/sites-available/000-default.conf", owner: "root", group: "root", mode: "0644"}
+  register: cfg_apache_1
+- command: a2ensite 000-default.conf
+  when: cfg_apache_1.changed == True
+- lineinfile:
+    dest: "{{item.dest}}"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "^ServerTokens", line: "ServerTokens Prod"}
+    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "^ServerSignature", line: "ServerSignature Off"}
+    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "^TraceEnable", line: "TraceEnable Off"}
+    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "", line: 'Header set X-Frame-Options: "sameorigin"'}
+    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "", line: 'Header always unset "X-Powered-By"'}
+    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "", line: 'Header unset "X-Powered-By"'}
+  register: cfg_apache_2
+- systemd:
+    name: apache2.service
+    state: reloaded
+  when: cfg_apache_1.changed or cfg_apache_2.changed == True
+- systemd:
+    name: apache2.service
+    enabled: yes
+    masked: no
+    state: started

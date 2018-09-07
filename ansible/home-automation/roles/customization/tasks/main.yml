@@ -1,0 +1,24 @@
+---
+# tasks file for customization
+- name: "INSTALLING AND UPGRADING PACKAGES"
+  apt:
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  with_items:
+    - vim
+
+- name: "CONFIGURING ENVIRONMENT"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: ".bash_aliases", dest: "/etc/skel/.bash_aliases", owner: "root", group: "root", mode: "0644"}
+    - {src: ".bash_aliases", dest: "~/.bash_aliases", owner: "root", group: "root", mode: "0644"}
+    - {src: ".bashrc", dest: "/etc/skel/.bashrc", owner: "root", group: "root", mode: "0644"}
+    - {src: ".bashrc", dest: "~/.bashrc", owner: "root", group: "root", mode: "0644"}
+    - {src: "vimrc.custom", dest: "/etc/vim/vimrc.custom", owner: "root", group: "root", mode: "0644"}

@@ -3,9 +3,11 @@
 - hosts: pi_gateway
   gather_facts: False
   roles:
-     - raspbian
-     - debian
-     - gateway
+    - raspbian
+    - debian
+    - customization
+    - gateway
+    - webserver
 
   pre_tasks:
     - name: "pre_task : VERIFY ANSIBLE VERSION"

@@ -141,5 +141,13 @@
       shell: "hostname"
       changed_when: false
     - name: REBOOT
-      shell: "reboot"
+      shell: "sleep 5 && reboot"
+      async: 1
+      poll: 0
+      when: current_hostname.stdout_lines.0 != "eve-ng"
+    - wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 300
       when: current_hostname.stdout_lines.0 != "eve-ng"

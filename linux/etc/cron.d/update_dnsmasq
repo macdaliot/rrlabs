@@ -1,2 +1,0 @@
-# /etc/cron.d/update_dnsmasq
-* * * * * root /usr/local/sbin/update_dnsmasq.sh

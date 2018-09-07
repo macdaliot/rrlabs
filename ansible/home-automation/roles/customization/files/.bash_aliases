@@ -1,0 +1,8 @@
+alias iplist='iptables -L --line-num -n -v'
+alias ip6list='ip6tables -L --line-num -n -v'
+alias ll='ls -alF'
+alias la='ls -A'
+alias l='ls -CF'
+alias srvlist='systemctl list-unit-files'
+alias vi='vim -C'
+alias vim='vim -u /etc/vim/vimrc.custom'
