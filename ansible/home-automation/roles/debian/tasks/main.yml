@@ -13,10 +13,13 @@
     force_apt_get: yes
     state: latest
   with_items:
+    - apt-file
     - apt-transport-https
     - git
     - ntp
     - ntpdate
+    - python-pip
+    - python3-pip
     - vim
 
 - name: "APPLYING TEMPLATES AND UPLOADING FILES"

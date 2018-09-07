@@ -3,11 +3,18 @@
 - hosts: pi_gateway
   gather_facts: False
   roles:
-    - raspbian
-    - debian
-    - customization
-    - gateway
-    - webserver
+    - role: raspbian
+      tags: raspbian
+    - role: debian
+      tags: debian
+    - role: customization
+      tags: customization
+    - role: gateway
+      tags: gateway
+    - role: netdata
+      tags: netdata
+    - role: webserver
+      tags: webserver
 
   pre_tasks:
     - name: "pre_task : VERIFY ANSIBLE VERSION"
@@ -25,3 +32,4 @@
 
     - name: "pre_task : LOAD VARIABLES"
       include_vars: secrets.yaml
+      tags: ['raspbian', 'debian', 'netdata', 'customization', 'gateway', 'webserver']

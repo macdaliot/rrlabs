@@ -8,9 +8,44 @@
     state: latest
   with_items:
     - apache2
+    - openssl
+    - python-openssl
+
+- stat:
+    path: /etc/ssl/certs/apache-default.crt
+  register: stat_apache_crt
+- file:
+    path: /etc/ssl/private/apache-default.key
+    state: absent
+  when: stat_apache_crt.stat.exists == False
+- stat:
+    path: /etc/ssl/private/apache-default.key
+  register: stat_apache_key
+- name: "GENERATING SELF-SIGNED CERTIFICATE"
+  command: openssl req -new -x509 -days 3650 -nodes -out /etc/ssl/certs/apache-default.crt -keyout /etc/ssl/private/apache-default.key -subj "/C=IT/ST=Italy/L=Padova/O=RR Labs/OU=IT Security/CN=elocalhost"
+  when: stat_apache_key.stat.exists == False
+  register: cfg_certificate
+
+- name: "CHECKING SELF-SIGNED CERTIFICATE"
+  openssl_certificate:
+    path: /etc/ssl/certs/apache-default.crt
+    privatekey_path: /etc/ssl/private/apache-default.key
+    provider: assertonly
+- openssl_certificate:
+    path: /etc/ssl/certs/apache-default.crt
+    provider: assertonly
+    valid_in: 1209600 # 2 weeks
 
 - name: "CONFIGURING WEBSERVER"
-  copy:
+  apache2_module:
+    force: True
+    name: "{{item.name}}"
+    state: "{{item.state}}"
+  with_items:
+    - {name: "headers", state: "present"}
+    - {name: "ssl", state: "present"}
+  register: cfg_apache_1
+- copy:
     src: "{{item.src}}"
     dest: "{{item.dest}}"
     owner: "{{item.owner}}"
@@ -18,7 +53,7 @@
     mode: "{{item.mode}}"
   with_items:
     - {src: "000-default.conf", dest: "/etc/apache2/sites-available/000-default.conf", owner: "root", group: "root", mode: "0644"}
-  register: cfg_apache_1
+  register: cfg_apache_2
 - command: a2ensite 000-default.conf
   when: cfg_apache_1.changed == True
 - lineinfile:
@@ -29,14 +64,19 @@
     - {dest: "/etc/apache2/conf-available/security.conf", regexp: "^ServerTokens", line: "ServerTokens Prod"}
     - {dest: "/etc/apache2/conf-available/security.conf", regexp: "^ServerSignature", line: "ServerSignature Off"}
     - {dest: "/etc/apache2/conf-available/security.conf", regexp: "^TraceEnable", line: "TraceEnable Off"}
-    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "", line: 'Header set X-Frame-Options: "sameorigin"'}
-    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "", line: 'Header always unset "X-Powered-By"'}
-    - {dest: "/etc/apache2/conf-available/security.conf", regexp: "", line: 'Header unset "X-Powered-By"'}
-  register: cfg_apache_2
+  register: cfg_apache_3
+- lineinfile:
+    dest: "{{item.dest}}"
+    line: "{{item.line}}"
+  with_items:
+    - {dest: "/etc/apache2/conf-available/security.conf", line: 'Header set X-Frame-Options: "sameorigin"'}
+    - {dest: "/etc/apache2/conf-available/security.conf", line: 'Header always unset "X-Powered-By"'}
+    - {dest: "/etc/apache2/conf-available/security.conf", line: 'Header unset "X-Powered-By"'}
+  register: cfg_apache_4
 - systemd:
     name: apache2.service
     state: reloaded
-  when: cfg_apache_1.changed or cfg_apache_2.changed == True
+  when: cfg_certificate.changed == True or cfg_apache_1.changed == True or cfg_apache_2.changed == True or cfg_apache_3.changed == True or cfg_apache_4.changed == True
 - systemd:
     name: apache2.service
     enabled: yes

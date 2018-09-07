@@ -28,9 +28,10 @@
 -A OUTPUT -m state --state INVALID -j DROP
 -A OUTPUT -s 127.0.0.0/8 -d 127.0.0.0/8 -o lo -j ACCEPT
 -A OUTPUT -p icmp -j ACCEPT
--A OUTPUT -m owner --uid-owner 0 -j ACCEPT -m comment --comment "Allow outgoing traffic from user root"
--A OUTPUT -m owner --uid-owner 106 -j ACCEPT -m comment --comment "Allow outgoing traffic from user ntp"
--A OUTPUT -m owner --uid-owner 109 -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
+-A OUTPUT -m owner --uid root -j ACCEPT -m comment --comment "Allow outgoing traffic from user root"
+-A OUTPUT -m owner --uid _apt -j ACCEPT -m comment --comment "Allow outgoing traffic from user _apt"
+-A OUTPUT -m owner --uid ntp -j ACCEPT -m comment --comment "Allow outgoing traffic from user ntp"
+-A OUTPUT -m owner --uid- dnsmasq -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
 -A OUTPUT -j REJECT --reject-with icmp-port-unreachable
 -A Services -p icmp -j ACCEPT
 -A Services -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "Allow incoming DNS traffic (from internal network)"

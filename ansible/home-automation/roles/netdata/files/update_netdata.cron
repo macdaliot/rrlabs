@@ -1,0 +1,2 @@
+# /etc/cron.d/update_netdata
+0 0 * * 0 root /usr/src/netdata.git/netdata-updater.sh
