@@ -65,6 +65,12 @@
   async: 1
   poll: 0
   when: cfg_networks.changed == True
+- wait_for_connection:
+    connect_timeout: 20
+    sleep: 15
+    delay: 5
+    timeout: 300
+  when: cfg_networks.changed == True
 
 - name: "CONFIGURING DDCLIENT"
   template:

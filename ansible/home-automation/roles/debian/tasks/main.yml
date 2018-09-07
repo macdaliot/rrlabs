@@ -54,7 +54,7 @@
   when: hostname_current.stdout_lines.0 != hostname_new
 - wait_for_connection:
     connect_timeout: 20
-    sleep: 5
+    sleep: 15
     delay: 5
     timeout: 300
   when: hostname_current.stdout_lines.0 != hostname_new
