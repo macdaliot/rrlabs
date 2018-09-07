@@ -8,7 +8,7 @@
   register: test_ssh
 
 - name: "ENABLING ROOT SSH AUTHENTICATION VIA KEY"
-  set_fact: ansible_ssh_user="{{ansible_unprivuser}}"
+  set_fact: ansible_ssh_user={{ansible_unprivuser}}
   when: test_ssh.rc != 0
 - become: True
   become_user: root
@@ -54,9 +54,9 @@
     name: root
     password: "{{root.hash}}"
 
-- name: "REMOVING PI USER"
+- name: "REMOVING UNPRIVILEGED USER"
   user:
-    name: pi
+    name: {{ansible_unprivuser}}
     state: absent
     remove: yes
     force: yes

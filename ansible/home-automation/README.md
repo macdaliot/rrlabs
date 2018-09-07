@@ -23,6 +23,8 @@ $ sudo systemctl start ssh
 $ logout
 ~~~
 
+The `pi` will be removed at the end.
+
 ## The "secrets.yaml" file
 
 The `secrets.yaml` file defines how a device must be configured. Currently the following files and roles are defined:
