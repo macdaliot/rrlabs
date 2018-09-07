@@ -2,7 +2,7 @@
 ::1 localhost ip6-localhost ip6-loopback
 ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
-{{gateway.networks.internal.ip}} {{inventory_hostname.split('.')[0] | lower}}.{{gateway.networks.internal.domain}} {{inventory_hostname.split('.')[0] | lower}}
-{% for host in gateway.networks.internal.hosts %}
-{{host.ip}} {{host.hostname}}.{{gateway.networks.internal.domain}} {{host.hostname}}
+{{networks.internal.ip}} {{inventory_hostname.split('.')[0] | lower}}.{{networks.internal.domain}} {{inventory_hostname.split('.')[0] | lower}}
+{% for host in networks.internal.hosts %}
+{{host.ip}} {{host.hostname}}.{{networks.internal.domain}} {{host.hostname}}
 {% endfor %}

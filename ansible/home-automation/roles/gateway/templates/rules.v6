@@ -18,7 +18,7 @@ COMMIT
 -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A FORWARD -m state --state INVALID -j DROP
 -A FORWARD -p ipv6-icmp -j ACCEPT
--A FORWARD -i {{gateway.networks.internal.interface}} -m state --state NEW -j ACCEPT
+-A FORWARD -i {{networks.internal.interface}} -m state --state NEW -j ACCEPT
 -A FORWARD -j REJECT --reject-with icmp6-port-unreachable
 -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A OUTPUT -m state --state INVALID -j DROP
@@ -31,11 +31,11 @@ COMMIT
 -A OUTPUT -m owner --uid- dnsmasq -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
 -A OUTPUT -j REJECT --reject-with icmp6-port-unreachable
 -A Services -p icmp -j ACCEPT
--A Services -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "Allow incoming DNS traffic (from internal network)"
--A Services -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 123 -j ACCEPT -m comment --comment "Allow incoming NTP traffic (from internal network)"
--A Services -s fe80::/10 -i {{gateway.networks.internal.interface}} -p udp -m udp --dport 547 -j ACCEPT -m comment --comment "Allow incoming DHCP traffic (from internal network)"
+-A Services -i {{networks.internal.interface}} -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "Allow incoming DNS traffic (from internal network)"
+-A Services -i {{networks.internal.interface}} -p udp -m udp --dport 123 -j ACCEPT -m comment --comment "Allow incoming NTP traffic (from internal network)"
+-A Services -s fe80::/10 -i {{networks.internal.interface}} -p udp -m udp --dport 547 -j ACCEPT -m comment --comment "Allow incoming DHCP traffic (from internal network)"
 -A Services -p tcp -m tcp --dport 22 -j ACCEPT -m comment --comment "Allow incoming SSH traffic"
 -A Services -p tcp -m multiport --dports 80,443 -j ACCEPT -m comment --comment "Allow incoming web traffic"
--A Services -i {{gateway.networks.internal.interface}} -p tcp -m tcp --dport 19999 -j ACCEPT -m comment --comment "Allow incoming NetData (monitoring) connections (internal)"
+-A Services -i {{networks.internal.interface}} -p tcp -m tcp --dport 19999 -j ACCEPT -m comment --comment "Allow incoming NetData (monitoring) connections (internal)"
 -A Services -j REJECT --reject-with icmp6-port-unreachable
 COMMIT

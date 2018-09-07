@@ -9,5 +9,5 @@ lcp-echo-interval 30
 lcp-echo-failure 4
 mtu 1492
 persist
-plugin rp-pppoe.so {{gateway.networks.external.interface}}
+plugin rp-pppoe.so {{networks.external.interface}}
 user "adsl@alice6.it"

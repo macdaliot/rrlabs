@@ -1,13 +1,13 @@
 auto eth0
 allow-hotplug eth0
 iface eth0 inet static
-{% if gateway.networks.internal.interface == "eth0" %}
-        address {{gateway.networks.internal.ip}}
-        netmask {{gateway.networks.internal.netmask}}
-        dns-search {{gateway.networks.internal.domain}}
+{% if networks.internal.interface == "eth0" %}
+        address {{networks.internal.ip}}
+        netmask {{networks.internal.netmask}}
+        dns-search {{networks.internal.domain}}
         dns-nameservers 127.0.0.1
 {% else %}
-        address {{gateway.networks.external.ip}}
-        netmask {{gateway.networks.external.netmask}}
-        gateway {{gateway.networks.external.gateway}}
+        address {{networks.external.ip}}
+        netmask {{networks.external.netmask}}
+        gateway {{networks.external.gateway}}
 {% endif %}
