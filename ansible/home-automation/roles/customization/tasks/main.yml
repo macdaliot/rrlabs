@@ -24,3 +24,5 @@
     - {src: ".bash_profile", dest: "/etc/skel/.bash_profile", owner: "root", group: "root", mode: "0644"}
     - {src: ".bash_profile", dest: "~/.bash_profile", owner: "root", group: "root", mode: "0644"}
     - {src: "vimrc.custom", dest: "/etc/vim/vimrc.custom", owner: "root", group: "root", mode: "0644"}
+- command: cp -a /etc/skel/.bashrc ~/.bashrc
+  changed_when: False

@@ -72,7 +72,7 @@
     enabled: yes
     masked: no
     state: started
-    
+
 - name: "CONFIGURING NETWORKS"
   template:
     src: "{{item.src}}"
@@ -102,7 +102,7 @@
   register: cfg_ddclient
 - systemd:
     name: ddclient.service
-    state: restart
+    state: restarted
   when: cfg_ddclient.changed == True
 - systemd:
     name: ddclient.service

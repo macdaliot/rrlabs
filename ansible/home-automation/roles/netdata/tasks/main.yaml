@@ -25,7 +25,7 @@
     - {src: "update_netdata.cron", dest: "/etc/cron.d/update_netdata", owner: "root", group: "root", mode: "0644"}
 - systemd:
     name: netdata.service
-    state: reloaded
+    state: restarted
   when: cfg_netdata_1.changed == True
 - systemd:
     name: netdata.service
