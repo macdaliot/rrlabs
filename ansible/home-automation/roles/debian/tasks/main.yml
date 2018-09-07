@@ -15,12 +15,10 @@
   with_items:
     - apt-file
     - apt-transport-https
-    - git
     - ntp
     - ntpdate
     - python-pip
     - python3-pip
-    - vim
 
 - name: "APPLYING TEMPLATES AND UPLOADING FILES"
   template:

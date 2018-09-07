@@ -7,7 +7,9 @@
     force_apt_get: yes
     state: latest
   with_items:
+    - git
     - vim
+    - whois
 
 - name: "CONFIGURING ENVIRONMENT"
   copy:

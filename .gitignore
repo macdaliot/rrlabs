@@ -6,5 +6,5 @@ __pycache__/
 ansible/eve-ng/images
 ansible/kali/api_keys
 netbox/working
-secrets.yaml
-hosts-incentory
+secrets-gateway.yaml
+hosts-inventory*
