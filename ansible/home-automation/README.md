@@ -9,19 +9,19 @@ Two files are needed:
 
 The `hosts` file is a simple Ansible inventory file, like the following:
 
-⁓⁓⁓
+~~~
 [pi_gateway]
 devicename ansible_host=192.168.2.1 ansible_user=root ansible_unprivuser=pi ansible_password=raspberry
-⁓⁓⁓
+~~~
 
 Mind that `devicename` will be used as hostname of the configured device. Also mind that playbooks will configure SSH to allow `root` login via public key authentication. The `ansible_password` will be used only for the first login, assuming the `ansible_unprivuser` has privileges to became root via sudo.
 
 To setup a new Raspberry PI, just login with user `pi` and password `raspberry`, then enable SSH:
 
-⁓⁓⁓
+~~~
 $ sudo systemctl start ssh
 $ logout
-⁓⁓⁓
+~~~
 
 ## The "secrets.yaml" file
 
@@ -33,7 +33,7 @@ The `secrets.yaml` file defines how a device must be configured. Currently the f
 
 This is an example of the setting for the `secrets-gateway.yaml` file:
 
-⁓⁓⁓
+~~~
 ---
 root:
   # use mkpasswd --method=sha-512
@@ -69,7 +69,7 @@ ddns:
     username: example@example.com
     password: password
     domain: Home
-⁓⁓⁓
+~~~
 
 ## The roles
 
