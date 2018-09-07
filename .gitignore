@@ -7,4 +7,4 @@ ansible/eve-ng/images
 ansible/kali/api_keys
 netbox/working
 secrets.yaml
-hosts
+hosts-incentory
