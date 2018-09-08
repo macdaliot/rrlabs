@@ -8,6 +8,7 @@
     state: latest
   with_items:
     - git
+    - telnet
     - vim
     - whois
 
