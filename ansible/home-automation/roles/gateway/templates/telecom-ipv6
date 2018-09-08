@@ -1,13 +1,14 @@
 # Minimalistic default options file for DSL/PPPoE connections
-debug
+#debug
 noipdefault
 passive
 noauth
 +ipv6 ipv6cp-use-ipaddr
-hide-password
+show-password
 lcp-echo-interval 30
 lcp-echo-failure 4
 mtu 1492
 persist
 plugin rp-pppoe.so {{networks.external.interface}}
-user "adsl@alice6.it"
+user adsl@alice6.it
+password IPV6@alice6
