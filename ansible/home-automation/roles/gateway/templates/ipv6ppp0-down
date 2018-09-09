@@ -1,4 +1,0 @@
-#!/bin/bash
-if [ "${CALLFILE}" == "telecom-ipv6" ]; then
-  # Stop the DHCP client and removing the old IPv6 address from {{networks.internal.interface}}
-  systemctl stop wide-dhcpv6-client

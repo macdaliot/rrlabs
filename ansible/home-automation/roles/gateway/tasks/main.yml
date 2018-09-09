@@ -111,8 +111,8 @@
     - {src: "dhcp6c.conf", dest: "/etc/wide-dhcpv6/dhcp6c.conf", owner: "root", group: "root", mode: "0644"}
     - {src: "ppp0-cfg", dest: "/etc/network/interfaces.d/ppp0-cfg", owner: "root", group: "root", mode: "0644"}
     - {src: "telecom-ipv6", dest: "/etc/ppp/peers/telecom-ipv6", owner: "root", group: "root", mode: "0640"}
-    - {src: "ipv6ppp0-up", dest: "/etc/ppp/ip-up.d/ipv6ppp0", owner: "root", group: "root", mode: "0755"}
-    - {src: "ipv6ppp0-down", dest: "/etc/ppp/ip-down.d/ipv6ppp0", owner: "root", group: "root", mode: "0755"}
+    - {src: "ipv6-up-internal_network", dest: "/etc/ppp/ipv6-up.d/internal_network", owner: "root", group: "root", mode: "0755"}
+    - {src: "ipv6-down-internal_network", dest: "/etc/ppp/ipv6-down.d/internal_network", owner: "root", group: "root", mode: "0755"}
   register: cfg_ipv6_1
 - lineinfile:
     dest: "{{item.dest}}"

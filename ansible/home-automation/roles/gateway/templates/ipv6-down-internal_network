@@ -1,0 +1,11 @@
+#!/bin/bash
+if [ "${CALL_FILE}" == "telecom-ipv6" ]; then
+  # Stop the DHCP client and removing the old IPv6 address from eth0
+  systemctl stop wide-dhcpv6-client
+
+  # Deleting the IPv6 configuration
+  rm -f /etc/dnsmasq.d/ipv6.conf
+
+  # Restarting DNSMasq
+  systemctl restart dnsmasq
+fi

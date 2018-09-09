@@ -1,0 +1,30 @@
+#!/bin/bash
+if [ "${CALL_FILE}" == "telecom-ipv6" ]; then
+  echo 2 > /proc/sys/net/ipv6/conf/ppp0/accept_ra
+  echo 2 > /proc/sys/net/ipv6/conf/ppp0/forwarding
+
+  # Starting the DHCP client to get the address from ppp0 and assign it to {{networks.internal.interface}}
+  systemctl restart wide-dhcpv6-client
+
+
+  COUNT=0
+  while [[ $COUNT -ge 6 || "${IPV6_NETWORK}" == "" ]]; do
+          # Getting the IPv6 network
+          IPV6_NETWORK=$(ip -f inet6 addr show dev eth0 scope global | sed 's/.*inet6 \([0-9a-f:]\+\)::.*/\1::/; t; d')
+
+          COUNT=$((COUNT + 1))
+          sleep 5
+  done
+  if [ "${IPV6_NETWORK}" == "" ]; then
+        logger -p daemon.error -t $0 "No valid IPv6 address on eth1"
+        exit 1
+  fi
+
+  # Configuring DNSMasq
+  rm -f /etc/dnsmasq.d/ipv6.conf
+  echo "dhcp-range=${IPV6_NETWORK}2000,${IPV6_NETWORK}2fff,64,168h" >> /etc/dnsmasq.d/ipv6.conf
+  echo "dhcp-option=option6:dns-server,[${IPV6_NETWORK}1]" >> /etc/dnsmasq.d/ipv6.conf
+
+  # Restarting DNSMasq
+  systemctl restart dnsmasq
+fi
