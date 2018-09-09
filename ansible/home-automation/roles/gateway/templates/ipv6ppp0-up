@@ -1,0 +1,7 @@
+#!/bin/bash
+if [ "${CALLFILE}" == "telecom-ipv6" ]; then
+  echo 2 > /proc/sys/net/ipv6/conf/ppp0/accept_ra
+  echo 2 > /proc/sys/net/ipv6/conf/ppp0/forwarding
+
+  # Start the DHCP client to get the address from ppp0 and assign it to {{networks.internal.interface}}
+  systemctl restart wide-dhcpv6-client

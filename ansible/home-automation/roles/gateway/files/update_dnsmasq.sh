@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# This script update the DHCPv6 range configuration accordingly with the current IPv6 assigned to {{networks.internal.interface}} by wide-dhcpv6
 DNSMASQ_IP=$(egrep -e "^dhcp-range=[0-9a-f:]+, [0-9a-f:]+, 64, " /etc/dnsmasq.conf | cut -d'=' -f2 | cut -d ',' -f1)
 CURRENT_IP=$(ip -f inet6 addr show dev eth1 2> /dev/null | grep global | sed 's/^.*inet6 \([0-9a-f:]\+\)\/64.*/\1/g')
 
@@ -23,4 +24,3 @@ if [ "${DNSMASQ_IP}" != "${CURRENT_IP}000" ]; then
 		exit 1
 	fi
 fi
-
