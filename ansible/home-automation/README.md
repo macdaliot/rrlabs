@@ -52,7 +52,12 @@ networks:
     hosts:
       - hostname: mypc
         ip: 192.168.2.70
-        mac: 00:01:02:03:04:05
+        mac:
+          - 00:01:02:03:04:05 # Wifi
+          - 00:01:02:03:04:06 # Wired
+      - hostname:
+      - id: 00:01:00:01:23:3a:3a:3a:3a:3a:3a:3a:3a:3a
+      - ipv6: f001
   external:
     network: 192.168.1.0/24
     ip: 192.168.1.100
