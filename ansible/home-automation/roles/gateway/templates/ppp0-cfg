@@ -1,4 +1,4 @@
-auto ppp0
+#auto ppp0
 iface ppp0 inet ppp
         provider telecom-ipv6
 {% if networks.external.interface == "eth0" %}
