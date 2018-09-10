@@ -32,4 +32,4 @@
 
     - name: "pre_task : LOAD VARIABLES"
       include_vars: secrets-gateway.yaml
-      tags: ['raspbian', 'debian', 'netdata', 'customization', 'gateway', 'webserver']
+      tags: always
