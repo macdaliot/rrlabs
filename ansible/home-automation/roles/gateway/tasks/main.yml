@@ -113,6 +113,7 @@
     - {src: "telecom-ipv6", dest: "/etc/ppp/peers/telecom-ipv6", owner: "root", group: "root", mode: "0640"}
     - {src: "ipv6-up-internal_network", dest: "/etc/ppp/ipv6-up.d/internal_network", owner: "root", group: "root", mode: "0755"}
     - {src: "ipv6-down-internal_network", dest: "/etc/ppp/ipv6-down.d/internal_network", owner: "root", group: "root", mode: "0755"}
+    - {src: "dnsmasq-ipv6.template", dest: "/etc/dnsmasq-ipv6.template", owner: "root", group: "root", mode: "0644"}
   register: cfg_ipv6_1
 - lineinfile:
     dest: "{{item.dest}}"

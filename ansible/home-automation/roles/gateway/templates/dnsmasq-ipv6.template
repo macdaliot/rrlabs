@@ -1,0 +1,60 @@
+# Enable DHCPv6. Note that the prefix-length does not need to be specified
+# and defaults to 64 if missing/
+#dhcp-range=1234::2, 1234::500, 64, 12h
+dhcp-range={% raw %}{{ipv6_network}}{% endraw %}2000,{% raw %}{{ipv6_network}}{% endraw %}2fff,64,168h
+
+# Do Router Advertisements, BUT NOT DHCP for this subnet.
+#dhcp-range=1234::, ra-only
+
+# Do Router Advertisements, BUT NOT DHCP for this subnet, also try and
+# add names to the DNS for the IPv6 address of SLAAC-configured dual-stack
+# hosts. Use the DHCPv4 lease to derive the name, network segment and
+# MAC address and assume that the host will also have an
+# IPv6 address calculated using the SLAAC alogrithm.
+#dhcp-range=1234::, ra-names
+
+# Do Router Advertisements, BUT NOT DHCP for this subnet.
+# Set the lifetime to 46 hours. (Note: minimum lifetime is 2 hours.)
+#dhcp-range=1234::, ra-only, 48h
+
+# Do DHCP and Router Advertisements for this subnet. Set the A bit in the RA
+# so that clients can use SLAAC addresses as well as DHCP ones.
+#dhcp-range=1234::2, 1234::500, slaac
+
+# Do Router Advertisements and stateless DHCP for this subnet. Clients will
+# not get addresses from DHCP, but they will get other configuration information.
+# They will use SLAAC for addresses.
+#dhcp-range=1234::, ra-stateless
+
+# Do stateless DHCP, SLAAC, and generate DNS names for SLAAC addresses
+# from DHCPv4 leases.
+#dhcp-range=1234::, ra-stateless, ra-names
+
+# Do router advertisements for all subnets where we're doing DHCPv6
+# Unless overriden by ra-stateless, ra-names, et al, the router
+# advertisements will have the M and O bits set, so that the clients
+# get addresses and configuration from DHCPv6, and the A bit reset, so the
+# clients don't use SLAAC addresses.
+enable-ra
+
+# Give a fixed IPv6 address and name to client with
+# DUID 00:01:00:01:16:d2:83:fc:92:d4:19:e2:d8:b2
+# Note the MAC addresses CANNOT be used to identify DHCPv6 clients.
+# Note also the they [] around the IPv6 address are obilgatory.
+#dhcp-host=id:00:01:00:01:16:d2:83:fc:92:d4:19:e2:d8:b2, fred, [1234::5]
+
+# For every host, add all IPv6 ID, set hostname
+{% for host in networks.internal.hosts %}
+{% if host.ipv6 is defined %}dhcp-host=id:{{host.id}},{{host.hostname}},[{% raw %}{{ipv6_network}}{% endraw %}{{host.ipv6}}],infinite,id:*
+{% endif %}{% endfor %}
+
+# Send DHCPv6 option. Note [] around IPv6 addresses.
+#dhcp-option=option6:dns-server,[1234::77],[1234::88]
+
+# Send DHCPv6 option for namservers as the machine running
+# dnsmasq and another.
+#dhcp-option=option6:dns-server,[::],[1234::88]
+dhcp-option=option6:dns-server,[{% raw %}{{ipv6_network}}{% endraw %}1]
+
+# Ask client to poll for option changes every six hours. (RFC4242)
+#dhcp-option=option6:information-refresh-time,6h

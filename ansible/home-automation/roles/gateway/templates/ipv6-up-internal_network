@@ -21,9 +21,7 @@ if [ "${CALL_FILE}" == "telecom-ipv6" ]; then
   fi
 
   # Configuring DNSMasq
-  rm -f /etc/dnsmasq.d/ipv6.conf
-  echo "dhcp-range=${IPV6_NETWORK}2000,${IPV6_NETWORK}2fff,64,168h" >> /etc/dnsmasq.d/ipv6.conf
-  echo "dhcp-option=option6:dns-server,[${IPV6_NETWORK}1]" >> /etc/dnsmasq.d/ipv6.conf
+  sed "s/{% raw %}{{ipv6_network}}{% endraw %}/${IPV6_NETWORK}/g" /etc/dnsmasq-ipv6.template > /etc/dnsmasq.d/ipv6.conf
 
   # Restarting DNSMasq
   systemctl restart dnsmasq
