@@ -41,6 +41,7 @@ root:
   # use mkpasswd --method=sha-512
   password: password
   hash: hashOfThePasswordGeneratedByTheCommandAbove
+timezone: Etc/UTC
 networks:
   internal:
     network: 192.168.2.0/24
