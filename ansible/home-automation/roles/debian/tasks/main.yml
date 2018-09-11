@@ -6,6 +6,19 @@
     force_apt_get: yes
     autoremove: yes
 
+- name: "REMOVING UNWANTED PACKAGES"
+  apt:
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: absent
+    purge: yes
+  with_items:
+    - avahi-daemon
+    - bluez
+    - bluez-firmware
+    - nfs-common
+
 - name: "INSTALLING AND UPGRADING PACKAGES"
   apt:
     name: "{{item}}"
