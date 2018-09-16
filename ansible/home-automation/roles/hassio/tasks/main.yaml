@@ -1,0 +1,71 @@
+---
+- name: "CHECKING IF HASSIO IS READY"
+  uri:
+    url: "http://{{ansible_host}}:8123"
+    return_content: yes
+  connection: local
+  register: url_hassio
+  failed_when: url_hassio.content is search("/Preparing Hass/")
+
+
+#POST /api/onboarding/users
+#Content-Type: application/json;charset=UTF-8
+#{"name":"Andrea Dainese","username":"andrea","password":"password"}
+
+#POST /auth/login_flow/48b271a4628441c1ae230446b1ea7e0b
+#Content-Type: text/plain;charset=UTF-8
+#{"username":"andrea","password":"password","client_id":"http://hassio.cydonia.local:8123/"}
+
+#0POST /api/hassio/addons/core_configurator/install HTTP/1.1
+Host: hassio.cydonia.local:8123
+Connection: keep-alive
+Content-Length: 2
+authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI4YmEzYjdiNjAxZjI0ZjNhYjliNjdjODg3MDVjZDVhZiIsImlhdCI6MTUzNjY1MzkyNiwiZXhwIjoxNTM2NjU1NzI2fQ.MwjBM0JKei8OVRzLg7eIcNKXUm6VNDkBvZ1Szv6bAfU
+Origin: http://hassio.cydonia.local:8123
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36
+Content-Type: application/json;charset=UTF-8
+Accept: */*
+Referer: http://hassio.cydonia.local:8123/hassio/addon/core_configurator
+Accept-Encoding: gzip, deflate
+Accept-Language: it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7
+
+{}
+
+
+
+0I...j..POST /api/hassio/addons/core_configurator/options HTTP/1.1
+Host: hassio.cydonia.local:8123
+Connection: keep-alive
+Content-Length: 329
+authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiI4YmEzYjdiNjAxZjI0ZjNhYjliNjdjODg3MDVjZDVhZiIsImlhdCI6MTUzNjY1MzkyNiwiZXhwIjoxNTM2NjU1NzI2fQ.MwjBM0JKei8OVRzLg7eIcNKXUm6VNDkBvZ1Szv6bAfU
+Origin: http://hassio.cydonia.local:8123
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36
+Content-Type: application/json;charset=UTF-8
+Accept: */*
+Referer: http://hassio.cydonia.local:8123/hassio/addon/core_configurator
+Accept-Encoding: gzip, deflate
+Accept-Language: it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7
+
+{"options":{"username":"admin","password":null,"ssl":false,"certfile":"fullchain.pem","keyfile":"privkey.pem","allowed_networks":["192.168.0.0/16","172.30.0.0/16"],"banned_ips":["8.8.8.8"],"banlimit":0,"ignore_pattern":["__pycache__"],"dirsfirst":false,"enforce_basepath":false,"notify_service":"persistent_notification.create"}}
+10:29:09.101395 IP 192.168.8.18.8123 > 192.168.8.10.62475: Flags [.], ack 1072, win 322, options [nop,nop,TS val 3999993061 ecr 810134728], length 0
+E..4d.@.@.D........
+....5...m.w....B.G.....
+.k..0I..
+10:29:09.153023 IP 192.168.8.18.8123 > 192.168.8.10.62475: Flags [P.], seq 1:590, ack 1072, win 322, options [nop,nop,TS val 3999993113 ecr 810134728], length 589
+E...d.@.@.B@.......
+....5...m.w....B.?.....
+.k..0I..HTTP/1.1 400 Bad Request
+Content-Type: application/json
+Content-Length: 437
+Date: Tue, 11 Sep 2018 08:29:09 GMT
+Server: Python/3.6 aiohttp/3.4.0
+
+{"result": "error", "message": "not a valid value for dictionary value @ data['options']. Got {'username': 'admin', 'password': None, 'ssl': False, 'certfile': 'fullchain.pem', 'keyfile': 'privkey.pem', 'allowed_networks': ['192.168.0.0/16', '172.30.0.0/16'], 'banned_ips': ['8.8.8.8'], 'banlimit': 0, 'ignore_pattern': ['__pycache__'], 'dirsfirst': False, 'enforce_basepath': False, 'notify_service': 'persistent_notification.create'}"}
+10:29:09.153091 IP 192.168.8.10.62475 > 192.168.8.18.8123: Flags [.], ack 590, win 4077, options [nop,nop,TS val 810134780 ecr 3999993113], length 0
+E..4..@.@..W...
+........m.w.5..<...........
+0I...k.
+^C
+4 packets captured
+98 packets received by filter
+0 packets dropped by kernel
