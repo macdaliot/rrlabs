@@ -28,10 +28,12 @@
   with_items:
     - apt-file
     - apt-transport-https
+    - cpufrequtils
     - ntp
     - ntpdate
     - python-pip
     - python3-pip
+    - ruby
     - unattended-upgrades
 
 - name: "APPLYING TEMPLATES AND UPLOADING FILES"
@@ -79,6 +81,25 @@
     - {name: "ssh.service"}
     - {name: "ntp.service"}
     - {name: "unattended-upgrades.service"}
+
+- name: "CONFIGURING CPUFREQUTILS"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "cpufrequtils", dest: "/etc/default/cpufrequtils", owner: "root", group: "root", mode: "0644"}
+  register: cfg_cpufrequtils
+- systemd:
+    name: "cpufrequtils.service"
+    enabled: yes
+    masked: no
+- systemd:
+    name: "cpufrequtils.service"
+    state: restarted
+  when: cfg_cpufrequtils.changed == True
 
 - register: hostname_current
   shell: "hostname"
