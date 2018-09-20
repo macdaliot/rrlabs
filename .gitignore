@@ -1,11 +1,25 @@
-.DS_Store
-__pycache__/
-*.py[cod]
-*.retry
+# Linux
 *.log
 *.swp
+
+# Apple
+.DS_Store
+
+# Ansible
+*.retry
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jekyll
+_site
+.sass-cache
+.jekyll-metadata
+
+# Others
 ansible/eve-ng/images
 ansible/kali/api_keys
 netbox/working
-secrets-gateway.yaml
+secrets*
 hosts-inventory*
