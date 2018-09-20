@@ -1,0 +1,77 @@
+---
+# tasks file for nextcloud
+- name: "INSTALLING AND UPGRADING PACKAGES"
+  apt:
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  with_items:
+    - php7.0
+    - php7.0-curl
+    - php7.0-gd
+    - php7.0-intl
+    - php7.0-mbstring
+    - php7.0-sqlite3
+    - php7.0-xml
+    - php7.0-zip
+  register: cfg_apache
+
+- name: "RELOADING THE WEBSERVER"
+  systemd:
+    name: apache2.service
+    state: reloaded
+  when: cfg_apache.changed
+
+- name: "GETTING THE HASH"
+  set_fact:
+    hash_nextcloud: "{{lookup('url', 'https://download.nextcloud.com/server/releases/latest.tar.bz2.sha512', validate_certs = False).split(' ')[0]}}"
+
+#- name: "DOWNLOADING ARCHIVE"
+#  get_url:
+#    url: https://download.nextcloud.com/server/releases/latest.tar.bz2
+#    dest: /usr/src/nextcloud-latest.tar.bz2
+#    mode: 0644
+#    checksum: "sha512:{{ hash_nextcloud }}"
+#  register: get_nextcloud
+- command: "true"
+  changed_when: False
+  register: get_nextcloud
+
+- name: "DELETING OLD ARCHIVE"
+  file:
+    path: /usr/src/nextcloud
+    state: absent
+  when: get_nextcloud.changed
+
+- name: "UNCOMPRESSING"
+  unarchive:
+    src: /usr/src/nextcloud-latest.tar.bz2
+    dest: /usr/src
+    copy: no
+    owner: www-data
+    group: www-data
+  when: get_nextcloud.changed
+
+- name: "INSTALLING"
+  command: "rsync --delay-updates -F --compress --delete-after --exclude nextdata/config/config.php --archive /usr/src/nextcloud /var/www/external_ssl"
+  when: get_nextcloud.changed
+
+- file:
+    path: /var/nextcloud
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: 0755
+  when: get_nextcloud.changed
+
+- stat:
+    path: /var/www/external_ssl/nextcloud/config/config.php
+  register: stat_config
+- copy:
+    src: config.php
+    dest: /var/www/external_ssl/nextcloud/config/config.php
+    owner: www-data
+    group: www-data
+    mode: 0644
+  when: not stat_config.stat.exists

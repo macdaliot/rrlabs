@@ -15,6 +15,12 @@
       tags: netdata
     - role: webserver
       tags: webserver
+    #- role: nextcloud how is it upgraded??? https://pimylifeup.com/raspberry-pi-nextcloud-server/
+    #  tags: nextcloud
+    #- role: rocketchat
+    #  tags: rocketchat
+    - role: hass
+      tags: hass
 
   pre_tasks:
     - name: "pre_task : VERIFYING ANSIBLE VERSION"

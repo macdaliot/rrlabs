@@ -1,0 +1,2 @@
+# /etc/cron.d/renew_cert
+0 0 * * 0 root certbot renew && systemctl reload apache2

@@ -1,0 +1,82 @@
+---
+# tasks file for hass
+- name: "ADDING USER"
+  user:
+    name: homeassistant
+    shell: /bin/bash
+    groups: dialout, gpio
+
+- stat:
+    path: /home/homeassistant/.local/bin/pip3
+  register: stat_hass_pip
+
+- name: "INSTALLING DEPENDENCIES (GLOBAL PIP)"
+  become: yes
+  become_user: homeassistant
+  pip:
+    executable: pip3
+    name:
+      - wheel
+      - homeassistant
+    extra_args: --user
+  when: not stat_hass_pip.stat.exists
+
+- name: "INSTALLING DEPENDENCIES (USER'S PIP)"
+  become: yes
+  become_user: homeassistant
+  pip:
+    executable: /home/homeassistant/.local/bin/pip3
+    name:
+      - wheel
+      - homeassistant
+    extra_args: --user
+  when: stat_hass_pip.stat.exists
+
+- copy:
+    src: hass.systemd
+    dest: /etc/systemd/system/homeassistant@homeassistant.service
+    owner: root
+    group: root
+    mode: 0644
+- systemd:
+    name: homeassistant@homeassistant.service
+    state: restarted
+- systemd:
+    name: homeassistant@homeassistant.service
+    enabled: yes
+    masked: no
+    state: started
+
+- name: "CONFIGURING HOMEASSISANT VIRTUAL HOST"
+  file:
+    path: /var/www/homeassistant
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+- template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "002-homeassistant.conf", dest: "/etc/apache2/sites-available/002-homeassistant.conf", owner: "root", group: "root", mode: "0644"}
+  register: cfg_apache
+
+- stat:
+    path: "/etc/letsencrypt/live/{{ddns.hass.domain}}/privkey.pem"
+  register: stat_hass_key
+- stat:
+    path: "/etc/letsencrypt/live/{{ddns.hass.domain}}/fullchain.pem"
+  register: stat_hass_crt
+- name: "GETTING CERTIFICATE SIGNED BY LET'S ENCRYPT"
+  command: certbot certonly --webroot --email {{root.email}} --agree-tos --webroot-path /var/www/html -d {{ddns.hass.domain}}
+  when: not stat_hass_key.stat.exists
+
+- command: a2ensite 002-homeassistant.conf
+  when: cfg_apache.changed or not stat_hass_key.stat.exists
+- systemd:
+    name: apache2.service
+    state: reloaded
+  when: cfg_apache.changed or not stat_hass_key.stat.exists

@@ -1,5 +1,5 @@
 ---
-# tasks file for customization
+# tasks file for webserver
 - name: "INSTALLING AND UPGRADING PACKAGES"
   apt:
     name: "{{item}}"
@@ -8,8 +8,15 @@
     state: latest
   with_items:
     - apache2
+    - certbot
     - openssl
     - python-openssl
+- file:
+    path: /etc/ssl/requests
+    state: directory
+    owner: root
+    group: ssl-cert
+    mode: 0755
 
 - stat:
     path: /etc/ssl/certs/apache-default.crt
@@ -17,13 +24,13 @@
 - file:
     path: /etc/ssl/private/apache-default.key
     state: absent
-  when: stat_apache_crt.stat.exists == False
+  when: not stat_apache_crt.stat.exists
 - stat:
     path: /etc/ssl/private/apache-default.key
   register: stat_apache_key
 - name: "GENERATING SELF-SIGNED CERTIFICATE"
-  command: openssl req -new -x509 -days 3650 -nodes -out /etc/ssl/certs/apache-default.crt -keyout /etc/ssl/private/apache-default.key -subj "/C=IT/ST=Italy/L=Padova/O=RR Labs/OU=IT Security/CN=elocalhost"
-  when: stat_apache_key.stat.exists == False
+  command: openssl req -new -x509 -days 3650 -nodes -out /etc/ssl/certs/apache-default.crt -keyout /etc/ssl/private/apache-default.key -subj "/C=IT/ST=Italy/L=Padova/O=RR Labs/OU=IT Security/CN=localhost"
+  when: not stat_apache_key.stat.exists
   register: cfg_certificate
 
 - name: "CHECKING SELF-SIGNED CERTIFICATE"
@@ -43,6 +50,10 @@
     state: "{{item.state}}"
   with_items:
     - {name: "headers", state: "present"}
+    - {name: "proxy_http", state: "present"}
+    - {name: "proxy_wstunnel", state: "present"}
+    - {name: "remoteip", state: "present"}
+    - {name: "rewrite", state: "present"}
     - {name: "ssl", state: "present"}
   register: cfg_apache_1
 - copy:
@@ -53,9 +64,11 @@
     mode: "{{item.mode}}"
   with_items:
     - {src: "000-default.conf", dest: "/etc/apache2/sites-available/000-default.conf", owner: "root", group: "root", mode: "0644"}
+    - {src: "renew_certs.cron", dest: "/etc/cron.d/renew_certs", owner: "root", group: "root", mode: "0644"}
+
   register: cfg_apache_2
 - command: a2ensite 000-default.conf
-  when: cfg_apache_1.changed == True
+  when: cfg_apache_1.changed
 - lineinfile:
     dest: "{{item.dest}}"
     regexp: "{{item.regexp}}"
@@ -76,9 +89,43 @@
 - systemd:
     name: apache2.service
     state: reloaded
-  when: cfg_certificate.changed == True or cfg_apache_1.changed == True or cfg_apache_2.changed == True or cfg_apache_3.changed == True or cfg_apache_4.changed == True
+  when: cfg_certificate.changed or cfg_apache_1.changed or cfg_apache_2.changed or cfg_apache_3.changed or cfg_apache_4.changed
 - systemd:
     name: apache2.service
     enabled: yes
     masked: no
     state: started
+
+- name: "CONFIGURING EXTERNAL VIRTUAL HOST"
+  file:
+    path: "/var/www/external"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+- template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "001-external.conf", dest: "/etc/apache2/sites-available/001-external.conf", owner: "root", group: "root", mode: "0644"}
+  register: cfg_external
+
+- stat:
+    path: /etc/letsencrypt/live/{{networks.external.domain}}/privkey.pem
+  register: stat_external_key
+- stat:
+    path: "/etc/letsencrypt/live/{{networks.external.domain}}/fullchain.pem"
+  register: stat_external_crt
+- name: "GETTING CERTIFICATE SIGNED BY LET'S ENCRYPT"
+  command: certbot certonly --webroot --email {{root.email}} --agree-tos --webroot-path /var/www/html -d {{networks.external.domain}}
+  when: not stat_external_key.stat.exists
+
+- command: a2ensite 001-external.conf
+  when: cfg_external.changed or not stat_external_key.stat.exists
+- systemd:
+    name: apache2.service
+    state: reloaded
+  when: cfg_external.changed or not stat_external_key.stat.exists

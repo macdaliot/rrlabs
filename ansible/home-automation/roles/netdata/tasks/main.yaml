@@ -1,5 +1,5 @@
 ---
-# tasks file for NetData
+# tasks file for netdata
 - stat:
     path: /usr/src/netdata.git/netdata-updater.sh
   register: stat_netdata
@@ -7,10 +7,10 @@
     url: https://my-netdata.io/kickstart.sh
     dest: /tmp/
     mode: 0755
-  when: stat_netdata.stat.exists == False
+  when: not stat_netdata.stat.exists
 - name: "INSTALLING NETDATA"
   shell: /tmp/kickstart.sh --dont-wait
-  when: stat_netdata.stat.exists == False
+  when: not stat_netdata.stat.exists
   register: cfg_netdata_1
 - file:
     path: /tmp/kickstart.sh
@@ -26,7 +26,7 @@
 - systemd:
     name: netdata.service
     state: restarted
-  when: cfg_netdata_1.changed == True
+  when: cfg_netdata_1.changed
 - systemd:
     name: netdata.service
     enabled: yes

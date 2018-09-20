@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.retry
 *.log
+*.swp
 ansible/eve-ng/images
 ansible/kali/api_keys
 netbox/working
