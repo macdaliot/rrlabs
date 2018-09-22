@@ -27,5 +27,21 @@
     - {src: "bash_profile", dest: "~/.bash_profile", owner: "root", group: "root", mode: "0644"}
     - {src: "vimrc", dest: "/etc/vim/.vimrc", owner: "root", group: "root", mode: "0644"}
     - {src: "vimrc", dest: "~/.vimrc", owner: "root", group: "root", mode: "0644"}
+    - {src: "autologout.sh", dest: "/etc/profile.d/autologout.sh", owner: "root", group: "root", mode: "0644"}
 - command: cp -a /etc/skel/.bashrc ~/.bashrc
   changed_when: False
+
+- name: "CONFIGURING SSH SERVER"
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^[#]?PermitRootLogin", line: "PermitRootLogin without-password"}
+    - {regexp: "^[#]?ClientAliveInterval", line: "ClientAliveInterval 14400"}
+    - {regexp: "^[#]?ClientAliveCountMax", line: "ClientAliveCountMax 5"}
+  register: cfg_ssh
+- systemd:
+    name: ssh.service
+    state: reloaded
+  when: cfg_ssh.changed

@@ -1,5 +1,20 @@
 ---
 # tasks file for hass
+
+- name: "CONFIGURING HOME ASSISTANT"
+  template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml", owner: "homeassistant", group: "homeassistant", mode: "0644"}
+  register: cfg_homeassistant
+
+- command: "false"
+
+
 - name: "ADDING USER"
   user:
     name: homeassistant
@@ -10,6 +25,18 @@
     path: /home/homeassistant/.local/bin/pip3
   register: stat_hass_pip
 
+- copy:
+    src: hass.udevd
+    dest: /etc/udev/rules.d/99-hass.rules
+    owner: root
+    group: root
+    mode: 0644
+  register: cfg_udevd
+- systemd:
+    name: udev.service
+    state: restarted
+  when: cfg_udevd.changed
+
 - name: "INSTALLING DEPENDENCIES (GLOBAL PIP)"
   become: yes
   become_user: homeassistant
@@ -18,6 +45,7 @@
     name:
       - wheel
       - homeassistant
+      - python_openzwave
     extra_args: --user
   when: not stat_hass_pip.stat.exists
 
@@ -40,7 +68,7 @@
     mode: 0644
 - systemd:
     name: homeassistant@homeassistant.service
-    state: restarted
+    state: started
 - systemd:
     name: homeassistant@homeassistant.service
     enabled: yes
@@ -80,3 +108,19 @@
     name: apache2.service
     state: reloaded
   when: cfg_apache.changed or not stat_hass_key.stat.exists
+
+- name: "CONFIGURING HOME ASSISTANT"
+  template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml", owner: "homeassistant", group: "homeassistant", mode: "0644"}
+  register: cfg_homeassistant
+
+- systemd:
+    name: homeassistant@homeassistant.service
+    state: restarted
+  when: cfg_homeassistant.changed
