@@ -1,0 +1,49 @@
+---
+# tasks file for hass
+- name: "ADDING BOTMANAGER USER"
+  user:
+    name: botmanager
+    shell: /bin/bash
+
+- name: "CLONING GIT REPOSITORY"
+  register: git_bots
+  git:
+    repo: https://github.com/dainok/bots
+    dest: "/usr/src/bots"
+    force: yes
+
+- name: "INSTALLING DEPENDENCIES"
+  become: yes
+  become_user: botmanager
+  pip:
+    executable: pip3
+    requirements: "{{item}}"
+    extra_args: --user
+  with_items:
+    - /usr/src/bots/telegram/ItalianGeekGuardianBot/requirements.txt
+
+- name: "APPLYING TEMPLATES AND UPLOADING FILES"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "ItalianGeekGuardianBot.cron", dest: "/etc/cron.d/ItalianGeeksGuardianBot", owner: "root", group: "root", mode: "0644"}
+- file:
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+    owner: botmanager
+    group: botmanager
+  with_items:
+    - /opt/bots/ItalianGeeksGuardianBot
+- template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: botmanager
+    group: botmanager
+    mode: 0644
+  with_items:
+    - {src: "ItalianGeekGuardianBot.secrets", dest: "/opt/bots/ItalianGeeksGuardianBot/secrets.yaml"}

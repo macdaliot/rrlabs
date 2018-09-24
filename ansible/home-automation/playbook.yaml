@@ -21,6 +21,8 @@
     #  tags: rocketchat
     - role: hass
       tags: hass
+    - role: bots
+      tags: bots
 
   pre_tasks:
     - name: "pre_task : VERIFYING ANSIBLE VERSION"
@@ -37,5 +39,5 @@
       connection: local
 
     - name: "pre_task : LOAD VARIABLES"
-      include_vars: secrets-gateway.yaml
+      include_vars: secrets.yaml
       tags: always

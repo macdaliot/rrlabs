@@ -32,6 +32,7 @@
 -A OUTPUT -m owner --uid _apt -j ACCEPT -m comment --comment "Allow outgoing traffic from user _apt"
 -A OUTPUT -m owner --uid ntp -j ACCEPT -m comment --comment "Allow outgoing traffic from user ntp"
 -A OUTPUT -m owner --uid dnsmasq -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
+-A OUTPUT -m owner --uid botmanager -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
 -A OUTPUT -m owner --uid homeassistant -j ACCEPT -m comment --comment "Allow outgoing traffic from user homeassistant"
 -A OUTPUT -j REJECT --reject-with icmp-port-unreachable
 -A Services -p icmp -j ACCEPT
