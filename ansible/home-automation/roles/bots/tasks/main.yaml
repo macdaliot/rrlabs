@@ -39,6 +39,7 @@
     group: botmanager
   with_items:
     - /opt/bots/ItalianGeeksGuardianBot
+    - /var/log/bots
 - template:
     src: "{{item.src}}"
     dest: "{{item.dest}}"
