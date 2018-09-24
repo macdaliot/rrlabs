@@ -9,7 +9,7 @@ $NPServers | ForEach-Object {
 
 	if ($NPServerName -ne $CurrentServerNPS) {
 		$NPServerName
-		copy-item Export-NpsConfiguration -Path  \\$NPServerName\C$\TEMP\LocalNPSExportedConfig.xml
+		Export-NpsConfiguration -Path \\$NPServerName\C$\TEMP\LocalNPSExportedConfig.xml
 		Invoke-Command -ComputerName $NPServerName -ScriptBlock {Export-NPSConfiguration -Path C:\TEMP\BackupNPSExportedConfig.xml
 		Invoke-Command -ComputerName $NPServerName -ScriptBlock {Import-NPSConfiguration -Path C:\TEMP\LocalNPSExportedConfig.xml
 	}

@@ -45,3 +45,16 @@
     name: ssh.service
     state: reloaded
   when: cfg_ssh.changed
+
+- name: "CONFIGURING RSYSLOG SERVER"
+  lineinfile:
+    dest: "/etc/rsyslog.conf"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^[#]?cron.*", line: "cron.* /var/log/cron.log"}
+  register: cfg_rsyslog
+- systemd:
+    name: rsyslog.service
+    state: restarted
+  when: cfg_rsyslog.changed

@@ -1,0 +1,2 @@
+# /etc/cron.d/ItaliabGeeksGuardianBot
+0 * * * * botmanager /usr/src/bots/telegram/ItalianGeeksGuardianBot/bot.py /opt/bots/ItalianGeeksGuardianBot/secrets.yaml > /dev/null 2>&1
