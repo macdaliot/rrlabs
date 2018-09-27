@@ -1,10 +1,9 @@
 ---
 platform: yr
-name: Meteo Oggi
+name: today_forecasts
 forecast: 0
 monitored_conditions:
   - temperature
   - symbol
-  - windSpeed
   - humidity
   - fog

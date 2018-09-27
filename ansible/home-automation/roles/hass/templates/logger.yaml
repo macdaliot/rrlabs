@@ -1,9 +1,9 @@
 ---
 # Logger (included by configuration.yaml)
-default: error
-logs:
-  requests.packages.urllib3.connectionpool: warn
-  homeassistant.components.device_tracker.actiontec: warn
-  homeassistant.components.media_player: warn
-  homeassistant.components.sensor: warn
-  homeassistant.components.http: warn
+# default: error
+# logs:
+#   requests.packages.urllib3.connectionpool: warn
+#   homeassistant.components.device_tracker.actiontec: warn
+#   homeassistant.components.media_player: warn
+#   homeassistant.components.sensor: warn
+#   homeassistant.components.http: warn

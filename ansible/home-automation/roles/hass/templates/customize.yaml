@@ -1,7 +1,32 @@
 ---
-sensor.yr_wind_speed:
-  friendly_name: Vento
-  icon: mdi:speedometer
+sun.sun:
+  friendly_name: Giorno/Notte
 
-sensor.yr_symbol:
-  friendly_name: Meteo
+sensor.moon:
+  friendly_name: Luna
+
+sensor.today_forecasts_symbol:
+  friendly_name: Meteo (oggi)
+
+sensor.today_forecasts_temperature:
+  friendly_name: Temperature (oggi)
+
+sensor.today_forecasts_humidity:
+  friendly_name: Umidità (oggi)
+  icon: mdi:water
+
+sensor.today_forecasts_fog:
+  friendly_name: Nebbia (oggi)
+  icon: mdi:format-align-justify
+
+device_tracker.iphone_di_andrea:
+  friendly_name: Andrea
+
+sensor.iphone_di_andrea_battery_level:
+  friendly_name: Batteria (Andrea)
+
+device_tracker.iphone_di_chiara:
+  friendly_name: Chiara
+
+sensor.iphone_di_chiara_battery_level:
+  friendly_name: Batteria (Chiara)

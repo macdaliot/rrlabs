@@ -38,7 +38,6 @@
     - {src: "zones.yaml", dest: "/home/homeassistant/.homeassistant/zones.yaml"}
     - {src: "sensor-moon.yaml", dest: "/home/homeassistant/.homeassistant/sensors/moon.yaml"}
     - {src: "sensor-templates.yaml", dest: "/home/homeassistant/.homeassistant/sensors/templates.yaml"}
-    - {src: "sensor-time_date.yaml", dest: "/home/homeassistant/.homeassistant/sensors/time_date.yaml"}
     - {src: "sensor-yr.yaml", dest: "/home/homeassistant/.homeassistant/sensors/yr.yaml"}
   register: cfg_homeassistant
 

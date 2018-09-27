@@ -2,15 +2,14 @@
 # Groups (included by configuration.yaml)
 
 # Views
-not_default_view:
+default_view:
   view: yes
-  name: NotHome
+  name: Home
+  icon: mdi:home
   entities:
 {% for device_name, device in hass.ios.items() %}
     - device_tracker.{{device_name}}
 {% endfor %}
-    - sensor.ap0
-    - sensor.ap1
     - group.environment
     - group.phones
     - group.wifi
@@ -56,9 +55,21 @@ environment:
   entities:
     - sun.sun
     - sensor.moon
-    - sensor.yr_symbol # TODO: now working
+    - sensor.today_forecasts_symbol
+    - sensor.today_forecasts_temperature
+    - sensor.today_forecasts_humidity
+    - sensor.today_forecasts_windSpeed
+    - sensor.today_forecasts_fog
 
-
+phones:
+  view: no
+  name: Telefoni
+  control: hidden
+  entities:
+{% for phone_name, phone in hass.ios.items() %}
+    - sensor.{{phone_name}}_battery_level
+    - sensor.{{phone_name}}_battery_state
+{% endfor %}
 
 # environment:
 #   view: no

@@ -15,7 +15,7 @@
 # Local Devices
 {% for host in networks.internal.hosts %}
 {{host.hostname}}:
-  hide_if_away: false
+  hide_if_away: true
   icon: {{host.icon}}
   mac:
   name: {{host.friendly_name}}
