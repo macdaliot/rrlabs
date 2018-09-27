@@ -12,6 +12,7 @@ not_default_view:
     - sensor.ap0
     - sensor.ap1
     - group.environment
+    - group.phones
     - group.wifi
     - group.lan
 
@@ -56,6 +57,8 @@ environment:
     - sun.sun
     - sensor.moon
     - sensor.yr_symbol # TODO: now working
+
+
 
 # environment:
 #   view: no
