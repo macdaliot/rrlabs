@@ -1,0 +1,24 @@
+---
+# Known Devices (included by configuration.yaml)
+
+# iOS
+{% for device_name, device in hass.ios.items() %}
+{{device_name}}:
+  hide_if_away: false
+  icon: {{device.icon}}
+  mac:
+  name: {{device.friendly_name}}
+  picture: {{device.picture}}
+  track: true
+{% endfor %}
+
+# Local Devices
+{% for host in networks.internal.hosts %}
+{{host.hostname}}:
+  hide_if_away: false
+  icon: {{host.icon}}
+  mac:
+  name: {{host.friendly_name}}
+  picture:
+  track: true
+{% endfor %}

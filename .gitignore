@@ -21,8 +21,6 @@ _site
 .jekyll-metadata
 
 # Others
-ansible/eve-ng/images
-ansible/kali/api_keys
-netbox/working
+working
 secrets*
 hosts-inventory*

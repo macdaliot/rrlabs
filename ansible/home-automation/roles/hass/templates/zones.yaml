@@ -1,0 +1,9 @@
+---
+# Zones (included by configuration.yaml)
+{% for zone in hass.zones %}
+- name: {{zone.name}}
+  latitude: {{zone.latitude}}
+  longitude: {{zone.longitude}}
+  radius: 200
+  icon: {{zone.icon}}
+{% endfor %}

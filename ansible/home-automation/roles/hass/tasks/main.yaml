@@ -2,15 +2,62 @@
 # tasks file for hass
 
 - name: "CONFIGURING HOME ASSISTANT"
-  template:
+  file:
+    path: "{{item}}"
+    state: directory
+    owner: homeassistant
+    group: homeassistant
+    mode: 0755
+  with_items:
+    - /home/homeassistant/.homeassistant
+    - /home/homeassistant/.homeassistant/sensors
+    - /home/homeassistant/.homeassistant/www
+
+- copy:
     src: "{{item.src}}"
     dest: "{{item.dest}}"
-    owner: "{{item.owner}}"
-    group: "{{item.group}}"
-    mode: "{{item.mode}}"
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
   with_items:
-    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml", owner: "homeassistant", group: "homeassistant", mode: "0644"}
+    - {src: "secrets-picture1.png", dest: "/home/homeassistant/.homeassistant/www/picture1.png"}
+    - {src: "secrets-picture2.png", dest: "/home/homeassistant/.homeassistant/www/picture2.png"}
+
+- template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_items:
+    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml"}
+    - {src: "customize.yaml", dest: "/home/homeassistant/.homeassistant/customize.yaml"}
+    - {src: "groups.yaml", dest: "/home/homeassistant/.homeassistant/groups.yaml"}
+    - {src: "known_devices.yaml", dest: "/home/homeassistant/.homeassistant/known_devices.yaml"}
+    - {src: "logger.yaml", dest: "/home/homeassistant/.homeassistant/logger.yaml"}
+    - {src: "zones.yaml", dest: "/home/homeassistant/.homeassistant/zones.yaml"}
+    - {src: "sensor-moon.yaml", dest: "/home/homeassistant/.homeassistant/sensors/moon.yaml"}
+    - {src: "sensor-templates.yaml", dest: "/home/homeassistant/.homeassistant/sensors/templates.yaml"}
+    - {src: "sensor-time_date.yaml", dest: "/home/homeassistant/.homeassistant/sensors/time_date.yaml"}
+    - {src: "sensor-yr.yaml", dest: "/home/homeassistant/.homeassistant/sensors/yr.yaml"}
   register: cfg_homeassistant
+
+- systemd:
+    name: homeassistant@homeassistant.service
+    state: restarted
+  when: cfg_homeassistant.changed
+
+
+
+- command: "false"
+
+
+- systemd:
+    name: homeassistant@homeassistant.service
+    state: restarted
+  when: cfg_homeassistant.changed
+
+
 
 - command: "false"
 

@@ -1,0 +1,76 @@
+---
+# Groups (included by configuration.yaml)
+
+# Views
+not_default_view:
+  view: yes
+  name: NotHome
+  entities:
+{% for device_name, device in hass.ios.items() %}
+    - device_tracker.{{device_name}}
+{% endfor %}
+    - sensor.ap0
+    - sensor.ap1
+    - group.environment
+    - group.wifi
+    - group.lan
+
+
+# security:
+#   view: yes
+#   name: Sicurezza
+#   entities:
+#
+# ground_floor:
+#   view: yes
+#   name: Piano Terra
+#   entities:
+#
+# first_floor:
+#   view: yes
+#   name: Primo Piano
+#   entities:
+#
+# outdoor:
+#   view: yes
+#   name: Esterno
+#   entities:
+
+# Groups
+{% for group_name, group in hass.groups.items() %}
+{{group_name}}:
+  view: no
+  name: {{group.friendly_name}}
+  control: hidden
+  entities:
+{% for device in group.entities: %}
+    - {{device}}
+{% endfor %}
+{% endfor %}
+
+environment:
+  view: no
+  name: Informazioni
+  control: hidden
+  entities:
+    - sun.sun
+    - sensor.moon
+    - sensor.yr_symbol # TODO: now working
+
+# environment:
+#   view: no
+#   name: Informazioni
+#   control: hidden
+#   entities:
+#     - sensor.date
+#     - sensor.time
+#     - sun.sun
+#     - sensor.moon
+#     - sensor.yr_symbol
+
+# weather:
+#   view: no
+#   name: Meteo
+#   control: hidden
+#   entities:
+#     - sensor.yr

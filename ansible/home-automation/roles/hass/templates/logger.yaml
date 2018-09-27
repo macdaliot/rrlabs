@@ -1,4 +1,5 @@
-# /home/hass/.homeassistant/logger.yaml
+---
+# Logger (included by configuration.yaml)
 default: error
 logs:
   requests.packages.urllib3.connectionpool: warn
