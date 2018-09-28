@@ -1,4 +1,5 @@
 ---
+# Customizations (included by configuration.yaml)
 sun.sun:
   friendly_name: Giorno/Notte
 
@@ -19,14 +20,17 @@ sensor.today_forecasts_fog:
   friendly_name: Nebbia (oggi)
   icon: mdi:format-align-justify
 
-device_tracker.iphone_di_andrea:
-  friendly_name: Andrea
+# iOS
+{% for device_name, device in hass.ios.items() %}
+device_tracker.{{device_name}}:
+  friendly_name: {{device.friendly_name}}
 
-sensor.iphone_di_andrea_battery_level:
-  friendly_name: Batteria (Andrea)
+device_tracker.{{device_name}}_battery_level:
+  friendly_name: Batteria ({{device.friendly_name}})
+{% endfor %}
 
-device_tracker.iphone_di_chiara:
-  friendly_name: Chiara
-
-sensor.iphone_di_chiara_battery_level:
-  friendly_name: Batteria (Chiara)
+# Zones
+{% for zone in hass.zones %}
+zone.{{zone.name}}:
+  friendly_name: {{zone.friendly_name}}
+{% endfor %}

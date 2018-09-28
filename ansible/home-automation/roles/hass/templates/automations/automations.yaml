@@ -1,0 +1,22 @@
+---
+# Automations (included by configuration.yaml)
+- alias: Low Battery
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.iphone_di_andrea_battery_level
+      below: 90
+  condition:
+    - condition: state
+      entity_id: sensor.iphone_di_andrea_battery_state
+      state: Unplugged
+    - condition: state
+      entity_id: device_tracker.iphone_di_andrea
+      zone: zone.Home
+    # {% raw %}
+    # - condition: template
+    # value_template: '{{ (as_timestamp(now()) - as_timestamp(states.automation.automation_name.attributes.last_triggered | default(0)) | int > 300)}}'
+    # {% endraw %}
+  action:
+    service: notify.all
+    data:
+      message: Low Battery

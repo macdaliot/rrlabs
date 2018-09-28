@@ -10,6 +10,7 @@
     mode: 0755
   with_items:
     - /home/homeassistant/.homeassistant
+    - /home/homeassistant/.homeassistant/automations
     - /home/homeassistant/.homeassistant/sensors
     - /home/homeassistant/.homeassistant/www
 
@@ -30,21 +31,39 @@
     group: homeassistant
     mode: 0644
   with_items:
-    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml"}
+    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/automations.yaml"}
     - {src: "customize.yaml", dest: "/home/homeassistant/.homeassistant/customize.yaml"}
     - {src: "groups.yaml", dest: "/home/homeassistant/.homeassistant/groups.yaml"}
     - {src: "known_devices.yaml", dest: "/home/homeassistant/.homeassistant/known_devices.yaml"}
     - {src: "logger.yaml", dest: "/home/homeassistant/.homeassistant/logger.yaml"}
+    - {src: "notifications.yaml", dest: "/home/homeassistant/.homeassistant/notifications.yaml"}
     - {src: "zones.yaml", dest: "/home/homeassistant/.homeassistant/zones.yaml"}
-    - {src: "sensor-moon.yaml", dest: "/home/homeassistant/.homeassistant/sensors/moon.yaml"}
-    - {src: "sensor-templates.yaml", dest: "/home/homeassistant/.homeassistant/sensors/templates.yaml"}
-    - {src: "sensor-yr.yaml", dest: "/home/homeassistant/.homeassistant/sensors/yr.yaml"}
-  register: cfg_homeassistant
+  register: cfg_homeassistant_1
+- template:
+    src: "{{item}}"
+    dest: /home/homeassistant/.homeassistant/automations
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_fileglob:
+    - ../templates/automations/*yaml
+  register: cfg_homeassistant_2
+
+- template:
+    src: "{{item}}"
+    dest: /home/homeassistant/.homeassistant/sensors
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_fileglob:
+    - ../templates/sensors/*yaml
+  register: cfg_homeassistant_3
+
 
 - systemd:
     name: homeassistant@homeassistant.service
     state: restarted
-  when: cfg_homeassistant.changed
+  when: cfg_homeassistant_1.changed or cfg_homeassistant_2.changed or cfg_homeassistant_3.changed
 
 
 

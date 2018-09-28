@@ -4,6 +4,6 @@
 - name: {{zone.name}}
   latitude: {{zone.latitude}}
   longitude: {{zone.longitude}}
-  radius: 200
+  radius: 150
   icon: {{zone.icon}}
 {% endfor %}

@@ -1,0 +1,11 @@
+---
+# Notifications (included by configuration.yaml)
+
+notify:
+  - name: log_file
+    platform: file
+    filename: /home/homeassistant/.homeassistant/notifications.log
+  - name: all
+    platform: group
+    services:
+      - service: log_file
