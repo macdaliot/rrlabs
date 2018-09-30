@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=simple
 User=%i
-ExecStartPre=rm -f /home/homeassistant/.homeassistant/home-assistant.log /home/homeassistant/.homeassistant/notifications.log
+ExecStartPre=rm -f /home/homeassistant/.homeassistant/home-assistant.log
 ExecStart=/home/homeassistant/.local/bin/hass -c /home/homeassistant/.homeassistant
 
 [Install]

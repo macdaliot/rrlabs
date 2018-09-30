@@ -15,16 +15,29 @@ default_view:
     - group.wifi
     - group.lan
 
+ground_floor:
+  view: yes
+  name: Piano Terra
+  icon: mdi:numeric-0-box
+  entities:
+    - group.puja
+
+troubleshooting:
+  view: yes
+  name: Troubleshooting
+  icon: mdi:help
+  entities:
+    - group.all_switches
+    - group.all_lights
+    - group.all_devices
+    - group.all_scripts
+    - group.all_automations
 
 # security:
 #   view: yes
 #   name: Sicurezza
 #   entities:
 #
-# ground_floor:
-#   view: yes
-#   name: Piano Terra
-#   entities:
 #
 # first_floor:
 #   view: yes
@@ -71,6 +84,23 @@ phones:
     - sensor.{{phone_name}}_battery_state
 {% endfor %}
 
+puja:
+  view: no
+  name: Puja
+  control: hidden
+  entities:
+    #- motion temperature light himidity vibration uv
+    - binary_sensor.aeotec_zw100_multisensor_6_sensor
+    - sensor.aeotec_zw100_multisensor_6_temperature
+    - sensor.aeotec_zw100_multisensor_6_luminance
+    - sensor.aeotec_zw100_multisensor_6_relative_humidity
+    # - sensor.aeotec_zw100_multisensor_6_burglar
+    # - sensor.aeotec_zw100_multisensor_6_ultraviolet
+    # - sensor.aeotec_zw100_multisensor_6_sourcenodeid
+    # - sensor.aeotec_zw100_multisensor_6_burglar
+    # - sensor.aeotec_zw100_multisensor_6_alarm_type
+    # - sensor.aeotec_zw100_multisensor_6_alarm_level
+
 # environment:
 #   view: no
 #   name: Informazioni
@@ -88,3 +118,9 @@ phones:
 #   control: hidden
 #   entities:
 #     - sensor.yr
+
+tests:
+  view: no
+  name: Tests
+  entities:
+    - script.test_notifications

@@ -1,0 +1,20 @@
+---
+# Warning WiFi left powered on
+- alias: wifi_still_on
+  trigger:
+    - platform: time
+      at: '22:00:00'
+  condition:
+    condition: or
+    conditions:
+      - condition: state
+        entity_id: device_tracker.ap0
+        state: home
+      - condition: state
+        entity_id: device_tracker.ap1
+        state: home
+  action:
+    service: notify.all
+    data:
+      title: WiFi accesa
+      message: Ricordati di spegnere la WiFi

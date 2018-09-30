@@ -1,0 +1,10 @@
+---
+- name: restart_hass
+  systemd:
+    name: homeassistant@homeassistant.service
+    state: restarted
+
+- name: reload_apache
+  systemd:
+    name: apache2.service
+    state: reloaded

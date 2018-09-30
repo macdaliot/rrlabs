@@ -1,11 +1,32 @@
 ---
 # Notifications (included by configuration.yaml)
+- name: log_file
+  platform: file
+  filename: /home/homeassistant/.homeassistant/notifications.log
+  timestamp: True
 
-notify:
-  - name: log_file
-    platform: file
-    filename: /home/homeassistant/.homeassistant/notifications.log
-  - name: all
-    platform: group
-    services:
-      - service: log_file
+- name: all
+  platform: group
+  services:
+    - service: log_file
+{% for device_name in hass.ios %}
+    - service: ios_{{device_name}}
+{% endfor %}
+
+{% for device_name in hass.ios %}
+- name: {{device_name}}
+  platform: group
+  services:
+    - service: log_file
+    - service: ios_{{device_name}}
+
+- name: all_but_{{device_name}}
+  platform: group
+  services:
+    - service: log_file
+{% for device_name_2 in hass.ios %}
+{% if device_name != device_name_2 %}
+    - service: ios_{{device_name_2}}
+{% endif %}
+{% endfor %}
+{% endfor %}

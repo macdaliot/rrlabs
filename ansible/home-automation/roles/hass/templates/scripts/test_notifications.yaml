@@ -1,0 +1,8 @@
+---
+# Test Notifications
+test_notifications:
+  sequence:
+    - service: notify.all
+      data:
+        title: Test
+        message: Success notification

@@ -1,9 +1,9 @@
 ---
-platform: yr
-name: today_forecasts
-forecast: 0
-monitored_conditions:
-  - temperature
-  - symbol
-  - humidity
-  - fog
+- platform: yr
+  name: today_forecasts
+  forecast: 0
+  monitored_conditions:
+    - temperature
+    - symbol
+    - humidity
+    - fog

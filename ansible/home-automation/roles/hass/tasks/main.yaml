@@ -1,85 +1,5 @@
 ---
 # tasks file for hass
-
-- name: "CONFIGURING HOME ASSISTANT"
-  file:
-    path: "{{item}}"
-    state: directory
-    owner: homeassistant
-    group: homeassistant
-    mode: 0755
-  with_items:
-    - /home/homeassistant/.homeassistant
-    - /home/homeassistant/.homeassistant/automations
-    - /home/homeassistant/.homeassistant/sensors
-    - /home/homeassistant/.homeassistant/www
-
-- copy:
-    src: "{{item.src}}"
-    dest: "{{item.dest}}"
-    owner: homeassistant
-    group: homeassistant
-    mode: 0644
-  with_items:
-    - {src: "secrets-picture1.png", dest: "/home/homeassistant/.homeassistant/www/picture1.png"}
-    - {src: "secrets-picture2.png", dest: "/home/homeassistant/.homeassistant/www/picture2.png"}
-
-- template:
-    src: "{{item.src}}"
-    dest: "{{item.dest}}"
-    owner: homeassistant
-    group: homeassistant
-    mode: 0644
-  with_items:
-    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/automations.yaml"}
-    - {src: "customize.yaml", dest: "/home/homeassistant/.homeassistant/customize.yaml"}
-    - {src: "groups.yaml", dest: "/home/homeassistant/.homeassistant/groups.yaml"}
-    - {src: "known_devices.yaml", dest: "/home/homeassistant/.homeassistant/known_devices.yaml"}
-    - {src: "logger.yaml", dest: "/home/homeassistant/.homeassistant/logger.yaml"}
-    - {src: "notifications.yaml", dest: "/home/homeassistant/.homeassistant/notifications.yaml"}
-    - {src: "zones.yaml", dest: "/home/homeassistant/.homeassistant/zones.yaml"}
-  register: cfg_homeassistant_1
-- template:
-    src: "{{item}}"
-    dest: /home/homeassistant/.homeassistant/automations
-    owner: homeassistant
-    group: homeassistant
-    mode: 0644
-  with_fileglob:
-    - ../templates/automations/*yaml
-  register: cfg_homeassistant_2
-
-- template:
-    src: "{{item}}"
-    dest: /home/homeassistant/.homeassistant/sensors
-    owner: homeassistant
-    group: homeassistant
-    mode: 0644
-  with_fileglob:
-    - ../templates/sensors/*yaml
-  register: cfg_homeassistant_3
-
-
-- systemd:
-    name: homeassistant@homeassistant.service
-    state: restarted
-  when: cfg_homeassistant_1.changed or cfg_homeassistant_2.changed or cfg_homeassistant_3.changed
-
-
-
-- command: "false"
-
-
-- systemd:
-    name: homeassistant@homeassistant.service
-    state: restarted
-  when: cfg_homeassistant.changed
-
-
-
-- command: "false"
-
-
 - name: "ADDING USER"
   user:
     name: homeassistant
@@ -113,6 +33,7 @@
       - python_openzwave
     extra_args: --user
   when: not stat_hass_pip.stat.exists
+  notify: restart_hass
 
 - name: "INSTALLING DEPENDENCIES (USER'S PIP)"
   become: yes
@@ -122,8 +43,10 @@
     name:
       - wheel
       - homeassistant
+      - python_openzwave
     extra_args: --user
   when: stat_hass_pip.stat.exists
+  notify: restart_hass
 
 - copy:
     src: hass.systemd
@@ -133,12 +56,8 @@
     mode: 0644
 - systemd:
     name: homeassistant@homeassistant.service
-    state: started
-- systemd:
-    name: homeassistant@homeassistant.service
     enabled: yes
     masked: no
-    state: started
 
 - name: "CONFIGURING HOMEASSISANT VIRTUAL HOST"
   file:
@@ -148,14 +67,12 @@
     group: root
     mode: 0755
 - template:
-    src: "{{item.src}}"
-    dest: "{{item.dest}}"
-    owner: "{{item.owner}}"
-    group: "{{item.group}}"
-    mode: "{{item.mode}}"
-  with_items:
-    - {src: "002-homeassistant.conf", dest: "/etc/apache2/sites-available/002-homeassistant.conf", owner: "root", group: "root", mode: "0644"}
-  register: cfg_apache
+    src: 002-homeassistant.conf
+    dest: /etc/apache2/sites-available/002-homeassistant.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart_apache
 
 - stat:
     path: "/etc/letsencrypt/live/{{ddns.hass.domain}}/privkey.pem"
@@ -168,24 +85,75 @@
   when: not stat_hass_key.stat.exists
 
 - command: a2ensite 002-homeassistant.conf
-  when: cfg_apache.changed or not stat_hass_key.stat.exists
-- systemd:
-    name: apache2.service
-    state: reloaded
-  when: cfg_apache.changed or not stat_hass_key.stat.exists
+  changed_when: false
+  notify: restart_apache
 
 - name: "CONFIGURING HOME ASSISTANT"
-  template:
+  file:
+    path: "{{item}}"
+    state: directory
+    owner: homeassistant
+    group: homeassistant
+    mode: 0755
+  with_items:
+    - /home/homeassistant/.homeassistant
+    - /home/homeassistant/.homeassistant/automations
+    - /home/homeassistant/.homeassistant/sensors
+    - /home/homeassistant/.homeassistant/scripts
+    - /home/homeassistant/.homeassistant/www
+
+- copy:
     src: "{{item.src}}"
     dest: "{{item.dest}}"
-    owner: "{{item.owner}}"
-    group: "{{item.group}}"
-    mode: "{{item.mode}}"
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
   with_items:
-    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml", owner: "homeassistant", group: "homeassistant", mode: "0644"}
-  register: cfg_homeassistant
+    - {src: "secrets-picture1.png", dest: "/home/homeassistant/.homeassistant/www/picture1.png"}
+    - {src: "secrets-picture2.png", dest: "/home/homeassistant/.homeassistant/www/picture2.png"}
 
-- systemd:
-    name: homeassistant@homeassistant.service
-    state: restarted
-  when: cfg_homeassistant.changed
+- template:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_items:
+    - {src: "configuration.yaml", dest: "/home/homeassistant/.homeassistant/configuration.yaml"}
+    - {src: "customize.yaml", dest: "/home/homeassistant/.homeassistant/customize.yaml"}
+    - {src: "groups.yaml", dest: "/home/homeassistant/.homeassistant/groups.yaml"}
+    - {src: "known_devices.yaml", dest: "/home/homeassistant/.homeassistant/known_devices.yaml"}
+    - {src: "logger.yaml", dest: "/home/homeassistant/.homeassistant/logger.yaml"}
+    - {src: "notifications.yaml", dest: "/home/homeassistant/.homeassistant/notifications.yaml"}
+    - {src: "zones.yaml", dest: "/home/homeassistant/.homeassistant/zones.yaml"}
+  notify: restart_hass
+
+- template:
+    src: "{{item}}"
+    dest: /home/homeassistant/.homeassistant/automations
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_fileglob:
+    - ../templates/automations/*yaml
+  notify: restart_hass
+
+- template:
+    src: "{{item}}"
+    dest: /home/homeassistant/.homeassistant/scripts
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_fileglob:
+    - ../templates/scripts/*yaml
+  notify: restart_hass
+
+- template:
+    src: "{{item}}"
+    dest: /home/homeassistant/.homeassistant/sensors
+    owner: homeassistant
+    group: homeassistant
+    mode: 0644
+  with_fileglob:
+    - ../templates/sensors/*yaml
+  notify: restart_hass

@@ -29,6 +29,8 @@ http:
   server_port: 8123
   api_password: {{hass.api_password}}
   base_url: {{ddns.hass.domain}}:443
+  trusted_proxies: 127.0.0.1
+  use_x_forwarded_for: True
 
 # Checks for available updates
 # Note: This component will send some information about your system to
@@ -86,11 +88,11 @@ zwave:
   network_key: "{{hass.zwave_passwords}}"
 
 # Includes
-automation: !include_dir_list automations
+automation: !include_dir_merge_list automations
 group: !include groups.yaml
 logger: !include logger.yaml
-#script: !include scripts.yaml
-sensor: !include_dir_list sensors
+script: !include_dir_merge_named scripts
+sensor: !include_dir_merge_list sensors
 notify: !include notifications.yaml
 zone: !include zones.yaml
 

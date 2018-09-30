@@ -1,10 +1,10 @@
 ---
 # Customizing device names, icons, status
-platform: template
-sensors:
+- platform: template
+  sensors:
 {% for host in networks.internal.hosts %}
-  {{host.hostname}}:
-    value_template: '{% raw %}{% if is_state("device_tracker.ap0", "home") %}Online{% else %}Offline{% endif %}{% endraw %}'
-    friendly_name: {{host.friendly_name}}
-    icon_template: '{% raw %}{% if is_state("device_tracker.ap0", "home") %}{% endraw %}{{host.icon}}{% raw %}{% else %}{% endraw %}{{host.icon_offline}}{% raw %}{% endif %}{% endraw %}'
+    {{host.hostname}}:
+      value_template: '{% raw %}{% if is_state("device_tracker.{% endraw %}{{host.hostname}}{% raw %}", "home") %}Online{% else %}Offline{% endif %}{% endraw %}'
+      friendly_name: {{host.friendly_name}}
+      icon_template: '{% raw %}{% if is_state("device_tracker.{% endraw %}{{host.hostname}}{% raw %}", "home") %}{% endraw %}{{host.icon}}{% raw %}{% else %}{% endraw %}{{host.icon_offline}}{% raw %}{% endif %}{% endraw %}'
 {% endfor %}

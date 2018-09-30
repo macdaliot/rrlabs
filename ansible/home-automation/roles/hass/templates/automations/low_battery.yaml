@@ -1,0 +1,32 @@
+---
+# Low Battery
+{% for device_name, device in hass.ios.items() %}
+- alias: {{device_name}}_low_battery
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.{{device_name}}_battery_level
+      below: 50
+    - platform: zone
+      entity_id: device_tracker.{{device_name}}
+      zone: zone.home
+      event: enter
+  condition:
+    condition: and
+    conditions:
+      - condition: numeric_state
+        entity_id: sensor.{{device_name}}_battery_level
+        below: 50
+      - condition: state
+        entity_id: device_tracker.{{device_name}}
+        state: home
+      - condition: state
+        entity_id: sensor.{{device_name}}_battery_state
+        state: Unplugged
+      - condition: template
+        value_template: '{% raw %}{{(as_timestamp(now()) - as_timestamp(states.automation.automation_name.attributes.last_triggered | default(0)) | int > 3600)}}{% endraw %}'
+  action:
+    service: notify.{{device_name}}
+    data:
+      title: Batteria scarica
+      message: Ricordati di ricaricare il telefono
+{% endfor %}

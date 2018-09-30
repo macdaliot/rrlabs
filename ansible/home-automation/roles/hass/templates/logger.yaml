@@ -1,7 +1,13 @@
 ---
 # Logger (included by configuration.yaml)
-# default: error
-# logs:
+default: debug
+logs:
+  homeassistant.components.device_tracker.ping: warn
+  homeassistant.components.websocket_api: warn
+  homeassistant.components.zwave.util: warn
+  homeassistant.loader: warn
+  homeassistant.setup: warn
+  libopenzwave: warn
 #   requests.packages.urllib3.connectionpool: warn
 #   homeassistant.components.device_tracker.actiontec: warn
 #   homeassistant.components.media_player: warn

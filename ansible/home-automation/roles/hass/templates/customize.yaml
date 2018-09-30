@@ -34,3 +34,19 @@ device_tracker.{{device_name}}_battery_level:
 zone.{{zone.name}}:
   friendly_name: {{zone.friendly_name}}
 {% endfor %}
+
+group.all_switches:
+  hidden: false
+  friendly_name: 'Switches'
+group.all_lights:
+  hidden: false
+  friendly_name: 'Lights'
+group.all_devices:
+  hidden: false
+  friendly_name: 'Devices'
+group.all_scripts:
+  hidden: false
+  friendly_name: 'Scripts'
+group.all_automations:
+  hidden: false
+  friendly_name: 'Automations'
