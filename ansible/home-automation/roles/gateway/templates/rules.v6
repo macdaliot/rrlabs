@@ -8,12 +8,14 @@ COMMIT
 :INPUT DROP [0:0]
 :FORWARD DROP [0:0]
 :OUTPUT DROP [0:0]
+:Blacklisted - [0:0]
 :Services - [0:0]
 -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A INPUT -m state --state INVALID -j DROP
 -A INPUT -i lo -j ACCEPT
 -A INPUT -s fe80::/10 -i ppp0 -p udp -m udp --dport 546 -j ACCEPT
 -A INPUT -p ipv6-icmp -j ACCEPT
+-A INPUT -m state --state NEW -j Blacklisted
 -A INPUT -m state --state NEW -j Services
 -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 -A FORWARD -m state --state INVALID -j DROP
@@ -32,6 +34,7 @@ COMMIT
 -A OUTPUT -m owner --uid botmanager -j ACCEPT -m comment --comment "Allow outgoing traffic from user dnsmasq"
 -A OUTPUT -m owner --uid homeassistant -j ACCEPT -m comment --comment "Allow outgoing traffic from user homeassistant"
 -A OUTPUT -j REJECT --reject-with icmp6-port-unreachable
+-A Blacklisted -j RETURN
 -A Services -p icmp -j ACCEPT
 -A Services -i {{networks.internal.interface}} -p udp -m udp --dport 53 -j ACCEPT -m comment --comment "Allow incoming DNS traffic (from internal network)"
 -A Services -i {{networks.internal.interface}} -p udp -m udp --dport 123 -j ACCEPT -m comment --comment "Allow incoming NTP traffic (from internal network)"

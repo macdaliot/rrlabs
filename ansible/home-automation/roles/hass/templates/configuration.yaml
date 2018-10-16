@@ -80,12 +80,19 @@ device_tracker:
       {{host.hostname}}: {{host.ip}}
 {% endfor %}
 
+# Chromecast
+# cast:
+#   tries: 3
+#   timeout: 10
+#   blocking: ???
+#   # https://github.com/home-assistant/home-assistant/pull/16471
+#   media_player:
+#     - host: chromecast_salotto.cydonia.local
 
-
-zwave:
-  usb_path: /dev/zwave
-  config_path: /home/homeassistant/.local/lib/python3.5/site-packages/python_openzwave/ozw_config
-  network_key: "{{hass.zwave_passwords}}"
+# zwave:
+#   usb_path: /dev/zwave
+#   config_path: /home/homeassistant/.local/lib/python3.5/site-packages/python_openzwave/ozw_config
+#   network_key: "{{hass.zwave_passwords}}"
 
 # Includes
 automation: !include_dir_merge_list automations

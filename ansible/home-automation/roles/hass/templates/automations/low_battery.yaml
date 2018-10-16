@@ -5,7 +5,7 @@
   trigger:
     - platform: numeric_state
       entity_id: sensor.{{device_name}}_battery_level
-      below: 50
+      below: 60
     - platform: zone
       entity_id: device_tracker.{{device_name}}
       zone: zone.home
@@ -15,7 +15,7 @@
     conditions:
       - condition: numeric_state
         entity_id: sensor.{{device_name}}_battery_level
-        below: 50
+        below: 60
       - condition: state
         entity_id: device_tracker.{{device_name}}
         state: home
@@ -23,10 +23,10 @@
         entity_id: sensor.{{device_name}}_battery_state
         state: Unplugged
       - condition: template
-        value_template: '{% raw %}{{(as_timestamp(now()) - as_timestamp(states.automation.automation_name.attributes.last_triggered | default(0)) | int > 3600)}}{% endraw %}'
+        value_template: '{% raw %}{{(as_timestamp(now()) - as_timestamp({% endraw %}states.automation.{{device_name}}_low_battery.last_triggered{% raw %} | default(0)) | int > 3600)}}{% endraw %}'
   action:
     service: notify.{{device_name}}
     data:
       title: Batteria scarica
-      message: Ricordati di ricaricare il telefono
+      message: {{device.friendly_name}}, ricordati di ricaricare il telefono
 {% endfor %}

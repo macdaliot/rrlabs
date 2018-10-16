@@ -35,6 +35,12 @@ zone.{{zone.name}}:
   friendly_name: {{zone.friendly_name}}
 {% endfor %}
 
+sensor.printer0_toner:
+  friendly_name: Toner stampante
+
+sensor.printer0_alert:
+  friendly_name: Messaggio stampante
+
 group.all_switches:
   hidden: false
   friendly_name: 'Switches'
