@@ -2,7 +2,7 @@
 - name: "UPDATING LOCALE"
   shell: "update-locale LANG=en_US.UTF-8"
   changed_when: false
-  # when: ansible_env.LANG != "en_US.UTF-8"
+  # when: ansible_env.LANG != "en_US.UTF-8" # Requires gather_facts
 
 - name: "SETTING MYSQL PASSWORD"
   shell: "{{item.cmd}}"
