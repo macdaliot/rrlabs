@@ -1,0 +1,46 @@
+---
+- name: "CHECKING CPU VIRTUALIZATION EXTENSION"
+  shell: "fgrep -e vmx -e svm /proc/cpuinfo"
+  changed_when: false
+
+- name: "ADDING EVE-NG APT REPOSITORY"
+  lineinfile:
+    dest: "/etc/apt/sources.list"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^deb .*www.eve-ng.net", line: "deb [arch=amd64] http://www.eve-ng.net/repo xenial main"}
+    - {regexp: "^#deb-src .*www.eve-ng.net", line: "#deb-src [arch=amd64] http://www.eve-ng.net/repo xenial main"}
+
+- name: "UPGRADING (SAFE UPGRADE)"
+  apt:
+    allow_unauthenticated: yes
+    upgrade: yes
+    cache_valid_time: 86400
+    force_apt_get: yes
+    autoremove: yes
+  async: 1800
+  poll: 15
+
+- name: "INSTALLING AND UPGRADING PACKAGES"
+  apt:
+    allow_unauthenticated: yes
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  with_items:
+    - apt-file
+    - apt-transport-https
+    - cpufrequtils
+    - git
+    - ntp
+    - ntpdate
+    - python
+    - python-pip
+    - python3-pip
+    - python3-venv
+    - unattended-upgrades
+    - whois
+  async: 1800
+  poll: 15

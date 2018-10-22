@@ -1,0 +1,58 @@
+---
+- name: "TESTING ROOT SSH AUTHENTICATION"
+  command: ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PasswordAuthentication=no root@{{ansible_host}}
+  connection: local
+  ignore_errors: yes
+  changed_when: False
+  failed_when: False
+  register: test_ssh
+
+- set_fact: ansible_ssh_user={{ansible_unprivuser}}
+  when: test_ssh.rc != 0
+- set_fact: ansible_ssh_pass={{ansible_unprivpass}}
+  when: test_ssh.rc != 0
+- set_fact: ansible_become_pass={{ansible_unprivpass}}
+  when: test_ssh.rc != 0
+- set_fact: ansible_become_user=root
+  when: test_ssh.rc != 0
+
+- name: "ENABLING SSH SERVER"
+  systemd:
+    name: ssh.service
+    enabled: yes
+    masked: no
+    state: started
+  become: True
+  become_method: sudo
+
+- name: "ENABLING ROOT SSH AUTHENTICATION"
+  become: True
+  become_method: sudo
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "^[#]?PermitRootLogin"
+    line: "PermitRootLogin yes"
+  when: test_ssh.rc != 0
+  notify: reload_ssh
+
+- name: "INSTALL PUBLIC KEYS FOR SSH AUTHENTICATION"
+  become: True
+  become_method: sudo
+  authorized_key:
+    user: root
+    key: "{{ item }}"
+    state: present
+    exclusive: True
+  with_file:
+    - files/keys.pub
+  when: test_ssh.rc != 0
+
+# - name: "REMOVING UNPRIVILEGED USER"
+#   user:
+#     name: "{{ansible_unprivuser}}"
+#     state: absent
+#     remove: yes
+#     force: yes
+
+# From here, use root
+- set_fact: ansible_ssh_user=root

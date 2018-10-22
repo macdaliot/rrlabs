@@ -24,3 +24,4 @@ _site
 working
 secrets*
 hosts-inventory*
+ansible/eve-ng/images

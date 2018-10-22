@@ -1,0 +1,7 @@
+---
+- name: reload_ssh
+  become: True
+  become_method: sudo
+  systemd:
+    name: ssh.service
+    state: reloaded

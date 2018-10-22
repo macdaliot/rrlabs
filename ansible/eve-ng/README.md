@@ -8,12 +8,17 @@ By default Ubuntu server does not come up with SSH and root user is not allowed 
 
 ~~~
 sudo apt-get -y install openssh-server python
-sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 sudo systemctl reload sshd
-sudo usermod -p $(echo eve | openssl passwd -1 -stdin) root
 ~~~
 
 Python is also required for Ansible.
+
+Fill the host file as following:
+
+~~~
+[eve_hosts]
+192.168.102.152 ansible_user=root ansible_unprivuser=andrea ansible_unprivpass=password
+~~~
 
 ## Images and license
 
