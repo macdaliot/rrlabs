@@ -23,7 +23,7 @@
     - {src: "hostname", dest: "/etc/hostname", owner: "root", group: "root", mode: "0644"}
     - {src: "interfaces", dest: "/etc/network/interfaces", owner: "root", group: "root", mode: "0644"}
 
-- name: INSTALLING EVE-NG
+- name: "INSTALLING EVE-NG"
   apt:
     name: eve-ng
     allow_unauthenticated: yes
@@ -32,12 +32,12 @@
   async: 1800
   poll: 15
 
-- name: GETTING NON EVE-NG INSTALLED KERNELS
+- name: "GETTING NON EVE-NG INSTALLED KERNELS"
   register: kernels_to_be_removed
   shell: "dpkg-query -f='${binary:Package}\n' -W 'linux-image*' | sed '/.*-generic/p; t; d;'"
   changed_when: false
 
-- name: REMOVING NON EVE-NG INSTALLED KERNELS
+- name: "REMOVING NON EVE-NG INSTALLED KERNELS"
   apt:
     name: "{{kernels_to_be_removed.stdout_lines}}"
     update_cache: yes
@@ -46,12 +46,12 @@
     purge: yes
   when: kernels_to_be_removed.stdout_lines.0 is defined
 
-- name: GETTING NON EVE-NG INSTALLED HEADERS
+- name: "GETTING NON EVE-NG INSTALLED HEADERS"
   register: headers_to_be_removed
   shell: "dpkg-query -f='${binary:Package}\n' -W 'linux-headers*' | sed '/.*-generic/p; t; d;'"
   changed_when: false
 
-- name: REMOVING NON EVE-NG INSTALLED HEADERS
+- name: "REMOVING NON EVE-NG INSTALLED HEADERS"
   apt:
     name: "{{headers_to_be_removed.stdout_lines}}"
     update_cache: yes
@@ -60,7 +60,15 @@
     purge: yes
   when: headers_to_be_removed.stdout_lines.0 is defined
 
-- name: UPLOADING EVE-NG IOL LICENSE
+- name: "UPLOADING LABS"
+  file:
+    path: /opt/unetlab/labs/Courses
+    state: directory
+    mode: 02755
+
+- command: /bin/false
+
+- name: "UPLOADING EVE-NG IOL LICENSE"
   copy:
     src: "images/iol/iourc"
     dest: "/opt/unetlab/addons/iol/bin/iourc"
@@ -68,7 +76,7 @@
     group: "root"
     mode: "0644"
 
-- name: UPLOADING EVE-NG IMAGES (IOL)
+- name: "UPLOADING EVE-NG IMAGES (IOL)"
   copy:
     src: "{{item}}"
     dest: "/opt/unetlab/addons/iol/bin"
@@ -78,7 +86,7 @@
   with_fileglob:
     - images/iol/*bin
 
-- name: UPLOADING EVE-NG IMAGES (DYNAMIPS)
+- name: "UPLOADING EVE-NG IMAGES (DYNAMIPS)"
   copy:
     src: "{{item}}"
     dest: "/opt/unetlab/addons/dynamips"
@@ -88,7 +96,7 @@
   with_fileglob:
     - images/dynamips/*image
 
-- name: UPLOADING EVE-NG IMAGES (QEMU)
+- name: "UPLOADING EVE-NG IMAGES (QEMU)"
   copy:
     src: "images/qemu"
     dest: "/opt/unetlab/addons"
@@ -97,7 +105,7 @@
     mode: "0644"
     directory_mode: "0755"
 
-- name: SETTING EVE-NG AS CONFIGURED
+- name: "SETTING EVE-NG AS CONFIGURED"
   copy:
     content: ""
     dest: "/opt/ovf/.configured"
@@ -105,12 +113,12 @@
     group: "root"
     mode: "0644"
 
-- name: GETTING CURRENT HOSTNAME
+- name: "GETTING CURRENT HOSTNAME"
   register: current_hostname
   shell: "hostname"
   changed_when: false
 
-- name: REBOOT
+- name: "REBOOT"
   shell: "sleep 5 && reboot"
   async: 1
   poll: 0
