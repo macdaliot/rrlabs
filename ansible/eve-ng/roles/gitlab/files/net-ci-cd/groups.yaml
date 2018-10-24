@@ -1,0 +1,11 @@
+---
+test:
+  nornir_username: admin
+  nornir_password: cisco
+  site: test
+prod:
+  nornir_username: admin
+  nornir_password: admin
+  site: prod
+ios:
+  nornir_nos: ios

@@ -29,6 +29,7 @@
     allow_unauthenticated: yes
     update_cache: yes
     force_apt_get: yes
+    state: latest
   async: 1800
   poll: 15
 

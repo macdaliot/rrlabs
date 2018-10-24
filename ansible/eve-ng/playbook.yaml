@@ -11,6 +11,8 @@
       tags: prerequisites
     - role: eveng
       tags: eveng
+    - role: gitlab
+      tags: gitlab
 
   pre_tasks:
     - name: "pre_task : VERIFYING ANSIBLE VERSION"

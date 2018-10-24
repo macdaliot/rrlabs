@@ -1,0 +1,155 @@
+---
+- name: "INSTALLING GITLAB"
+  apt:
+    name: gitlab-ee
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  environment:
+    EXTERNAL_URL: http://eve-ng.example.com:9080
+  async: 1800
+  poll: 15
+
+- name: "CHANGING UNICORN PORT"
+  lineinfile:
+    dest: "/etc/gitlab/gitlab.rb"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^[# ]?unicorn\\['port'\\]", line: "unicorn['port'] = 8081"}
+    - {regexp: "^[# ]?gitlab_workhorse\\['auth_backend'\\]", line:    "gitlab_workhorse['auth_backend'] = \"http://localhost:8081\""}
+  register: gitlab_config
+
+- name: "RECONFIGURING GITLAB"
+  command: gitlab-ctl reconfigure
+  when: gitlab_config.changed
+
+- name: "RESTARTING GITLAB"
+  command: gitlab-ctl restart
+  when: gitlab_config.changed
+
+- name: "UPLOADING FILES"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "set_gitlab_password.py", dest: "/usr/local/bin/set_gitlab_password.py", owner: "root", group: "root", mode: "0755"}
+    - {src: "create_gitlab_project.py", dest: "/usr/local/bin/create_gitlab_project.py", owner: "root", group: "root", mode: "0755"}
+    - {src: "register_gitlab_runner.py", dest: "/usr/local/bin/register_gitlab_runner.py", owner: "root", group: "root", mode: "0755"}
+
+- name: "SETTING ADMIN PASSWORD"
+  command: /usr/local/bin/set_gitlab_password.py
+  register: command_result
+  changed_when: command_result.stdout is search("has been set")
+
+- name: "DOWNLOADING GITLAB RUNNER"
+  get_url:
+    url: https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-386
+    dest: /usr/local/bin/gitlab-runner
+    mode: 0755
+
+- name: "ADDING GITLAN RUNNER USER"
+  user:
+    name: gitlab-runner
+    shell: /bin/bash
+    home: /home/gitlab-runner
+    comment: GitLab Runner
+
+- stat:
+    path: /etc/systemd/system/gitlab-runner.service
+  register: gitlab_service
+
+- name: "INSTALLING GITLAB RUNNER"
+  command: gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+  when: not gitlab_service.stat.exists
+
+- command: gitlab-runner list
+  register: gitlab_runners
+  changed_when: False
+
+- debug: var=gitlab_runners
+
+- name: "REGISTERING GITLAB RUNNER"
+  command: /usr/local/bin/register_gitlab_runner.py
+  when: gitlab_runners.stderr is search("shell")
+
+- name: "STARTING GITLAB RUNNER"
+  systemd:
+    name: gitlab-runner.service
+    state: restarted
+
+- name: "CREATING CI/CD PROJECT"
+  command: /usr/local/bin/create_gitlab_project.py
+  register: command_result
+  changed_when: command_result.stdout is search("project created")
+
+- name: "CLONING GITLAB REPOSITORY"
+  git:
+    repo: http://root:password@127.0.0.1:9080/root/net-ci-cdnet-ci-cd.git
+    dest: /usr/src/net-ci-cd
+    force: yes
+
+- name: "CREATING CI/CD DIRECTORIES"
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+  with_items:
+    - /usr/src/net-ci-cd/configs
+    - /usr/src/net-ci-cd/scripts
+
+- name: "UPLOADING CI/CD FILES"
+  copy:
+    src: "net-ci-cd/{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: root
+    group: root
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "groups.yaml", dest: "/usr/src/net-ci-cd/groups.yaml", mode: "0644"}
+    - {src: "configs/R1.yaml", dest: "/usr/src/net-ci-cd/configs/R1.yaml", mode: "0644"}
+    - {src: "configs/R2.yaml", dest: "/usr/src/net-ci-cd/configs/R2.yaml", mode: "0644"}
+    - {src: "scripts/push_to_prod.py", dest: "/usr/src/net-ci-cd/scripts/push_to_prod.py", mode: "0755"}
+    - {src: "scripts/make_configs_for_test.py", dest: "/usr/src/net-ci-cd/scripts/make_configs_for_test.py", mode: "0755"}
+    - {src: "scripts/test_lab_2.py", dest: "/usr/src/net-ci-cd/scripts/test_lab_2.py", mode: "0755"}
+    - {src: "scripts/lab-test.zip", dest: "/usr/src/net-ci-cd/scripts/lab-test.zip", mode: "0644"}
+    - {src: "scripts/get_templates_from_test.py", dest: "/usr/src/net-ci-cd/scripts/get_templates_from_test.py", mode: "0755"}
+    - {src: "scripts/destroy_lab.py", dest: "/usr/src/net-ci-cd/scripts/destroy_lab.py", mode: "0755"}
+    - {src: "scripts/make_configs_for_prod.py", dest: "/usr/src/net-ci-cd/scripts/make_configs_for_prod.py", mode: "0755"}
+    - {src: "scripts/push_to_test.py", dest: "/usr/src/net-ci-cd/scripts/push_to_test.py", mode: "0755"}
+    - {src: "scripts/prepare_lab.py", dest: "/usr/src/net-ci-cd/scripts/prepare_lab.py", mode: "0755"}
+    - {src: "scripts/test_lab_1.py", dest: "/usr/src/net-ci-cd/scripts/test_lab_1.py", mode: "0755"}
+    - {src: "scripts/get_templates_from_prod.py", dest: "/usr/src/net-ci-cd/scripts/get_templates_from_prod.py", mode: "0755"}
+    - {src: "hosts.yaml", dest: "/usr/src/net-ci-cd/hosts.yaml", mode: "0644"}
+
+- name: "ADDING FILES TO GIT REPOSITORY"
+  command: git -C /usr/src/net-ci-cd add -A
+  register: command_result
+  changed_when: command_result.stdout is search("files changed")
+
+- name: "COMMITTING GIT REPOSITORY"
+  command: git -C /usr/src/net-ci-cd commit -m "Adding files"
+  register: command_result
+  changed_when: command_result.stdout is search("Your branch is ahead")
+  failed_when: False
+
+- name: "PUSHING TO GITLAB REPOSITORY"
+  command: git -C /usr/src/net-ci-cd push
+  register: command_result
+  changed_when: command_result.stdout is search("Writing objects")
+
+
+# https://docs.gitlab.com/omnibus/settings/database.html#seed-the-database-fresh-installs-only
+# install also git
+
+# install runners
+# https://docs.gitlab.com/runner/install/linux-manually.html
+
+# after a reboot
+#  gitlab-runner status
+# disable or stom tomcat8
+# systemctl stop tomcat8
+# restart gitlab (unicorn)

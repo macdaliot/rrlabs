@@ -12,6 +12,21 @@
     - {regexp: "^deb .*www.eve-ng.net", line: "deb [arch=amd64] http://www.eve-ng.net/repo xenial main"}
     - {regexp: "^#deb-src .*www.eve-ng.net", line: "#deb-src [arch=amd64] http://www.eve-ng.net/repo xenial main"}
 
+- stat: path=/etc/apt/sources.list.d/gitlab_gitlab-ee.list
+  register: gitlab_repo
+
+- name: "GETTING GITLAB INSTALLATION SCRIPT"
+  get_url:
+    url: https://packages.gitlab.com/install/repositories/gitlab/gitlab-ee/script.deb.sh
+    dest: /tmp/script.deb.sh
+    mode: 0755
+  when: not gitlab_repo.stat.exists
+
+- name: "ADDING GITLAB APT REPOSITORY"
+  shell: "/tmp/script.deb.sh"
+  changed_when: false
+  when: not gitlab_repo.stat.exists
+
 - name: "UPGRADING (SAFE UPGRADE)"
   apt:
     allow_unauthenticated: yes
@@ -32,6 +47,8 @@
   with_items:
     - apt-file
     - apt-transport-https
+    - chromium-browser
+    - chromium-chromedriver
     - cpufrequtils
     - git
     - ntp
@@ -44,3 +61,15 @@
     - whois
   async: 1800
   poll: 15
+
+- file:
+    src: /usr/lib/chromium-browser/chromedriver
+    dest: /usr/local/bin/chromedriver
+    state: link
+
+- name: "INSTALLING PYTHON MODULES"
+  pip:
+    executable: pip3
+    name:
+      - selenium
+    extra_args: --user
