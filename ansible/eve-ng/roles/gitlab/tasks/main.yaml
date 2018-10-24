@@ -70,16 +70,14 @@
   register: gitlab_runners
   changed_when: False
 
-- debug: var=gitlab_runners
-
 - name: "REGISTERING GITLAB RUNNER"
   command: /usr/local/bin/register_gitlab_runner.py
-  when: gitlab_runners.stderr is search("shell")
+  when: gitlab_runners.stderr is not search("shell")
 
 - name: "STARTING GITLAB RUNNER"
   systemd:
     name: gitlab-runner.service
-    state: restarted
+    state: started
 
 - name: "CREATING CI/CD PROJECT"
   command: /usr/local/bin/create_gitlab_project.py
