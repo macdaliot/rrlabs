@@ -7,7 +7,7 @@ eve_username = 'admin'
 eve_password = 'eve'
 eve_lab_name = 'CI-CD-test.unl'
 eve_lab_filename = pwd + '/lab-test.zip'
-node_ips = ['192.168.102.142', '192.168.102.145']
+node_ips = ['192.0.2.11', '192.0.2.12']
 
 headers = {
     'Accept': 'application/json;',

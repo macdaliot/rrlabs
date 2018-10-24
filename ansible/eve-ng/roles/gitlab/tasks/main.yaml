@@ -51,7 +51,7 @@
     dest: /usr/local/bin/gitlab-runner
     mode: 0755
 
-- name: "ADDING GITLAN RUNNER USER"
+- name: "ADDING GITLAB RUNNER USER"
   user:
     name: gitlab-runner
     shell: /bin/bash
@@ -107,6 +107,7 @@
     group: root
     mode: "{{item.mode}}"
   with_items:
+    - {src: ".gitlab-ci.yml", dest: "/usr/src/net-ci-cd/.gitlab-ci.yml", mode: "0644"}
     - {src: "groups.yaml", dest: "/usr/src/net-ci-cd/groups.yaml", mode: "0644"}
     - {src: "configs/R1.yaml", dest: "/usr/src/net-ci-cd/configs/R1.yaml", mode: "0644"}
     - {src: "configs/R2.yaml", dest: "/usr/src/net-ci-cd/configs/R2.yaml", mode: "0644"}
