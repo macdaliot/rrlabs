@@ -1,0 +1,61 @@
+---
+# tasks file for customization
+- name: "INSTALLING AND UPGRADING PACKAGES"
+  apt:
+    name: "{{item}}"
+    update_cache: no
+    force_apt_get: yes
+    state: latest
+  with_items:
+    - git
+    - locate
+    - ruby
+    - telnet
+    - vim
+    - whois
+
+- name: "CONFIGURING ENVIRONMENT"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "bash_aliases", dest: "/etc/skel/.bash_aliases", owner: "root", group: "root", mode: "0644"}
+    - {src: "bash_aliases", dest: "~/.bash_aliases", owner: "root", group: "root", mode: "0644"}
+    - {src: "bash_profile", dest: "/etc/skel/.bash_profile", owner: "root", group: "root", mode: "0644"}
+    - {src: "bash_profile", dest: "~/.bash_profile", owner: "root", group: "root", mode: "0644"}
+    - {src: "vimrc", dest: "/etc/vim/.vimrc", owner: "root", group: "root", mode: "0644"}
+    - {src: "vimrc", dest: "~/.vimrc", owner: "root", group: "root", mode: "0644"}
+    - {src: "autologout.sh", dest: "/etc/profile.d/autologout.sh", owner: "root", group: "root", mode: "0644"}
+- command: cp -a /etc/skel/.bashrc ~/.bashrc
+  changed_when: False
+
+- name: "CONFIGURING SSH SERVER"
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^[#]?PermitRootLogin", line: "PermitRootLogin yes"}
+    - {regexp: "^[#]?ClientAliveInterval", line: "ClientAliveInterval 14400"}
+    - {regexp: "^[#]?ClientAliveCountMax", line: "ClientAliveCountMax 5"}
+  register: cfg_ssh
+- systemd:
+    name: ssh.service
+    state: reloaded
+  when: cfg_ssh.changed
+
+- name: "CONFIGURING RSYSLOG SERVER"
+  lineinfile:
+    dest: "/etc/rsyslog.conf"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^[#]?cron.*", line: "cron.* /var/log/cron.log"}
+  register: cfg_rsyslog
+- systemd:
+    name: rsyslog.service
+    state: restarted
+  when: cfg_rsyslog.changed

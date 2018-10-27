@@ -7,10 +7,14 @@
   roles:
     - role: first_connection
       tags: first_connection
+    - role: customization
+      tags: customization
     - role: prerequisites
       tags: prerequisites
     - role: eveng
       tags: eveng
+    - role: evenglabs
+      tags: evenglabs
     - role: gitlab
       tags: gitlab
 

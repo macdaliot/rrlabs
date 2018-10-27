@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<lab name="ZTP" version="1" scripttimeout="300" lock="0" author="Andrea Dainese">
+  <topology>
+    <nodes>
+      <node id="11" name="IOS" type="iol" template="iol" image="L3-ADVENTERPRISEK9-M-15.5-2T.bin" ethernet="1" nvram="1024" ram="1024" serial="0" console="" delay="0" icon="Router.png" config="0" left="318" top="213">
+        <interface id="0" name="e0/0" type="ethernet" network_id="1"/>
+        <interface id="16" name="e0/1" type="ethernet" network_id="2"/>
+      </node>
+      <node id="12" name="NXOS" type="qemu" template="nxosv9k" image="nxosv9k-7.0.3.I7.1" console="telnet" cpu="2" cpulimit="0" ram="5120" ethernet="8" uuid="1ec4fd06-401c-4ac6-86ed-4fc27094025b" delay="0" icon="Nexus7K.png" config="0" left="423" top="198">
+        <interface id="0" name="Mgmt0" type="ethernet" network_id="1"/>
+        <interface id="1" name="E1/1" type="ethernet" network_id="2"/>
+      </node>
+    </nodes>
+    <networks>
+      <network id="1" type="pnet1" name="pnet1" left="363" top="75" visibility="1"/>
+      <network id="2" type="bridge" name="Net-IOSiface_16" left="378" top="253" visibility="0"/>
+    </networks>
+  </topology>
+</lab>

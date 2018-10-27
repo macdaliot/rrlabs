@@ -139,16 +139,3 @@
   command: git -C /usr/src/net-ci-cd push
   register: command_result
   changed_when: command_result.stdout is search("Writing objects")
-
-
-# https://docs.gitlab.com/omnibus/settings/database.html#seed-the-database-fresh-installs-only
-# install also git
-
-# install runners
-# https://docs.gitlab.com/runner/install/linux-manually.html
-
-# after a reboot
-#  gitlab-runner status
-# disable or stom tomcat8
-# systemctl stop tomcat8
-# restart gitlab (unicorn)

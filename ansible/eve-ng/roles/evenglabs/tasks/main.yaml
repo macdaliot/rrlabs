@@ -1,0 +1,77 @@
+---
+- name: "INSTALLING PYTHON MODULES"
+  pip:
+    executable: pip3
+    name:
+      - ansible
+      - fbtftp
+      - nornir
+      - selenium
+
+- file:
+    src: /usr/lib/chromium-browser/chromedriver
+    dest: /usr/local/bin/chromedriver
+    state: link
+
+- file:
+    path: "{{item.path}}"
+    state: directory
+    mode: 0755
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+  with_items:
+    - {path: "/opt/customtftp/tftproot", owner: "root", group: "root"}
+    - {path: "/root/scripts", owner: "root", group: "root"}
+    - {path: "/opt/unetlab/labs/Courses", owner: "www-data", group: "www-data"}
+
+- name: "UPLOADING LABS"
+  copy:
+    src: "labs/Courses/{{item}}"
+    dest: "/opt/unetlab/labs/Courses/{{item}}"
+    owner: www-data
+    group: www-data
+    mode: 0644
+  with_items:
+    - NetDevOps/ZTP.unl
+
+- name: "UPLOADING FILES"
+  copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: root
+    group: root
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "custom_tftp.py", dest: "/usr/local/sbin/custom_tftp.py", mode: "0755"}
+    - {src: "dhcpd.conf", dest: "/etc/dhcp/dhcpd.conf", mode: "0644"}
+    - {src: "poap.py", dest: "/opt/customtftp/tftproot/poap.py", mode: "0644"}
+    - {src: "files/nxos.7.0.3.I7.1.bin",  dest: "/opt/unetlab/html/files/nxos.7.0.3.I7.1.bin", mode: "0644"}
+    - {src: "files/nxos.7.0.3.I7.1.bin.md5",  dest: "/opt/unetlab/html/files/nxos.7.0.3.I7.1.bin.md5", mode: "0644"}
+    - {src: "google_search.py",  dest: "/root/scripts/google_search.py", mode: "0755"}
+  notify: reload_dhcpd
+
+- name: "START SERVICES AT BOOT"
+  systemd:
+    name: "{{item}}"
+    state: started
+    enabled: yes
+    masked: no
+  with_items:
+    - isc-dhcp-server.service
+
+- name: "DISABLE SERVICES"
+  systemd:
+    name: "{{item}}"
+    state: stopped
+    enabled: no
+    masked: yes
+  with_items:
+    - isc-dhcp-server6.service
+
+- name: "CLONING GIT REPOSITORIES"
+  git:
+    repo: "{{item.repo}}"
+    dest: "/usr/src/{{item.dest}}"
+    force: yes
+  with_items:
+    - {repo: "https://github.com/CiscoSE/Cisco-POAP", dest: "Cisco-POAP"}

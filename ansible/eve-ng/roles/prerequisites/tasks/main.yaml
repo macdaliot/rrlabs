@@ -27,6 +27,13 @@
   changed_when: false
   when: not gitlab_repo.stat.exists
 
+- wait_for:
+    path: /var/lib/dpkg/lock
+    state: absent
+    delay: 10
+    timeout: 30
+    msg: DPKG is still running
+
 - name: "UPGRADING (SAFE UPGRADE)"
   apt:
     allow_unauthenticated: yes
@@ -47,8 +54,6 @@
   with_items:
     - apt-file
     - apt-transport-https
-    - chromium-browser
-    - chromium-chromedriver
     - cpufrequtils
     - git
     - ntp
@@ -61,15 +66,3 @@
     - whois
   async: 1800
   poll: 15
-
-- file:
-    src: /usr/lib/chromium-browser/chromedriver
-    dest: /usr/local/bin/chromedriver
-    state: link
-
-- name: "INSTALLING PYTHON MODULES"
-  pip:
-    executable: pip3
-    name:
-      - selenium
-    extra_args: --user

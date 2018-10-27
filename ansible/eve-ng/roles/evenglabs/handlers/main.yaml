@@ -1,0 +1,5 @@
+---
+- name: reload_dhcpd
+  systemd:
+    name: isc-dhcp-server.service
+    state: restarted

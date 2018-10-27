@@ -25,3 +25,4 @@ working
 secrets*
 hosts-inventory*
 ansible/eve-ng/images
+ansible/eve-ng/files
