@@ -7,9 +7,12 @@
     force_apt_get: yes
     state: latest
   with_items:
+    - bc
     - git
     - locate
     - telnet
+    - ruby
+    - snmp
     - vim
     - whois
 
