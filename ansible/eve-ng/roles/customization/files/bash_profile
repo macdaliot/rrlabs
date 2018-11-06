@@ -17,3 +17,6 @@ fi
 
 # Fixing missing SIGWINCH signals that mess up screen
 export PROMPT_COMMAND="resize &>/dev/null;$PROMPT_COMMAND"
+
+# TEXTFSM templates by network.toCode()
+export NET_TEXTFSM=/usr/src/ntc-templates/templates

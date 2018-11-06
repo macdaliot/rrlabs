@@ -27,12 +27,20 @@
   changed_when: false
   when: not gitlab_repo.stat.exists
 
-- wait_for:
-    path: /var/lib/dpkg/lock
-    state: absent
-    delay: 10
-    timeout: 30
-    msg: DPKG is still running
+- command: fuser /var/lib/dpkg/lock
+  register: command_result
+  retries: 3
+  delay: 10
+  failed_when: command_result.rc == 0
+  changed_when: False
+
+- command: fuser /var/lib/apt/lists/lock
+  register: command_result
+  retries: 3
+  delay: 10
+  until: command_result.rc != 0
+  failed_when: command_result.rc == 0
+  changed_when: False
 
 - name: "UPGRADING (SAFE UPGRADE)"
   apt:
