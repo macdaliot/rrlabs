@@ -1,0 +1,4 @@
+ios:
+  nornir_nos: ios
+  nornir_username: admin
+  nornir_password: cisco

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<lab name="ScreenScraping" id="428a2ac3-c3be-4556-bf8a-7647ec3556e3" version="1" scripttimeout="300" lock="0" author="Andrea Dainese">
+<lab name="ScreenScraping" id="428a2ac3-c3be-4556-bf8a-7647ec3556e3" version="1" scripttimeout="300" lock="1" author="Andrea Dainese">
   <topology>
     <nodes>
       <node id="13" name="IOL" type="iol" template="iol" image="L3-ADVENTERPRISEK9-M-15.5-2T.bin" ethernet="1" nvram="1024" ram="1024" serial="0" console="" delay="0" icon="Router.png" config="0" left="291" top="240">
@@ -11,6 +11,9 @@
       </node>
       <node id="15" name="R2" type="iol" template="iol" image="L3-ADVENTERPRISEK9-M-15.5-2T.bin" ethernet="1" nvram="1024" ram="1024" serial="0" console="" delay="0" icon="Router.png" config="0" left="468" top="219">
         <interface id="0" name="e0/0" type="ethernet" network_id="2"/>
+        <interface id="48" name="e0/3" type="ethernet" network_id="1"/>
+      </node>
+      <node id="16" name="R3" type="iol" template="iol" image="L3-ADVENTERPRISEK9-M-15.5-2T.bin" ethernet="1" nvram="1024" ram="1024" serial="0" console="" delay="0" icon="Router.png" config="0" left="129" top="240">
         <interface id="48" name="e0/3" type="ethernet" network_id="1"/>
       </node>
     </nodes>

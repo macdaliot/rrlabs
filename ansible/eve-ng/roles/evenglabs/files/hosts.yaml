@@ -1,0 +1,9 @@
+r1:
+  nornir_host: 192.0.2.16
+  groups: ["ios"]
+r2:
+  nornir_host: 192.0.2.17
+  groups: ["ios"]
+r3:
+  nornir_host: 192.0.2.18
+  groups: ["ios"]

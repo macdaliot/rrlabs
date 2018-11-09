@@ -24,6 +24,7 @@
       assert:
         that: "ansible_version.full is version_compare('2.6.0', '>=')"
         msg: "This playbook has been tested with Ansible >= 2.6.0, please upgrade."
+      tags: always
 
     - name: "pre_task : TESTING REACHABILITY"
       wait_for:
@@ -31,3 +32,4 @@
         host: "{{ansible_host}}"
         timeout: 3
       connection: local
+      tags: always
