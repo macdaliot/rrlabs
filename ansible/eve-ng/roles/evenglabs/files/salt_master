@@ -1,0 +1,9 @@
+file_roots:
+  base:
+    - /etc/salt/pillar
+    - /etc/salt/states
+    - /etc/salt/reactors
+    - /etc/salt/templates
+pillar_roots:
+  base:
+    - /etc/salt/pillar

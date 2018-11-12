@@ -7,6 +7,7 @@
       - fbtftp
       - nornir
       - pexpect
+      - salt
       - selenium
 
 - file:
@@ -24,6 +25,18 @@
     - {path: "/opt/customtftp/tftproot", owner: "root", group: "root"}
     - {path: "/root/scripts", owner: "root", group: "root"}
     - {path: "/opt/unetlab/labs/Courses", owner: "www-data", group: "www-data"}
+    - {path: "/etc/salt/pillar", owner: "root", group: "root"}
+
+- copy:
+    src: "{{item.src}}"
+    dest: "{{item.dest}}"
+    owner: "{{item.owner}}"
+    group: "{{item.group}}"
+    mode: "{{item.mode}}"
+  with_items:
+    - {src: "salt_master", dest: "/etc/salt/master", owner: "root", group: "root", mode: "0644"}
+    - {src: "salt_minion", dest: "/etc/salt/minion", owner: "root", group: "root", mode: "0644"}
+    - {src: "salt_proxy", dest: "/etc/salt/proxy", owner: "root", group: "root", mode: "0644"}
 
 - name: "UPLOADING LABS"
   copy:
@@ -36,6 +49,7 @@
     - NetDevOps/ZTP.unl
     - NetDevOps/ScreenScraping.unl
     - NetDevOps/Ansible.unl
+    - NetDevOps/SaltStack.unl
 
 - name: "UPLOADING FILES"
   copy:
@@ -62,6 +76,10 @@
     - {src: "groups.yaml",  dest: "/root/scripts/groups.yaml", mode: "0644"}
     - {src: "nornir_lab1.py",  dest: "/root/scripts/nornir_lab1.py", mode: "0755"}
     - {src: "nornir_lab2.py",  dest: "/root/scripts/nornir_lab2.py", mode: "0755"}
+    - {src: "ansible.cfg",  dest: "/root/scripts/ansible.cfg", mode: "0755"}
+    - {src: "ansible-hosts",  dest: "/root/scripts/ansible-hosts", mode: "0755"}
+    - {src: "ansible_lab_3_1.yaml",  dest: "/root/scripts/ansible_lab_3_1.yaml", mode: "0755"}
+    - {src: "ansible_lab_3_2.yaml",  dest: "/root/scripts/ansible_lab_3_2.yaml", mode: "0755"}
   notify: reload_dhcpd
 
 - name: "START SERVICES AT BOOT"

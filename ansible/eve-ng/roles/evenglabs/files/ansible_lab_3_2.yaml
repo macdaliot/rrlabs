@@ -1,0 +1,64 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: routers
+  gather_facts: False
+  connection: network_cli
+  tasks:
+    - name: CONFIGURING L2 INTERFACE (R1)
+      ios_interface:
+        name: Ethernet0/0
+        state: up
+      when: inventory_hostname == "r1"
+    - name: CONFIGURE L3 INTERFACES (R1)
+      ios_l3_interface:
+        name: "{{item.name}}"
+        ipv4: "{{item.ip}}"
+        state: present
+      with_items:
+        - {name: "Ethernet0/0", ip: "192.168.12.1/24"}
+        - {name: "Loopback1", ip: "1.1.1.1/32"}
+      when: inventory_hostname == "r1"
+    - name: CONFIGURING L2 INTERFACE (R2)
+      ios_interface:
+        name: Ethernet0/0
+        state: up
+      when: inventory_hostname == "r2"
+    - name: CONFIGURING ENCAPSULATION ON SUBINTERFACES (R2)
+      ios_config:
+        lines:
+          - "encapsulation dot1Q {{item}}"
+        parents: "interface Ethernet0/0.{{item}}"
+      with_items:
+        - 2
+        - 3
+      when: inventory_hostname == "r2"
+    - name: CONFIGURE INTERFACES (R2)
+      ios_l3_interface:
+        name: "{{item.name}}"
+        ipv4: "{{item.ip}}"
+        state: present
+      with_items:
+        - {name: "Ethernet0/0.2", ip: "192.168.12.2/24"}
+        - {name: "Ethernet0/0.3", ip: "192.168.23.2/24"}
+        - {name: "Loopback1", ip: "2.2.2.2/32"}
+      when: inventory_hostname == "r2"
+    - name: CONFIGURING L2 INTERFACE (R3)
+      ios_interface:
+        name: Ethernet0/0
+        state: up
+      when: inventory_hostname == "r3"
+    - name: CONFIGURE L3 INTERFACES (R3)
+      ios_l3_interface:
+        name: "{{item.name}}"
+        ipv4: "{{item.ip}}"
+        state: present
+      with_items:
+        - {name: "Ethernet0/0", ip: "192.168.23.3/24"}
+        - {name: "Loopback1", ip: "3.3.3.3/32"}
+      when: inventory_hostname == "r3"
+    - name: CONFIGURING OSPF
+      ios_config:
+        lines:
+          - network 0.0.0.0 255.255.255.255 area 0
+          - passive-interface Ethernet0/3
+        parents: "router ospf 1"
