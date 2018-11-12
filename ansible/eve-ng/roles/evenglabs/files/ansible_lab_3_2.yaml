@@ -9,7 +9,7 @@
         name: Ethernet0/0
         state: up
       when: inventory_hostname == "r1"
-    - name: CONFIGURE L3 INTERFACES (R1)
+    - name: CONFIGURING L3 INTERFACES (R1)
       ios_l3_interface:
         name: "{{item.name}}"
         ipv4: "{{item.ip}}"
@@ -32,7 +32,7 @@
         - 2
         - 3
       when: inventory_hostname == "r2"
-    - name: CONFIGURE INTERFACES (R2)
+    - name: CONFIGURING INTERFACES (R2)
       ios_l3_interface:
         name: "{{item.name}}"
         ipv4: "{{item.ip}}"
