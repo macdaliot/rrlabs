@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<lab name="NetRestConf" id="144de22f-ba24-4118-8d99-e4eb8265b417" version="1" scripttimeout="300" lock="1" author="Andrea Dainese">
+  <topology>
+    <nodes>
+      <node id="27" name="CSR" type="qemu" template="csr1000vng" image="csr1000vng-16.6.1" console="telnet" cpu="1" cpulimit="0" ram="4096" ethernet="4" uuid="81b352fb-8435-4508-a41c-e4b32cd320bb" delay="0" icon="Router.png" config="0" left="276" top="264">
+        <interface id="3" name="Gi4" type="ethernet" network_id="1"/>
+      </node>
+    </nodes>
+    <networks>
+      <network id="1" type="pnet1" name="pnet1" left="272" top="147" visibility="1"/>
+    </networks>
+  </topology>
+</lab>

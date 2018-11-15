@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<lab name="NativeAPI" id="b168399a-0159-49b5-8067-396161e19d4c" version="1" scripttimeout="300" lock="1" author="Andrea Dainese">
+  <topology>
+    <nodes>
+      <node id="28" name="NXOS" type="qemu" template="nxosv9k" image="nxosv9k-7.0.3.I7.1" console="telnet" cpu="2" cpulimit="0" ram="6144" ethernet="8" uuid="84d44f5f-f42d-473e-89ca-ad6c38f8292f" delay="0" icon="Nexus7K.png" config="0" left="315" top="280">
+        <interface id="0" name="Mgmt0" type="ethernet" network_id="1"/>
+      </node>
+      <node id="29" name="ASAv" type="qemu" template="asav" image="asav-961" console="telnet" cpu="1" cpulimit="0" ram="2048" ethernet="8" uuid="81e40fbb-2d65-431f-927f-9854ae49d5f8" delay="0" icon="ASA.png" config="0" left="519" top="285">
+        <interface id="0" name="Mgmt0/0" type="ethernet" network_id="1"/>
+      </node>
+    </nodes>
+    <networks>
+      <network id="1" type="pnet1" name="pnet1" left="441" top="156" visibility="1"/>
+    </networks>
+  </topology>
+</lab>

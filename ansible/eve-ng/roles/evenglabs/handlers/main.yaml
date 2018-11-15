@@ -3,3 +3,9 @@
   systemd:
     name: isc-dhcp-server.service
     state: restarted
+
+- name: reload_iptables
+  shell: iptables-restore < /etc/iptables/rules.v4
+
+- name: reload_sysctl
+  shell: sysctl -p

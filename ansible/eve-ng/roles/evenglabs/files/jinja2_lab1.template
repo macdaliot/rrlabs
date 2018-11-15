@@ -1,0 +1,8 @@
+hostname {{hostname}}
+no ip domain-lookup
+username {{username}} privilege 15 password {{password}}
+ip domain-name example.com
+interface vlan1
+ ip address {{ip}} {{netmask}}
+ no shutdown
+end

@@ -1,0 +1,2 @@
+switch1,192.0.2.100,255.255.255.0,admin,cisco
+switch2,192.0.2.101,255.255.255.0,admin,cisco

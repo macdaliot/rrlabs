@@ -64,6 +64,8 @@
     - apt-transport-https
     - cpufrequtils
     - git
+    - iptables-persistent
+    - libxml2-utils
     - ntp
     - ntpdate
     - python

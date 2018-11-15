@@ -50,6 +50,8 @@
     - NetDevOps/ScreenScraping.unl
     - NetDevOps/Ansible.unl
     - NetDevOps/SaltStack.unl
+    - NetDevOps/NetRestConf.unl
+    - NetDevOps/NativeAPI.unl
 
 - name: "UPLOADING FILES"
   copy:
@@ -80,7 +82,34 @@
     - {src: "ansible-hosts",  dest: "/root/scripts/ansible-hosts", mode: "0755"}
     - {src: "ansible_lab_3_1.yaml",  dest: "/root/scripts/ansible_lab_3_1.yaml", mode: "0755"}
     - {src: "ansible_lab_3_2.yaml",  dest: "/root/scripts/ansible_lab_3_2.yaml", mode: "0755"}
+    - {src: "devices.csv",  dest: "/root/scripts/devices.csv", mode: "0644"}
+    - {src: "jinja2_lab1.py",  dest: "/root/scripts/jinja2_lab1.py", mode: "0755"}
+    - {src: "jinja2_lab1.template",  dest: "/root/scripts/jinja2_lab1.template", mode: "0644"}
+    - {src: "netconf_lab1.py",  dest: "/root/scripts/netconf_lab1.py", mode: "0755"}
+    - {src: "netconf_lab2.py",  dest: "/root/scripts/netconf_lab2.py", mode: "0755"}
+    - {src: "netconf_lab3.py",  dest: "/root/scripts/netconf_lab3.py", mode: "0755"}
+    - {src: "restconf_lab1.py",  dest: "/root/scripts/restconf_lab1.py", mode: "0755"}
+    - {src: "nativeapi_lab1.py",  dest: "/root/scripts/nativeapi_lab1.py", mode: "0755"}
+    - {src: "nativeapi_lab2.py",  dest: "/root/scripts/nativeapi_lab2.py", mode: "0755"}
+    - {src: "nativeapi_lab3.py",  dest: "/root/scripts/nativeapi_lab3.py", mode: "0755"}
+    - {src: "files/Cisco/ASA/asa-restapi-132200-lfbff-k8.SPA",  dest: "/opt/customtftp/tftproot/asa-restapi-132200-lfbff-k8.SPA", mode: "0644"}
   notify: reload_dhcpd
+
+- name: "CONFIGURING THE FIREWALL"
+  copy:
+    src: "rules.v4"
+    dest: "/etc/iptables/rules.v4"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify: reload_iptables
+
+- name: "CONFIGURING THE ROUTER"
+  lineinfile:
+    dest: "/etc/sysctl.conf"
+    regexp: "^[#]?net.ipv4.ip_forward"
+    line: "net.ipv4.ip_forward=1"
+  notify: reload_sysctl
 
 - name: "START SERVICES AT BOOT"
   systemd:
