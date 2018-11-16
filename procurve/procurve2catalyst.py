@@ -143,6 +143,13 @@ re_table = textfsm.TextFSM(sntp_template)
 for host in re_table.ParseText(running_config):
     sntp_hosts.append(host[0])
 
+# Reading default gateway
+default_gateway = None
+default_gateway_template = open('default-gateway.template')
+re_table = textfsm.TextFSM(default_gateway_template)
+for gateway in re_table.ParseText(running_config):
+    default_gateway = gateway[0]
+
 # Reading STP
 stp_template = open('stp.template')
 re_table = textfsm.TextFSM(stp_template)
@@ -185,6 +192,10 @@ for interface_name, interface_configs in natsort.natsorted(interfaces.items()):
             print(' switchport mode access')
             print(f' switchport access vlan {trunk_interfaces[interface_name]["native"]}')
     print('!')
+
+if default_gateway:
+    print('ip routing')
+    print(f'ip route 0.0.0.0 0.0.0.0 {default_gateway}')
 
 if snmp_contact:
     print(f'snmp-server contact {snmp_contact}')
