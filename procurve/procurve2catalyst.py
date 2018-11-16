@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-import logging, re, sys, textfsm
+import logging, natsort, re, sys, textfsm
+
+# for i in 1 2 3 4 5; do ./procurve2catalyst.py switch${i}.cfg ${i} ${i}0 > switch${i}_cisco.cfg; done
 
 config_file = sys.argv[1]
-interface_prefix = 'GigabitEthernet1/0/'
-po_offset = 10
+switch_id = int(sys.argv[2])
+po_offset = int(sys.argv[3])
+
+interface_prefix = f'GigabitEthernet{switch_id}/0/'
 interfaces = {}
 vlans = {'1': 'default'}
 
@@ -167,7 +171,7 @@ for vlan, name in vlans.items():
         print(f' name {name}')
     print('!')
 
-for interface_name, interface_configs in interfaces.items():
+for interface_name, interface_configs in natsort.natsorted(interfaces.items()):
     print(f'interface {interface_name}')
     for interface_config in interface_configs:
         print(f' {interface_config}')
