@@ -97,6 +97,8 @@
     - {src: "nativeapi_lab3.py",  dest: "/root/scripts/nativeapi_lab3.py", mode: "0755"}
     - {src: "nativeapi_lab4.py",  dest: "/root/scripts/nativeapi_lab4.py", mode: "0755"}
     - {src: "nativeapi_lab5.py",  dest: "/root/scripts/nativeapi_lab5.py", mode: "0755"}
+    - {src: "sdk_lab1.py",  dest: "/root/scripts/sdk_lab1.py", mode: "0755"}
+    - {src: "sdk_lab2.py",  dest: "/root/scripts/sdk_lab2.py", mode: "0755"}
     - {src: "files/Cisco/ASA/asa-restapi-132200-lfbff-k8.SPA",  dest: "/opt/customtftp/tftproot/asa-restapi-132200-lfbff-k8.SPA", mode: "0644"}
     - {src: "files/Cisco/CUCM/cucm-data-dictionary-12-0.zip",  dest: "/opt/unetlab/html/files/cucm-data-dictionary-12-0.zip", mode: "0644"}
     - {src: "files/Cisco/CUCM/axlsqltoolkit.zip",  dest: "/usr/src/axlsqltoolkit/axlsqltoolkit.zip", mode: "0644"}
@@ -144,3 +146,4 @@
   with_items:
     - {repo: "https://github.com/CiscoSE/Cisco-POAP", dest: "Cisco-POAP"}
     - {repo: "https://github.com/networktocode/ntc-templates", dest: "ntc-templates"}
+    - {repo: "https://github.com/datacenter/acitoolkit", dest: "acitoolkit"}
