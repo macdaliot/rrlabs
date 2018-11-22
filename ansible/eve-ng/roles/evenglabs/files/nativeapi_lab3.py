@@ -20,3 +20,5 @@ r = requests.get(url, verify = False, cookies = cookies)
 response = r.json()
 response_code = r.status_code
 print(response)
+
+# Get a specific tenant with: https://apic-ip-address/api/mo/uni/tn-ExampleCorp.json?query-target=subtree
