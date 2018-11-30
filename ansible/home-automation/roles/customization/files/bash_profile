@@ -11,9 +11,11 @@ fi
 export PATH=~/bin:~/.local/bin:~/go/bin:$(ruby -r rubygems -e 'puts Gem.user_dir')/bin:$PATH
 
 # start ssh-agent
-if [ -z "$SSH_AUTH_SOCK" ] ; then
+if [ -z "$SSH_AUTH_SOCK" ]; then
 	eval `ssh-agent -s` > /dev/null 2>&1
 fi
+# stop ssh-agent after the logout
+trap 'test -n "$SSH_AGENT_PID" && eval `ssh-agent -k`' 0
 
 # Fixing missing SIGWINCH signals that mess up screen
 export PROMPT_COMMAND="resize &>/dev/null;$PROMPT_COMMAND"
