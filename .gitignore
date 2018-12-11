@@ -26,3 +26,5 @@ secrets*
 hosts-inventory*
 ansible/eve-ng/images
 ansible/eve-ng/files
+aci/*txt
+aci/*yaml
