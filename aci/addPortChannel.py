@@ -121,10 +121,17 @@ def main():
     if po_type == 'vpc':
         attributes['lagT'] = 'node'
         name = f'v{name}'
-    if not description:
-        description = f'Port-Channel to {name}'
+    port_group_description = f'Port-Channel to {device_name}'
+    if po_type == 'vpc':
+        port_group_description = f'Virtual {port_group_description}'
+    if  description:
+        profile_description = description
+        interface_description = description
+    else:
+        profile_description = f'Port-Channel connected to {device_name}'
         if po_type == 'vpc':
-            description = f'Virtual {description}'
+            profile_description = f'Virtual {profile_description}'
+        interface_description = f'{device_name}'
 
     # Login
     token, cookies = login(username = apic_username, password = apic_password, ip = apic_ip)
@@ -142,10 +149,41 @@ def main():
     total, interface_policy_groups = getInterfacePolicyGroups(ip = apic_ip, token = token, cookies = cookies, name = name, class_name = 'infraAccBndlGrp')
     if total == 0 or force:
         # Adding the policy group (port-channel)
-        if not addInterfacePolicyGroup(ip = apic_ip, token = token, cookies = cookies, name = name, policies = policies, aep = aep_l2, description = description, attributes = attributes, class_name = 'infraAccBndlGrp'):
+        if not addInterfacePolicyGroup(ip = apic_ip, token = token, cookies = cookies, name = name, policies = policies, aep = aep_l2, description = port_group_description, attributes = attributes, class_name = 'infraAccBndlGrp'):
             logging.error(f'failed to add port-channel {name}')
             sys.exit(1)
 
+    # Checking if interface profile exists
+    total, interface_profiles = getInterfaceProfiles(ip = apic_ip, token = token, cookies = cookies, name = device_name)
+    if total == 0 or force:
+        # Adding interface profile
+        if not addInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = device_name, description = profile_description):
+            logging.error(f'failed to create interface profile {device_name}')
+            sys.exit(1)
+
+    # Checking if interface selector exists
+    total, interface_selectors = getInterfaceSelectors(ip = apic_ip, token = token, cookies = cookies, profile = device_name, name = 'ports')
+    if total == 0 or force:
+        # Adding interface selector associated to the policy group
+        if not addInterfaceSelector(ip = apic_ip, token = token, cookies = cookies, profile = device_name, name = 'ports', group = name, class_name = 'infraAccBndlGrp'):
+            logging.error(f'failed to create interface selector {device_name}')
+            sys.exit(1)
+
+    # Checking if interface selector block exists
+    total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = device_name)
+    if total > 0:
+        for port in ports:
+            interface_card = port.split('/')[0]
+            interface_port = port.split('/')[1]
+            for interface_selector_block in interface_selector_blocks:
+                if interface_selector_block['infraPortBlk']['attributes']['fromCard'] == interface_card and interface_selector_block['infraPortBlk']['attributes']['fromPort'] == interface_port:
+                    # Interface Selector block exists
+                    logging.error(f'interface "{interface_card}/{interface_port}" exists')
+                else:
+                    # Adding interface selector block
+                    if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = interface_port, description = interface_description):
+                        logging.error(f'failed to create interface selector block {interface_port}')
+                        sys.exit(1)
 
     # Associating the interfaces to the policy group
 

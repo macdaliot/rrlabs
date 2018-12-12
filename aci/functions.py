@@ -868,9 +868,19 @@ def getSwitchProfileFromInterfaceProfile(ip = None, token = None, cookies = None
     Interface Selectors
 '''
 
-def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, description = None, profile = None, group = None):
-    if not ip or not token or not cookies or not profile or not name or not group:
-        logging.error('missing ip, token, cookies, profile, group or name')
+def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, description = None, profile = None, group = None, class_name = None):
+    if not ip or not token or not cookies or not profile or not name or not group or not class_name:
+        logging.error('missing ip, token, cookies, profile, group, class_name or name')
+        return False
+    # Classes:
+    # - infraAccPortGrp per single port
+    # - infraAccBndlGrp per port-channel/virtual port-channel
+    if class_name == 'infraAccPortGrp':
+        object = 'accportgrp'
+    elif class_name == 'infraAccBndlGrp':
+        object = 'accbundle'
+    else:
+        logging.error('invalid class_name')
         return False
 
     url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{name}-typ-range.json?challenge={token}'
@@ -882,7 +892,7 @@ def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, d
     		"children": [{
     			"infraRsAccBaseGrp": {
     				"attributes": {
-    					"tDn": f"uni/infra/funcprof/accportgrp-{group}"
+    					"tDn": f"uni/infra/funcprof/{object}-{group}"
     				}
     			}
     		}]
@@ -965,9 +975,9 @@ def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = N
         return False, False
 
     if name:
-        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{name}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{name}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
     else:
-        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}.json?query-target=subtree&target-subtree-class=infraPortBlk&challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}.json?query-target=subtree&target-subtree-class=infraHPortS&challenge={token}'
 
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code

@@ -19,7 +19,6 @@ def usage():
     print('  -T STRING  device|server|switch')
     print('  -i STRING  Interface Name (i.e. 1/15)')
     print('  -l STRING  Switch Profile (i.e. Leaf101)')
-    print('  -g STRING  Policy Group (i.e. SinglePort_Switch)')
     print('  -f         Force: if interface profile exists then overwrite it')
     sys.exit(1)
 
@@ -84,9 +83,6 @@ def main():
         usage()
     if not name:
         logger.error('name not specified')
-        sys.exit(1)
-    if not group:
-        logger.error('group not specified')
         sys.exit(1)
     if not leaf:
         logger.error('leaf not specified')
@@ -160,17 +156,18 @@ def main():
     total, interface_selectors = getInterfaceSelectors(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports')
     if total == 0 or force:
         # Adding interface selector associated to the policy group
-        if not addInterfaceSelector(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports', group = group):
+        if not addInterfaceSelector(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports', group = group, class_name = 'infraAccPortGrp'):
             logging.error(f'failed to create interface selector {name}')
             sys.exit(1)
 
     # Checking if interface selector block exists
     total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports')
-    for interface_selector_block in interface_selector_blocks:
-        if interface_selector_block['infraPortBlk']['attributes']['fromCard'] == interface_card and interface_selector_block['infraPortBlk']['attributes']['fromPort'] == interface_port:
-            # Interface Selector block exists
-            logging.error(f'interface "{interface_card}/{interface_port}" exists')
-            sys.exit(1)
+    if total > 0:
+        for interface_selector_block in interface_selector_blocks:
+            if interface_selector_block['infraPortBlk']['attributes']['fromCard'] == interface_card and interface_selector_block['infraPortBlk']['attributes']['fromPort'] == interface_port:
+                # Interface Selector block exists
+                logging.error(f'interface "{interface_card}/{interface_port}" exists')
+                sys.exit(1)
 
     # Adding interface selector block
     if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = name, selector = 'ports', name = interface_port, description = interface_description):
