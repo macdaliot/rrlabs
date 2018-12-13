@@ -5,7 +5,7 @@
     associated with the EPG using the addVLANToEPG.py script.
 
     Examples:
-    # ./addSinglePort.py -v -n ESXi03:mgmt -g SinglePort_Device -i 1/15 -f -l Leaf101
+    # ./addSinglePort.py -v -n ESXi03:mgmt -T server -i 1/15 -f -l Leaf101
 '''
 
 import getopt, logging, sys, yaml

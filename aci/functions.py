@@ -699,7 +699,6 @@ def addPathToEPG(ip = None, token = None, cookies = None, path = None, vlan = No
     FEX
 '''
 
-
 def addFexProfile(ip = None, token = None, cookies = None, name = None, description = None):
     if not ip or not token or not cookies or not name:
         logging.error('missing ip, token, cookies, name')
@@ -759,6 +758,27 @@ def getFexProfile(ip = None, token = None, cookies = None, name = None):
         logging.error(f'failed to get fex with code {response_code}')
         logging.debug(response_text)
         return False, False
+
+def addFexPort(ip = None, token = None, cookies = None, fex_name = None, port = None, policy_group = None, description = None):
+    if not ip or not token or not cookies or not fex_name or not port or not policy_group or not name:
+        logging.error('missing ip, token, cookies, fex_name, port, policy_group or name')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{fex_name}/hports-{name}-typ-range.json?challenge={token}'
+    payload = {
+        class_name: {
+            "attributes": {},
+            "children": [{
+                    "infraRsAttEntP": {
+                        "attributes": {
+                            "annotation": "",
+                            "tDn": f"uni/infra/attentp-{aep}"
+                        }
+                    }
+                }
+            ]
+        }
+    }
 
 '''
     Interface Policy Groups
@@ -1017,10 +1037,15 @@ def getInterfaceSelectors(ip = None, token = None, cookies = None, name = None, 
     Interface Selector Blocks
 '''
 
-def addInterfaceSelectorBlock(ip = None, token = None, cookies = None, name = None, description = None, profile = None, selector = None):
-    if not ip or not token or not cookies or not profile or not selector or not name:
-        logging.error('missing ip, token, cookies, profile, selector or name')
-        return False
+def addInterfaceSelectorBlock(ip = None, token = None, cookies = None, name = None, description = None, profile = None, selector = None, fex = False, group = None):
+    if fex:
+        if not ip or not token or not cookies or not profile or not selector or not name or not group:
+            logging.error('missing ip, token, cookies, profile, selector, group or name')
+            return False
+    else:
+        if not ip or not token or not cookies or not profile or not selector or not name:
+            logging.error('missing ip, token, cookies, profile, selector or name')
+            return False
     try:
         interface_card = name.split('/')[0]
         interface_port = name.split('/')[1]
@@ -1029,20 +1054,57 @@ def addInterfaceSelectorBlock(ip = None, token = None, cookies = None, name = No
         return False
 
     block_id = secrets.token_hex(8)
-    url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range/portblk-{block_id}.json?challenge={token}'
-    payload = {
-    	"infraPortBlk": {
-    		"attributes": {
-                "fromCard": interface_card,
-                "toCard": interface_card,
-    			"fromPort": interface_port,
-    			"toPort": interface_port
-    		}
-    	}
-    }
+    if fex:
+        object = None
+        total, policy_groups = getInterfacePolicyGroups(ip = ip, token = token, cookies = cookies, name = group, class_name = 'infraAccPortGrp')
+        if total > 0:
+            # Policy group is for single ports
+            object = 'accportgrp'
+        total, policy_groups = getInterfacePolicyGroups(ip = ip, token = token, cookies = cookies, name = group, class_name = 'infraAccBndlGrp')
+        if total > 0:
+            # Policy group is for Port-Channel/Virtual Port-Channel
+            object = 'accbundle'
 
-    if description:
-        payload['infraPortBlk']['attributes']['descr'] = description
+        url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}/hports-{selector}-typ-range.json?challenge={token}'
+        payload = {
+            "infraHPortS": {
+                "attributes": {},
+                "children": [{
+                	"infraPortBlk": {
+                		"attributes": {
+                            "name": block_id,
+                            "fromCard": interface_card,
+                            "toCard": interface_card,
+                			"fromPort": interface_port,
+                			"toPort": interface_port
+                		}
+                    }
+            	},
+                {
+        			"infraRsAccBaseGrp": {
+        				"attributes": {
+        					"tDn": f"uni/infra/funcprof/{object}-{group}"
+        				}
+                    }
+    			}]
+            }
+        }
+        if description:
+            payload['infraHPortS']['children'][0]['infraPortBlk']['attributes']['descr'] = description
+    else:
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range/portblk-{block_id}.json?challenge={token}'
+        payload = {
+        	"infraPortBlk": {
+        		"attributes": {
+                    "fromCard": interface_card,
+                    "toCard": interface_card,
+        			"fromPort": interface_port,
+        			"toPort": interface_port
+        		}
+        	}
+        }
+        if description:
+            payload['infraPortBlk']['attributes']['descr'] = description
 
     r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
     response_code = r.status_code
@@ -1054,17 +1116,29 @@ def addInterfaceSelectorBlock(ip = None, token = None, cookies = None, name = No
         logging.debug(response_text)
         return False
 
-def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = None, profile = None, selector = None):
-    if not ip or not token or not cookies or not selector:
-        logging.error('missing ip, token, cookies, selector')
-        return False, False
+def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = None, profile = None, selector = None, fex = False):
+    if fex:
+        if not ip or not token or not cookies:
+            logging.error('missing ip, token, cookies')
+            return False, False
+    else:
+        if not ip or not token or not cookies or not selector:
+            logging.error('missing ip, token, cookies, selector')
+            return False, False
 
     if name:
         interface_card = name.split('/')[0]
         interface_port = name.split('/')[1]
-        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"))&challenge={token}'
+        if fex:
+            url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"))&challenge={token}'
+        else:
+            url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"))&challenge={token}'
     else:
-        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
+        if fex:
+            url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
+            print(url)
+        else:
+            url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
 
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code

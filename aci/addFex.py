@@ -87,7 +87,7 @@ def main():
         sys.exit(1)
     if not ports:
         logger.error('port not specified')
-    fex_profile_name = f'Fex_{leaf_profile}:{name}'
+    fex_profile_name = f'FEX_{leaf_profile}:{name}'
     leaf_profile_name = f'{leaf_profile}:{name}'
 
     # Setting description
@@ -147,14 +147,6 @@ def main():
             if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = leaf_profile_name, selector = 'fex_ports', name = port, description = fex_profile_name):
                 logging.error(f'failed to create interface selector block with {port}')
                 sys.exit(1)
-
-
-# ethod: POST
-# url: https://10.1.24.1/api/node/mo/uni/infra/accportprof-ICCA-Leaf04:Fex107/hports-aaaa-typ-range.json
-# payload{"infraHPortS":{"attributes":{"dn":"uni/infra/accportprof-ICCA-Leaf04:Fex107/hports-aaaa-typ-range","name":"aaaa","rn":"hports-aaaa-typ-range","status":"created,modified"},"children":[{"infraPortBlk":{"attributes":{"dn":"uni/infra/accportprof-ICCA-Leaf04:Fex107/hports-aaaa-typ-range/portblk-block2","fromPort":"27","toPort":"27","name":"block2","rn":"portblk-block2","status":"created,modified"},"children":[]}},{"infraRsAccBaseGrp":{"attributes":{"tDn":"uni/infra/fexprof-Fex_ICCA-Leaf04:Fex107/fexbundle-Fex_ICCA-Leaf04:Fex107","fexId":"107","status":"created,modified"},"children":[]}}]}}
-# response: {"totalCount":"0","imdata":[]}
-# timestamp: 13:10:11 DEBUG
-
 
 if __name__ == '__main__':
     main()
