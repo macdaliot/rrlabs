@@ -127,6 +127,104 @@ def addPolicies(ip = None, token = None, cookies = None, aep = None):
         return False
 
     policies = {
+        "AEP_Global": {
+    		"infraAttEntityP": {
+    			"attributes": {
+    				"dn": "uni/infra/attentp-AAA_AEP_Global"
+    			}
+    		}
+        },
+        "Phy_Global": {
+    		"physDomP": {
+    			"attributes": {
+    				"dn": "uni/phys-Phy_Global"
+    			},
+    			"children": [{
+    				"infraRsVlanNs": {
+    					"attributes": {
+    						"tDn": "uni/infra/vlanns-[VLAN_ALL]-static"
+    					}
+    				}
+    			}]
+    		}
+        },
+        "L3_Global": {
+    		"l3extDomP": {
+    			"attributes": {
+    				"annotation": "",
+    				"dn": "uni/l3dom-L3_Global",
+    				"name": "L3_Global",
+    				"nameAlias": "",
+    				"ownerKey": "",
+    				"ownerTag": ""
+    			},
+    			"children": [{
+    				"infraRsVlanNs": {
+    					"attributes": {
+    						"annotation": "",
+    						"tDn": "uni/infra/vlanns-[Pool_ALL_VLANs]-static"
+    					}
+    				}
+    			}]
+    		}
+        },
+        "VLAN_ALL": {
+    		"fvnsVlanInstP": {
+    			"attributes": {
+    				"allocMode": "static",
+    				"descr": "All VLANs except the reserved ones (1002-1005, 3967 and 4095). The VLAN 3967 is assumed to be the infrastructure VLAN.",
+    				"dn": "uni/infra/vlanns-[VLAN_ALL]-static"
+    			},
+    			"children": [{
+    				"fvnsEncapBlk": {
+    					"attributes": {
+    						"allocMode": "inherit",
+    						"from": "vlan-3968",
+    						"role": "external",
+    						"to": "vlan-4094"
+    					}
+    				}
+    			}, {
+    				"fvnsEncapBlk": {
+    					"attributes": {
+    						"allocMode": "inherit",
+    						"from": "vlan-1006",
+    						"role": "external",
+    						"to": "vlan-3966"
+    					}
+    				}
+    			}, {
+    				"fvnsEncapBlk": {
+    					"attributes": {
+    						"allocMode": "inherit",
+    						"from": "vlan-1",
+    						"role": "external",
+    						"to": "vlan-1001"
+    					}
+    				}
+    			}]
+    		}
+        },
+        "VLAN_4": {
+    		"fvnsVlanInstP": {
+    			"attributes": {
+    				"allocMode": "static",
+    				"descr": "VLAN used between spines and Inter Pod Network.",
+    				"dn": "uni/infra/vlanns-[VLAN_4]-static",
+    				"name": "VLAN_4"
+    			},
+    			"children": [{
+    				"fvnsEncapBlk": {
+    					"attributes": {
+    						"allocMode": "inherit",
+    						"from": "vlan-4",
+    						"role": "external",
+    						"to": "vlan-4"
+    					}
+    				}
+    			}]
+    		}
+        },
         "IGMP_Snoop_Off": {
     		"igmpSnoopPol": {
     			"attributes": {
@@ -1153,6 +1251,89 @@ def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = N
         logging.error(f'failed to get interface selector blocks with code {response_code}')
         logging.debug(response_text)
         return False, False
+
+'''
+    L3 OUTS
+'''
+
+def addL3Out(ip = None, token = None, cookies = None, name = None, description = None, tenant = None, vrf = None, domain = None):
+    if not ip or not token or not cookies or not name or not tenant or not vrf or not domain:
+        logging.error('missing ip, token, cookies, name, tenant, vrf or domain')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{name}.json?challenge={token}'
+    payload = {
+    	"l3extOut": {
+    		"attributes": {
+    			"name": name,
+                "enforceRtctrl": "export"
+    		},
+    		"children": [{
+    			"l3extRsEctx": {
+    				"attributes": {
+    					"tnFvCtxName": vrf
+    				}
+    			}
+    		}, {
+    			"l3extRsL3DomAtt": {
+    				"attributes": {
+    					"tDn": f"uni/l3dom-{domain}",
+    				}
+    			}
+            }, {
+				"l3extInstP": {
+					"attributes": {
+						"floodOnEncap": "disabled",
+						"matchT": "AtleastOne",
+						"name": "ALL_Prefixes",
+						"prefGrMemb": "exclude",
+						"prio": "unspecified",
+						"targetDscp": "unspecified"
+					},
+					"children": []
+				}
+    		}]
+    	}
+    }
+
+    if description:
+        payload['l3extOut']['attributes']['descr'] = description
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create subnet with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getL3Outs(ip = None, token = None, cookies = None, tenant = None, name = None):
+    if not ip or not token or not cookies or not tenant:
+        logging.error('missing ip, token, cookies, tenant')
+        return False, False
+
+    if name:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{name}.json?challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}.json?query-target=children&target-subtree-class=l3extOut&query-target-filter=not(wcard(l3extOut.name,"__ui_"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get L3Outs with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+
 
 '''
     Subnets
