@@ -161,6 +161,21 @@ def main():
             logging.error(f'failed to create interface profile {device_name}')
             sys.exit(1)
 
+    # Checking how many switch profiles are connected to the interface profile
+    total, switch_profiles = getSwitchProfileFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = name)
+    if total > 1:
+        logging.error(f'interface profile {name} is bound to multiple switch profiles')
+    elif total == 1:
+        connected_leaf = switch_profiles[0]['infraRtAccPortP']['attributes']['tDn'].split('/')[-1][6:]
+        if leaf != connected_leaf:
+            logging.error(f'interface profile {name} is bound to a different switch profile {connected_leaf}')
+            sys.exit(1)
+    else:
+        # Binding interface profile with the switch profile
+        if not bindSwitchProfileToInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile, interface_profile = name):
+            logging.error(f'failed to bind switch profile {leaf_profile} to interface profile {name}')
+            sys.exit(1)
+
     # Checking if interface selector exists
     total, interface_selectors = getInterfaceSelectors(ip = apic_ip, token = token, cookies = cookies, profile = device_name, name = 'ports')
     if total == 0 or force:
@@ -170,20 +185,13 @@ def main():
             sys.exit(1)
 
     # Checking if interface selector block exists
-    total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = device_name)
-    if total > 0:
-        for port in ports:
-            interface_card = port.split('/')[0]
-            interface_port = port.split('/')[1]
-            for interface_selector_block in interface_selector_blocks:
-                if interface_selector_block['infraPortBlk']['attributes']['fromCard'] == interface_card and interface_selector_block['infraPortBlk']['attributes']['fromPort'] == interface_port:
-                    # Interface Selector block exists
-                    logging.error(f'interface "{interface_card}/{interface_port}" exists')
-                else:
-                    # Adding interface selector block
-                    if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = interface_port, description = interface_description):
-                        logging.error(f'failed to create interface selector block {interface_port}')
-                        sys.exit(1)
+    for port in ports:
+        total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = port)
+        if total == 0:
+            # Adding interface selector block
+            if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = port, description = device_name):
+                logging.error(f'failed to create interface selector block with {port}')
+                sys.exit(1)
 
     # Associating the interfaces to the policy group
 

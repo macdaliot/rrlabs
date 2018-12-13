@@ -28,10 +28,9 @@ def main():
     name = None
     group = None
     description = None
-    interface_card = None
-    interface_port = None
     leaf = None
     device_type = None
+    interface = None
 
     # Configure logging
     logging.basicConfig()
@@ -70,8 +69,7 @@ def main():
         elif opt == '-l':
             leaf = arg
         elif opt == '-i':
-            interface_card = arg.split('/')[0]
-            interface_port = arg.split('/')[1]
+            interface = arg
         elif opt == '-f':
             force = True
         else:
@@ -90,8 +88,8 @@ def main():
     if not device_type or device_type not in ['switch', 'device', 'server']:
         logger.error('device_type not specified or not valid')
         sys.exit(1)
-    if not interface_card or not interface_port:
-        logger.error('interface not specified or not valid')
+    if not interface:
+        logger.error('interface not specified')
         sys.exit(1)
     if device_type == 'server':
         group = 'SinglePort_Server'
@@ -161,18 +159,12 @@ def main():
             sys.exit(1)
 
     # Checking if interface selector block exists
-    total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports')
-    if total > 0:
-        for interface_selector_block in interface_selector_blocks:
-            if interface_selector_block['infraPortBlk']['attributes']['fromCard'] == interface_card and interface_selector_block['infraPortBlk']['attributes']['fromPort'] == interface_port:
-                # Interface Selector block exists
-                logging.error(f'interface "{interface_card}/{interface_port}" exists')
-                sys.exit(1)
-
-    # Adding interface selector block
-    if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = name, selector = 'ports', name = interface_port, description = interface_description):
-        logging.error(f'failed to create interface selector block {interface_port}')
-        sys.exit(1)
+    total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = name, selector = 'ports', name = interface)
+    if total == 0:
+        # Adding interface selector block
+        if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = name, selector = 'ports', name = interface, description = name):
+            logging.error(f'failed to create interface selector block with {interface}')
+            sys.exit(1)
 
 if __name__ == '__main__':
     main()
