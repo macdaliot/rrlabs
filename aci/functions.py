@@ -696,6 +696,71 @@ def addPathToEPG(ip = None, token = None, cookies = None, path = None, vlan = No
         return False
 
 '''
+    FEX
+'''
+
+
+def addFexProfile(ip = None, token = None, cookies = None, name = None, description = None):
+    if not ip or not token or not cookies or not name:
+        logging.error('missing ip, token, cookies, name')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{name}.json?challenge={token}'
+    payload = {
+    	"infraFexP": {
+    		"attributes": {
+    			"name": name
+    		},
+    		"children": [{
+    			"infraFexBndlGrp": {
+    				"attributes": {
+    					"name": name,
+                        "descr": f"Port-Channel connected to the leaf"
+    				}
+    			}
+    		}]
+    	}
+    }
+
+    # Adding description
+    if description:
+        payload['infraFexP']['attributes']['descr'] = description
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create Fex with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getFexProfile(ip = None, token = None, cookies = None, name = None):
+    if not ip or not token or not cookies :
+        logging.error('missing ip, token, cookies')
+        return False, False
+
+    if name:
+        url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{name}/.json?challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/infra.json?query-target=subtree&target-subtree-class=infraFexP&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get fex with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+'''
     Interface Policy Groups
 '''
 
@@ -868,13 +933,13 @@ def getSwitchProfileFromInterfaceProfile(ip = None, token = None, cookies = None
     Interface Selectors
 '''
 
-def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, description = None, profile = None, group = None, class_name = None):
+def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, description = None, profile = None, group = None, class_name = None, fex_id = False, fex_profile_name = None):
     if not ip or not token or not cookies or not profile or not name or not group or not class_name:
         logging.error('missing ip, token, cookies, profile, group, class_name or name')
         return False
     # Classes:
     # - infraAccPortGrp per single port
-    # - infraAccBndlGrp per port-channel/virtual port-channel
+    # - infraAccBndlGrp per port-channel/virtual port-channel also for Fex
     if class_name == 'infraAccPortGrp':
         object = 'accportgrp'
     elif class_name == 'infraAccBndlGrp':
@@ -889,19 +954,31 @@ def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, d
     		"attributes": {
     			"name": name
     		},
-    		"children": [{
-    			"infraRsAccBaseGrp": {
-    				"attributes": {
-    					"tDn": f"uni/infra/funcprof/{object}-{group}"
-    				}
-    			}
-    		}]
+    		"children": []
     	}
     }
+    if fex_id and fex_profile_name:
+        payload['infraHPortS']['children'].append({
+            "infraRsAccBaseGrp": {
+                "attributes": {
+                    "tDn": f"uni/infra/fexprof-{fex_profile_name}/fexbundle-{fex_profile_name}",
+					"fexId": f"{fex_id}"
+                }
+            }
+        })
+    else:
+        payload['infraHPortS']['children'].append({
+            "infraRsAccBaseGrp": {
+                "attributes": {
+                    "tDn": f"uni/infra/funcprof/{object}-{group}"
+                }
+            }
+        })
 
     if description:
         payload['infraHPortS']['attributes']['descr'] = description
 
+    print(payload)
     r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
     response_code = r.status_code
     response_text = r.text
@@ -1106,7 +1183,7 @@ def bindSwitchProfileToInterfaceProfile(ip = None, token = None, cookies = None,
         objects = response['imdata']
         return total, objects
     else:
-        logging.error(f'failed to get subnets with code {response_code}')
+        logging.error(f'failed to bind switch profile to interface profile with code {response_code}')
         logging.debug(response_text)
         return False, False
 
