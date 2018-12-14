@@ -1096,7 +1096,6 @@ def addInterfaceSelector(ip = None, token = None, cookies = None, name = None, d
     if description:
         payload['infraHPortS']['attributes']['descr'] = description
 
-    print(payload)
     r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
     response_code = r.status_code
     response_text = r.text
@@ -1234,7 +1233,6 @@ def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = N
     else:
         if fex:
             url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
-            print(url)
         else:
             url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
 
@@ -1330,6 +1328,108 @@ def getL3Outs(ip = None, token = None, cookies = None, tenant = None, name = Non
         return total, objects
     else:
         logging.error(f'failed to get L3Outs with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+def addL3OutNodeProfile(ip = None, token = None, cookies = None, name = None, description = None, l3out = None, tenant = None):
+    if not ip or not token or not cookies or not name or not tenant or not l3out or not tenant:
+        logging.error('missing ip, token, cookies, name, tenant, l3out')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{name}.json?challenge={token}'
+    payload = {
+    	"l3extLNodeP": {
+    		"attributes": {
+    			"name": name
+    		}
+    	}
+    }
+
+    if description:
+        payload['l3extLNodeP']['attributes']['descr'] = description
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create L3Out node profile with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getL3OutNodeProfiles(ip = None, token = None, cookies = None, tenant = None, l3out = None, name = None):
+    if not ip or not token or not cookies or not tenant or not l3out:
+        logging.error('missing ip, token, cookies, tenant, l3out')
+        return False, False
+
+    if name:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{name}.json?challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}.json?query-target=children&target-subtree-class=l3extLNodeP&query-target-filter=not(wcard(l3extLNodeP.name,"__ui_"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get L3Out node profiles with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+def addL3OutNodeInterfaceProfile(ip = None, token = None, cookies = None, name = None, description = None, l3out = None, tenant = None, node = None):
+    if not ip or not token or not cookies or not name or not tenant or not l3out or not node:
+        logging.error('missing ip, token, cookies, name, tenant, l3out, node')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node}/lifp-{name}.json?challenge={token}'
+    payload = {
+    	"l3extLIfP": {
+    		"attributes": {
+    			"name": name
+    		}
+    	}
+    }
+
+    if description:
+        payload['l3extLIfP']['attributes']['descr'] = description
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create L3Out node interface profile with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getL3OutNodeInterfaceProfiles(ip = None, token = None, cookies = None, tenant = None, l3out = None, node = None, name = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node:
+        logging.error('missing ip, token, cookies, tenant, l3out, node')
+        return False, False
+
+    if name:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node}/lifp-{name}/fltCnts.json?challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node}.json?query-target=subtree&target-subtree-class=l3extLIfP&query-target-filter=not(wcard(l3extLIfP.name,"__ui_"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get L3Out node interface profiles with code {response_code}')
         logging.debug(response_text)
         return False, False
 
