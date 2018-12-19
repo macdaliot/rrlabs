@@ -12,6 +12,7 @@ def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
     print('  -d STRING  Interface Profile Description (optional)')
+    print('  -b         Bind existent L3 BD to the L3 Out')
     print('  -n STRING  name (i.e. FW1:dmz)')
     print('  -t STRING  tenant')
 
@@ -36,6 +37,7 @@ def main():
     vlan = None
     vip_ip_address = None
     leafs = []
+    bind = False
 
     # Configure logging
     logging.basicConfig()
@@ -58,7 +60,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vfd:n:t:m:i:a:V:I:l:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vfbd:n:t:m:i:a:V:I:l:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -74,6 +76,8 @@ def main():
             tenant = arg
         elif opt == '-f':
             force = True
+        elif opt == '-b':
+            bind = True
         elif opt == '-m':
             mode = arg
         elif opt == '-i':
@@ -182,17 +186,29 @@ def main():
                     logging.error(f'cannot add physical path {path} for L3Out')
                     sys.exit(1)
 
-    # TODO: when addind BD, should allow the L3Out to bind to
-
-    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/paths-201/pathep-[eth1/37]].json
-    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-203].json
-
-#response:
-# ethod: POST
-# url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-203].json
-# payload{"l3extRsNodeL3OutAtt":{"attributes":{"dn":"uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-203]","tDn":"topology/pod-2/node-203","rtrIdLoopBack":"false","rtrId":"192.168.0.203","rn":"rsnodeL3OutAtt-[topology/pod-2/node-203]","status":"created"},"children":[]}}
-
-
+    if bind:
+        total, bds = getBDs(ip = apic_ip, token = token, cookies = cookies, tenant = tenant)
+        for bd in bds:
+            has_subnet = False
+            has_l3out = False
+            try:
+                bd_name = bd['fvBD']['attributes']['name']
+                for children in bd['fvBD']['children']:
+                    if 'fvSubnet' in children:
+                        # BD has a subnet
+                        has_subnet = True
+                    elif 'fvRsBDToOut' in children:
+                        # BD has a L3Out
+                        if children['fvRsBDToOut']['attributes']['tnL3extOutName'] == f'L3OUT_{tenant}':
+                            has_l3out = True
+                if has_subnet and not has_l3out:
+                    # BD has a subnet but is missing the L3Out
+                    if not bindBDtoL3Out(ip = apic_ip, token = token, cookies = cookies, name = bd_name, tenant = tenant, l3out = f'L3OUT_{tenant}'):
+                        logger.error(f'failed to bind L3Oout to BD {bd_name}')
+                        sys.exit(1)
+            except Exception as err:
+                # BD has no children (no subnet, no L3Out)
+                continue
 
 if __name__ == '__main__':
     main()

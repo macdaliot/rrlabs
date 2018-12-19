@@ -21,6 +21,7 @@ def usage():
     print('  -m STRING  MAC address (i.e. 00:22:BD:aa:bb:cc, optional)')
     print('  -s STRING  Subnet (i.e. 192.168.0.1/24, mandatory with -o)')
     print('  -o         Create subnet only (optional)')
+    print('  -b         Bind the BD with L3Oout (optional)')
     print('  -f         Force: if exists then overwrite it')
     sys.exit(1)
 
@@ -37,6 +38,7 @@ def main():
     bridge_exists = False
     epg_exists = False
     subnet_exists = False
+    bind = False
 
     # Configure logging
     logging.basicConfig()
@@ -59,7 +61,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'voft:n:d:m:s:q:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vboft:n:d:m:s:q:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -69,6 +71,8 @@ def main():
             logger.setLevel(logging.DEBUG)
         elif opt == '-f':
             force = True
+        elif opt == '-b':
+            bind = True
         elif opt == '-t':
             tenant = arg
         elif opt == '-n':
@@ -138,6 +142,12 @@ def main():
     else:
         if not addBD(ip = apic_ip, token = token, cookies = cookies, name = name, description = description, tenant = tenant, mac = mac, subnet = subnet, vrf = tenant):
             logging.error(f'failed to create bridge domain {name}')
+            sys.exit(1)
+
+    if bind and subnet:
+        # Binding the BD to the L3Out
+        if not bindBDtoL3Out(ip = apic_ip, token = token, cookies = cookies, name = name, tenant = tenant, l3out = f'L3OUT_{tenant}'):
+            logger.error(f'failed to bind L3Oout to BD {bd_name}')
             sys.exit(1)
 
     if epg_exists:

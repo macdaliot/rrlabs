@@ -731,6 +731,29 @@ def addBD(ip = None, token = None, cookies = None, name = None, description = No
         logging.debug(response_text)
         return False
 
+def bindBDtoL3Out(ip = None, token = None, cookies = None, name = None, tenant = None, l3out = None):
+    if not ip or not token or not cookies or not name or not tenant or not l3out:
+        logging.error('missing ip, token, cookies, name, tenant or l3out')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/BD-{name}.json?challenge={token}'
+    payload = {
+    	"fvRsBDToOut": {
+    		"attributes": {
+    			"tnL3extOutName": l3out
+    		}
+    	}
+    }
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to bind bridge domain to L3Out with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def deleteBD(ip = None, token = None, cookies = None, name = None, tenant = None):
     if not ip or not token or not cookies or not name or not tenant:
         logging.error('missing ip, token, cookies, name or tenant')
@@ -755,9 +778,9 @@ def getBDs(ip = None, token = None, cookies = None, tenant = None, name = None):
         return False, False
 
     if name:
-        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/BD-{name}.json?challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/BD-{name}.json?rsp-subtree=full&rsp-subtree-class=fvSubnet&challenge={token}'
     else:
-        url = f'https://{ip}/api/node/class/fvBD.json?challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}.json?query-target=children&target-subtree-class=fvBD&rsp-subtree=full&rsp-subtree-class=fvSubnet,fvRsBDToOut&challenge={token}'
 
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code
