@@ -19,7 +19,7 @@ def usage():
     print('  -g STRING  Policy Group (mandatory if PC or vPC is used)')
     print('  -l STRING  leaf (mandatory if single port is used)')
     print('  -p STRING  port (i.e. 1/15, mandatory if single port is used)')
-    print('  -f INTEGER FEX ID (i.e. 101, optional only mandatory if single port is used)')
+    print('  -f INTEGER FEX ID (i.e. 101, optional if single port is used)')
     sys.exit(1)
 
 def main():
@@ -101,7 +101,7 @@ def main():
         logger.error('port pc/vpc requires policy group')
         sys.exit(1)
     if port_type == 'single' and (not leaf or not port):
-        logger.error('port single requires lead and port')
+        logger.error('port single requires leaf and port')
         sys.exit(1)
 
     # Login

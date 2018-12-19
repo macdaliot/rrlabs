@@ -37,6 +37,104 @@ def login(ip = None, username = None, password = None):
 '''
     Fabric
 '''
+def getLeafID(ip = None, token = None, cookies = None, name = None):
+    if not ip or not token or not cookies or not name:
+        logging.error('missing ip, token, cookies, name')
+        return False
+    leaf_id = None
+
+    # Finding leaf ID and POD
+    url = f'https://{ip}/api/node/class/fabricNode.json?query-target-filter=and(eq(fabricNode.role,"leaf"),eq(fabricNode.name,"{name}"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        return response['imdata'][0]['fabricNode']['attributes']['id']
+    else:
+        logging.error(f'failed to get path with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+    if not leaf_id or not leaf_pod:
+        logging.error(f'cannot find leaf {name}')
+        return False
+
+    # Finding path for the leaf
+    if fex:
+        url = f'https://{ip}/api/node/class/fabricPathEp.json?query-target-filter=and(eq(fabricPathEp.lagT,"not-aggregated"),eq(fabricPathEp.name,"eth{port}"),wcard(fabricPathEp.dn,"^topology/pod-{leaf_pod}/paths-{leaf_id}/extpaths-{fex}/pathep"))&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/class/fabricPathEp.json?query-target-filter=and(eq(fabricPathEp.lagT,"not-aggregated"),eq(fabricPathEp.name,"eth{port}"),wcard(fabricPathEp.dn,"^topology/pod-{leaf_pod}/paths-{leaf_id}/pathep"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    response = r.json()
+    if response_code == 200:
+        response = r.json()
+        total = int(response['totalCount'])
+        if total == 1:
+            return int(response['imdata'][0]['fabricPathEp']['attributes']['dn'])
+        elif total > 1:
+            logging.debug('found multiple leaf')
+        else:
+            logging.debug('leaf not found')
+        return False
+    else:
+        logging.error(f'failed to find leaf with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getPathFromLeafName(ip = None, token = None, cookies = None, name = None):
+    if not ip or not token or not cookies or not name:
+        logging.error('missing ip, token, cookies, name')
+        return False
+    leaf_id = None
+    leaf_pod = None
+
+    # Finding leaf ID and POD
+    url = f'https://{ip}/api/node/class/fabricNode.json?query-target-filter=and(eq(fabricNode.role,"leaf"),eq(fabricNode.name,"{name}"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        return response['imdata'][0]['fabricNode']['attributes']['dn']
+    else:
+        logging.error(f'failed to get path with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+    if not leaf_id or not leaf_pod:
+        logging.error(f'cannot find leaf {name}')
+        return False
+
+    # Finding path for the leaf
+    if fex:
+        url = f'https://{ip}/api/node/class/fabricPathEp.json?query-target-filter=and(eq(fabricPathEp.lagT,"not-aggregated"),eq(fabricPathEp.name,"eth{port}"),wcard(fabricPathEp.dn,"^topology/pod-{leaf_pod}/paths-{leaf_id}/extpaths-{fex}/pathep"))&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/class/fabricPathEp.json?query-target-filter=and(eq(fabricPathEp.lagT,"not-aggregated"),eq(fabricPathEp.name,"eth{port}"),wcard(fabricPathEp.dn,"^topology/pod-{leaf_pod}/paths-{leaf_id}/pathep"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    response = r.json()
+    if response_code == 200:
+        response = r.json()
+        total = int(response['totalCount'])
+        if total == 1:
+            return response['imdata'][0]['fabricPathEp']['attributes']['dn']
+        elif total > 1:
+            logging.debug('found multiple path')
+        else:
+            logging.debug('path not found')
+        return False
+    else:
+        logging.error(f'failed to find path with code {response_code}')
+        logging.debug(response_text)
+        return False
 
 def getPathFromLeafPort(ip = None, token = None, cookies = None, name = None, port = None, fex = None):
     if not ip or not token or not cookies or not name or not port:
@@ -1254,7 +1352,7 @@ def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = N
     L3 OUTS
 '''
 
-def addL3Out(ip = None, token = None, cookies = None, name = None, description = None, tenant = None, vrf = None, domain = None):
+def addStaticL3Out(ip = None, token = None, cookies = None, name = None, description = None, tenant = None, vrf = None, domain = None):
     if not ip or not token or not cookies or not name or not tenant or not vrf or not domain:
         logging.error('missing ip, token, cookies, name, tenant, vrf or domain')
         return False
@@ -1287,8 +1385,7 @@ def addL3Out(ip = None, token = None, cookies = None, name = None, description =
 						"prefGrMemb": "exclude",
 						"prio": "unspecified",
 						"targetDscp": "unspecified"
-					},
-					"children": []
+					}
 				}
     		}]
     	}
@@ -1328,6 +1425,82 @@ def getL3Outs(ip = None, token = None, cookies = None, tenant = None, name = Non
         return total, objects
     else:
         logging.error(f'failed to get L3Outs with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+def addStaticL3OutSVI(ip = None, token = None, cookies = None, tenant = None, path = None, group = None, vip_mac_address = None, vlan = None, leaf_ip = None, vip_ip_address = None, mode = None, l3out = None, node_name = None, name = None):
+    if not ip or not token or not cookies or not tenant or not path or not vlan or not leaf_ip or not vip_ip_address or not mode or not l3out or not node_name or not name or not mode:
+        logging.error('missing ip, token, cookies, tenant, vlan, leaf_ip, vip_ip_address, mode, l3out, node_name, name')
+        return False
+    if not path and not group:
+        logging.error('path or group must be specified')
+        return False
+
+    if not vip_mac_address:
+        vip_mac_address = '00:22:BD:{:02x}:{:02x}:{:02x}'.format(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+    if path:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/lifp-{name}/rspathL3OutAtt-[{path}].json?challenge={token}'
+
+        payload = {
+        	"l3extRsPathL3OutAtt": {
+        		"attributes": {
+        			"mac": vip_mac_address,
+        			"ifInstT": "ext-svi",
+        			"encap": f"vlan-{vlan}",
+        			"addr": leaf_ip
+        		},
+        		"children": [{
+        			"l3extIp": {
+        				"attributes": {
+        					"addr": vip_ip_address
+        				}
+        			}
+        		}]
+        	}
+        }
+
+        if mode == 'access':
+            payload['l3extRsPathL3OutAtt']['attributes']['mode'] = 'native'
+    if group:
+        # TODO
+        logging.error('not implemented')
+        return False
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create static L3Out SVI with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getStaticL3OutSVI(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, interface_name = None, path = None, group = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node_name or not interface_name:
+        logging.error('missing ip, token, cookies, tenant, l3out, node_name, interface_name')
+        return False, False
+
+    if path:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/lifp-{interface_name}.json?query-target=subtree&target-subtree-class=l3extRsPathL3OutAtt&query-target-filter=eq(l3extRsPathL3OutAtt.tDn,"{path}")&challenge={token}'
+    elif group:
+        logging.error('not implemented')
+        return False, False
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/lifp-{interface_name}.json?query-target=subtree&target-subtree-class=l3extRsPathL3OutAtt&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get SVI from L3Out with code {response_code}')
         logging.debug(response_text)
         return False, False
 
@@ -1415,7 +1588,7 @@ def getL3OutNodeInterfaceProfiles(ip = None, token = None, cookies = None, tenan
         return False, False
 
     if name:
-        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node}/lifp-{name}/fltCnts.json?challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node}.json?query-target=children&target-subtree-class=l3extLIfP&query-target-filter=eq(l3extLIfP.name,"{name}")&challenge={token}'
     else:
         url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node}.json?query-target=subtree&target-subtree-class=l3extLIfP&query-target-filter=not(wcard(l3extLIfP.name,"__ui_"))&challenge={token}'
 
@@ -1434,6 +1607,67 @@ def getL3OutNodeInterfaceProfiles(ip = None, token = None, cookies = None, tenan
         return False, False
 
 
+def addStaticL3OutConfiguredNodes(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, path = None, router_id = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node_name or not path or not router_id:
+        logging.error('missing ip, token, cookies, tenant, l3out, node')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/rsnodeL3OutAtt-[{path}].json?challenge={token}'
+    payload = {
+	"l3extRsNodeL3OutAtt": {
+    		"attributes": {
+    			"rtrId": router_id,
+    			"rtrIdLoopBack": "false"
+    		}
+    	}
+    }
+
+    print(url)
+    # https://10.1.24.1
+    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-201/rsnodeL3OutAtt-[topology/pod-2/paths-201/pathep-[eth1/37]].json
+    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-201].json
+
+
+    # Dn0=uni\/tn-Prod\/out-L3OUT_Prod\/lnodep-201\/rsnodeL3OutAtt-[topology\/pod-2\/paths-201\/pathep-[eth1\/37]]
+
+    # method: POST
+    # url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-201].json
+    # payload{"l3extRsNodeL3OutAtt":{"attributes":{"dn":"uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-201]","tDn":"topology/pod-2/node-201","rtrId":"192.168.20.201","rtrIdLoopBack":"false","rn":"rsnodeL3OutAtt-[topology/pod-2/node-201]","status":"created"},"children":[]}}
+    # response: {"totalCount":"0","imdata":[]}
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create L3Out node configuration with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getStaticL3OutConfiguredNodes(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, path = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node_name:
+        logging.error('missing ip, token, cookies, tenant, l3out, node_name')
+        return False, False
+
+    if path:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}.json?query-target=children&target-subtree-class=l3extRsNodeL3OutAtt&query-target-filter=eq(l3extRsNodeL3OutAtt.tDn,"{path}")&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}.json?query-target=children&target-subtree-class=l3extRsNodeL3OutAtt&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get L3Out configured nodes with code {response_code}')
+        logging.debug(response_text)
+        return False, False
 
 '''
     Subnets

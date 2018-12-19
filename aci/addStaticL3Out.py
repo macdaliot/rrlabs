@@ -14,6 +14,15 @@ def usage():
     print('  -d STRING  Interface Profile Description (optional)')
     print('  -n STRING  name (i.e. FW1:dmz)')
     print('  -t STRING  tenant')
+
+    print('  -m STRING  trunk|access')
+    print('  -i INTEGER VLAN ID')
+    print('  -I STRING  VIP IP Address (i.e. 10.0.0.1/24)')
+
+    print('  -l STRING  Leaf Name,RID,IP,port|group (i.e.:')
+    print('             Leaf101,10.0.0.2/24,1/15, or')
+    print('             Leaf101,10.0.0.2/24,vPC_FW)')
+
     print('  -f         Force: if interface profile exists then overwrite it')
     sys.exit(1)
 
@@ -23,6 +32,10 @@ def main():
     description = None
     tenant = None
     name = None
+    mode = None
+    vlan = None
+    vip_ip_address = None
+    leafs = []
 
     # Configure logging
     logging.basicConfig()
@@ -45,7 +58,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vfd:n:t:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vfd:n:t:m:i:a:V:I:l:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -61,6 +74,28 @@ def main():
             tenant = arg
         elif opt == '-f':
             force = True
+        elif opt == '-m':
+            mode = arg
+        elif opt == '-i':
+            vlan = arg
+        elif opt == '-a':
+            port_type = arg
+        elif opt == '-I':
+            vip_ip_address = arg
+        elif opt == '-g':
+            group = arg
+        elif opt == '-p':
+            port = arg
+        elif opt == '-l':
+            try:
+                leafs.append({
+                    'name': arg.split(',')[0],
+                    'ip': arg.split(',')[1],
+                    'port': arg.split(',')[2]
+                })
+            except Exception as err:
+                logger.error('cannot parse Leaf Name, IP and port or policy group')
+                sys.exit(1)
         else:
             logger.error('unhandled option ({})'.format(opt))
             usage()
@@ -74,6 +109,11 @@ def main():
     if not tenant:
         logger.error('tenant not specified')
         sys.exit(1)
+    if not vip_ip_address:
+        logger.error('VIP IP address specified')
+        sys.exit(1)
+    if len(leafs) < 1:
+        logger.error('need at least one leaf')
     l3out_name = f'L3OUT_{tenant}'
     l3out_description = f'Static L3Out for VRF {tenant}'
     l3out_interface_description = f'Logical (SVI) and physical (single/PC/vPC) interfaces facing {name}'
@@ -90,7 +130,7 @@ def main():
     total, l3outs = getL3Outs(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, name = l3out_name)
     if total == 0 or force:
         # Adding interface profile
-        if not addL3Out(ip = apic_ip, token = token, cookies = cookies, name = l3out_name, description = l3out_description, tenant = tenant, vrf = tenant, domain = domain_l3):
+        if not addStaticL3Out(ip = apic_ip, token = token, cookies = cookies, name = l3out_name, description = l3out_description, tenant = tenant, vrf = tenant, domain = domain_l3):
             logging.error(f'failed to create L3Out {l3out_name}')
             sys.exit(1)
 
@@ -110,39 +150,50 @@ def main():
             logging.error(f'failed to create L3Out node profile {l3out_name}')
             sys.exit(1)
 
+    for leaf in leafs:
+        leaf_id = getLeafID(ip = apic_ip, token = token, cookies = cookies, name = leaf['name'])
+        vip_mac_address = '00:22:BD:00:0{}:{}'.format(str(leaf_id)[0], str(leaf_id)[1:3])
+        router_id = f'192.168.20.{leaf_id}'
+
+        if '/' in leaf['port']:
+            # This is a single port (i.e. 1/25)
+            port_path = getPathFromLeafPort(ip = apic_ip, token = token, cookies = cookies, name = leaf['name'], port = leaf['port'])
+            if not port_path:
+                logging.error(f'Port {leaf["port"]} not found in Leaf {leaf["name"]}')
+                sys.exit(1)
+            # Checking if SVI exists
+            total, svis = getStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, interface_name = 'ports', path = port_path)
+            if total == 0:
+                # Adding the SVI
+                if not addStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, path = path, vip_mac_address = vip_mac_address, vlan = vlan, leaf_ip = leaf['ip'], vip_ip_address = vip_ip_address, mode = mode, l3out = l3out_name, node_name = name, name = 'ports'):
+                    logging.error('failed to create SVI on path {path}')
+                    sys.exit(1)
+
+            node_path = getPathFromLeafName(ip = apic_ip, token = token, cookies = cookies, name = leaf['name'])
+            if not node_path:
+                logging.error(f'Node {leaf["name"]} not found')
+                sys.exit(1)
+
+            # Checking if node exists
+            total, nodes = getStaticL3OutConfiguredNodes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, path = node_path)
+            if total == 0:
+                # Adding physical node path
+                if not addStaticL3OutConfiguredNodes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, path = node_path, router_id = router_id):
+                    logging.error(f'cannot add physical path {path} for L3Out')
+                    sys.exit(1)
+
+    # TODO: when addind BD, should allow the L3Out to bind to
+
+    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/paths-201/pathep-[eth1/37]].json
+    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-203].json
+
+#response:
+# ethod: POST
+# url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-203].json
+# payload{"l3extRsNodeL3OutAtt":{"attributes":{"dn":"uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-203]","tDn":"topology/pod-2/node-203","rtrIdLoopBack":"false","rtrId":"192.168.0.203","rn":"rsnodeL3OutAtt-[topology/pod-2/node-203]","status":"created"},"children":[]}}
+
+
 
 if __name__ == '__main__':
     main()
     sys.exit(0)
-
-
-
-# Nome Node Profile
-# Nodo (pod/leaf)
-# Router ID del nodo
-# IP del nodo
-# IP del nodo (VIP/HSRP)
-# Single PC/VPC
-# Access/Trunk
-# VLAN
-
-
-
-#
-# interface profile
-#
-# ethod: POST
-# url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-AAANAME/lnodep-AAANAME/lifp-AAANAME.json
-# payload{"l3extLIfP":{"attributes":{"dn":"uni/tn-Prod/out-AAANAME/lnodep-AAANAME/lifp-AAANAME","name":"AAANAME","descr":"AAADESC","rn":"lifp-AAANAME","status":"created"},"children":[{"l3extRsPathL3OutAtt":{"attributes":{"dn":"uni/tn-Prod/out-AAANAME/lnodep-AAANAME/lifp-AAANAME/rspathL3OutAtt-[topology/pod-1/paths-101/pathep-[eth1/43]]","mac":"00:22:BD:F8:19:FF","ifInstT":"ext-svi","encap":"vlan-1123","addr":"1.2.3.4/24","tDn":"topology/pod-1/paths-101/pathep-[eth1/43]","rn":"rspathL3OutAtt-[topology/pod-1/paths-101/pathep-[eth1/43]]","status":"created"},"children":[{"l3extIp":{"attributes":{"addr":"1.2.3.1/24","status":"created"},"children":[]}}]}}]}}
-# response: {"totalCount":"0","imdata":[]}
-# timestamp: 15:56:00 DEBUG
-#
-# link L3Out with alll EPGs of VRF Prod
-#
-#
-# Static route
-#
-# method: POST
-# url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-AAANAME/lnodep-AAANAME/rsnodeL3OutAtt-[topology/pod-1/node-101]/rt-[10.1.2.3/30].json
-# payload{"ipRouteP":{"attributes":{"dn":"uni/tn-Prod/out-AAANAME/lnodep-AAANAME/rsnodeL3OutAtt-[topology/pod-1/node-101]/rt-[10.1.2.3/30]","ip":"10.1.2.3/30","rn":"rt-[10.1.2.3/30]","status":"created"},"children":[{"ipNexthopP":{"attributes":{"dn":"uni/tn-Prod/out-AAANAME/lnodep-AAANAME/rsnodeL3OutAtt-[topology/pod-1/node-101]/rt-[10.1.2.3/30]/nh-[1.2.3.7]","nhAddr":"1.2.3.7","pref":"1","rn":"nh-[1.2.3.7]","status":"created"},"children":[]}}]}}
-# response: {"totalCount":"0","imdata":[]}
