@@ -1645,19 +1645,6 @@ def addStaticL3OutConfiguredNodes(ip = None, token = None, cookies = None, tenan
     	}
     }
 
-    print(url)
-    # https://10.1.24.1
-    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-201/rsnodeL3OutAtt-[topology/pod-2/paths-201/pathep-[eth1/37]].json
-    # /api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-201].json
-
-
-    # Dn0=uni\/tn-Prod\/out-L3OUT_Prod\/lnodep-201\/rsnodeL3OutAtt-[topology\/pod-2\/paths-201\/pathep-[eth1\/37]]
-
-    # method: POST
-    # url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-201].json
-    # payload{"l3extRsNodeL3OutAtt":{"attributes":{"dn":"uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-201]","tDn":"topology/pod-2/node-201","rtrId":"192.168.20.201","rtrIdLoopBack":"false","rn":"rsnodeL3OutAtt-[topology/pod-2/node-201]","status":"created"},"children":[]}}
-    # response: {"totalCount":"0","imdata":[]}
-
     r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
     response_code = r.status_code
     response_text = r.text
@@ -1676,7 +1663,7 @@ def getStaticL3OutConfiguredNodes(ip = None, token = None, cookies = None, tenan
     if path:
         url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}.json?query-target=children&target-subtree-class=l3extRsNodeL3OutAtt&query-target-filter=eq(l3extRsNodeL3OutAtt.tDn,"{path}")&challenge={token}'
     else:
-        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}.json?query-target=children&target-subtree-class=l3extRsNodeL3OutAtt&challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}.json?query-target=children&target-subtree-class=l3extRsNodeL3OutAtt&rsp-subtree=full&challenge={token}'
 
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code
@@ -1691,6 +1678,67 @@ def getStaticL3OutConfiguredNodes(ip = None, token = None, cookies = None, tenan
         logging.error(f'failed to get L3Out configured nodes with code {response_code}')
         logging.debug(response_text)
         return False, False
+
+def addStaticRoute(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, path = None, network = None, gateway = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node_name or not gateway:
+        logging.error('missing ip, token, cookies, tenant, l3out, node_name, gateway')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/rsnodeL3OutAtt-[{path}]/rt-[{network}].json?challenge={token}'
+    payload = {
+    	"ipRouteP": {
+    		"attributes": {},
+    		"children": [{
+    			"ipNexthopP": {
+    				"attributes": {
+    					"dn": f"uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/rsnodeL3OutAtt-[{path}]/rt-[{network}]/nh-[{gateway}]",
+    					"pref": "1"
+    				}
+    			}
+    		}]
+    	}
+    }
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to create static route with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+
+
+def getStaticRoutes(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, path = None, network = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node_name:
+        logging.error('missing ip, token, cookies, tenant, l3out, node_name')
+        return False, False
+
+    if network:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/rsnodeL3OutAtt-[{path}].json?query-target=subtree&target-subtree-class=ipRouteP&rsp-subtree=children&query-target-filter=eq(ipRouteP.ip,"{network}")&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/rsnodeL3OutAtt-[{path}].json?query-target=subtree&target-subtree-class=ipRouteP&rsp-subtree=children&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get static routes with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+
+        # url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-202].json?query-target=subtree&target-subtree-class=ipRouteP&rsp-subtree=children&subscription=yes&order-by=ipRouteP.ip|asc&page=0&page-size=100
+
+        total, routes = getStaticRoutes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, node_name = node, path = path)
 
 '''
     Subnets

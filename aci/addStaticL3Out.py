@@ -3,6 +3,7 @@
     This script configure a L3Out.
 
     Examples:
+    # ./addStaticL3Out.py -n FW1:dmz -t Prod -m trunk -i 1143 -I 10.0.0.1/24 Leaf101,10.0.0.2/24,1/37 -b
 '''
 
 import getopt, logging, sys, yaml
