@@ -754,6 +754,35 @@ def bindBDtoL3Out(ip = None, token = None, cookies = None, name = None, tenant =
         logging.debug(response_text)
         return False
 
+def unbindBDtoL3Out(ip = None, token = None, cookies = None, name = None, tenant = None, l3out = None):
+    if not ip or not token or not cookies or not name or not tenant or not l3out:
+        logging.error('missing ip, token, cookies, name, tenant or l3out')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/BD-{name}.json?challenge={token}'
+    payload = {
+    	"fvBD": {
+    		"attributes": {},
+    		"children": [{
+    			"fvRsBDToOut": {
+    				"attributes": {
+    					"dn": f"uni/tn-{tenant}/BD-{name}/rsBDToOut-{l3out}",
+    					"status": "deleted"
+    				}
+    			}
+    		}]
+    	}
+    }
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to unbind bridge domain from L3Out with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def deleteBD(ip = None, token = None, cookies = None, name = None, tenant = None):
     if not ip or not token or not cookies or not name or not tenant:
         logging.error('missing ip, token, cookies, name or tenant')
@@ -1486,7 +1515,7 @@ def addStaticL3OutSVI(ip = None, token = None, cookies = None, tenant = None, pa
         if mode == 'access':
             payload['l3extRsPathL3OutAtt']['attributes']['mode'] = 'native'
     if group:
-        # TODO
+        # TODO: need to be implemented
         logging.error('not implemented')
         return False
 
@@ -1508,6 +1537,7 @@ def getStaticL3OutSVI(ip = None, token = None, cookies = None, tenant = None, l3
     if path:
         url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/lifp-{interface_name}.json?query-target=subtree&target-subtree-class=l3extRsPathL3OutAtt&query-target-filter=eq(l3extRsPathL3OutAtt.tDn,"{path}")&challenge={token}'
     elif group:
+        # TODO: need to be implemented
         logging.error('not implemented')
         return False, False
     else:
@@ -1709,7 +1739,35 @@ def addStaticRoute(ip = None, token = None, cookies = None, tenant = None, l3out
         logging.debug(response_text)
         return False
 
+def deleteStaticRoute(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, path = None, network = None):
+    if not ip or not token or not cookies or not tenant or not l3out or not node_name:
+        logging.error('missing ip, token, cookies, tenant, l3out, node_name')
+        return False
 
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{node_name}/rsnodeL3OutAtt-[{path}].json?challenge={token}'
+    payload = {
+        "l3extRsNodeL3OutAtt": {
+            "attributes": {},
+            "children": [{
+            	"ipRouteP": {
+            		"attributes": {
+                        "ip": network,
+                        "status": "deleted"
+                    }
+            	}
+            }]
+        }
+    }
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to delete static route with code {response_code}')
+        logging.debug(response_text)
+        return False
 
 def getStaticRoutes(ip = None, token = None, cookies = None, tenant = None, l3out = None, node_name = None, path = None, network = None):
     if not ip or not token or not cookies or not tenant or not l3out or not node_name:

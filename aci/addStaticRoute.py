@@ -40,7 +40,6 @@ def main():
         apic_ip = config['apic_ip']
         apic_username = config['apic_username']
         apic_password = config['apic_password']
-        domain_l3 = config['domain_l3']
     except:
         logger.error('invalid config.yaml file: missing apic_ip, apic_username, apic_password or domain_l3')
 

@@ -70,6 +70,7 @@ def main():
         logger.error('tenant, network name or vlan not specified')
         sys.exit(1)
     name = f'{vlan:0>4}_{name}'
+    l3out = f'L3OUT_{tenant}'
 
     # Login
     token, cookies = login(username = apic_username, password = apic_password, ip = apic_ip)
@@ -80,6 +81,10 @@ def main():
     if only_subnet:
         # Getting subnets
         total, subnets = getSubnets(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, bd = name)
+        # Unbinding the L3Out (mandatory to avoid blackhole)
+        if not unbindBDtoL3Out(ip = apic_ip, token = token, cookies = cookies, name = name, tenant = tenant, l3out = l3out):
+            logger.error('failed to unbind BD from L3Out')
+            sys.exit(1)
         if total > 0:
             for subnet in subnets:
                 network = subnet['fvSubnet']['attributes']['ip']
