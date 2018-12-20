@@ -943,6 +943,54 @@ def addPathToEPG(ip = None, token = None, cookies = None, path = None, vlan = No
         logging.debug(response_text)
         return False
 
+def deletePathFromEPG(ip = None, token = None, cookies = None, path = None, name = None, tenant = None, app = None):
+    if not ip or not token or not cookies or not path or not name or not tenant or not app:
+        logging.error('missing ip, token, cookies, name, app or tenant or path')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/ap-{app}/epg-{name}/rspathAtt-[{path}].json?challenge={token}'
+    payload = {
+    	"fvRsPathAtt": {
+    		"attributes": {
+    			"status": "deleted"
+    		}
+    	}
+    }
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to delete path from EPG with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+def getPathFromEPG(ip = None, token = None, cookies = None, tenant = None, app = None, path = None, name = None):
+    if not ip or not token or not cookies or not tenant or not name or not app:
+        logging.error('missing ip, token, cookies, name or tenant or app')
+        return False, False
+
+    if path:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/ap-{app}/epg-{name}.json?query-target=children&target-subtree-class=fvRsPathAtt&&query-target-filter=eq(fvRsPathAtt.tDn,"{path}")&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/ap-{app}/epg-{name}.json?query-target=children&target-subtree-class=fvRsPathAtt&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to get paths from EPG with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
 '''
     FEX
 '''

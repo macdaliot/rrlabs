@@ -3,7 +3,7 @@
     This script assign one VLAN from a port (single) or from a PolicyGroup (PC/vPC) to an EPG.
 
     Examples:
-    # ./addVLANToEPG.py -t Tenant -m access -i 1576 -a single -l Leaf102 -p 1/37 -f 101
+    # ./addPortToEPG.py -t Tenant -m access -i 1576 -a single -l Leaf102 -p 1/37 -f 101
 '''
 
 import getopt, logging, sys, yaml

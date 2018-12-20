@@ -3,7 +3,7 @@
     This script delete a network in terms of Bridge Domain and EPG.
 
     Examples:
-    # c./deleteNetwork.py -t Tenant -n Prod_Network -q 1531 -v
+    # ./deleteNetwork.py -t Tenant -n Prod_Network -q 1531 -v
 '''
 
 import getopt, logging, sys, yaml
