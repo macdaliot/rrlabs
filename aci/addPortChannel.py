@@ -141,13 +141,13 @@ def main():
 
     # Checking if switch profile exists
     total, switch_profiles = getSwitchProfiles(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile)
-    if total == 0:
+    if total is 0:
         logging.error(f'switch profile {leaf_profile} does not exist')
         sys.exit(1)
 
     # Checking if interface policy group exists
     total, interface_policy_groups = getInterfacePolicyGroups(ip = apic_ip, token = token, cookies = cookies, name = name, class_name = 'infraAccBndlGrp')
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding the policy group (port-channel)
         if not addInterfacePolicyGroup(ip = apic_ip, token = token, cookies = cookies, name = name, policies = policies, aep = aep_l2, description = port_group_description, attributes = attributes, class_name = 'infraAccBndlGrp'):
             logging.error(f'failed to add port-channel {name}')
@@ -155,7 +155,7 @@ def main():
 
     # Checking if interface profile exists
     total, interface_profiles = getInterfaceProfiles(ip = apic_ip, token = token, cookies = cookies, name = device_name)
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface profile
         if not addInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = device_name, description = profile_description):
             logging.error(f'failed to create interface profile {device_name}')
@@ -178,7 +178,7 @@ def main():
 
     # Checking if interface selector exists
     total, interface_selectors = getInterfaceSelectors(ip = apic_ip, token = token, cookies = cookies, profile = device_name, name = 'ports')
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface selector associated to the policy group
         if not addInterfaceSelector(ip = apic_ip, token = token, cookies = cookies, profile = device_name, name = 'ports', group = name, class_name = 'infraAccBndlGrp'):
             logging.error(f'failed to create interface selector {device_name}')
@@ -187,7 +187,7 @@ def main():
     # Checking if interface selector block exists
     for port in ports:
         total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = port)
-        if total == 0:
+        if total is 0:
             # Adding interface selector block
             if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = port, description = device_name):
                 logging.error(f'failed to create interface selector block with {port}')

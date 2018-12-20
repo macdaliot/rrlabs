@@ -102,7 +102,7 @@ def main():
 
     # Checking if Fex profile exists
     total, fex_profiles = getFexProfile(ip = apic_ip, token = token, cookies = cookies, name = fex_profile_name)
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface selector block
         if not addFexProfile(ip = apic_ip, token = token, cookies = cookies, name = fex_profile_name, description = description):
             logging.error(f'failed to create Fex profile')
@@ -110,7 +110,7 @@ def main():
 
     # Checking if interface profile exists
     total, interface_profiles = getInterfaceProfiles(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile_name)
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface profile
         if not addInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile_name, description = f'Port-Channel connected to Fex {fex_profile_name}'):
             logging.error(f'failed to create interface profile {leaf_profile_name}')
@@ -133,7 +133,7 @@ def main():
 
     # Checking if interface selector exists
     total, interface_selectors = getInterfaceSelectors(ip = apic_ip, token = token, cookies = cookies, profile = leaf_profile_name, name = 'fex_ports')
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface selector associated to the policy group
         if not addInterfaceSelector(ip = apic_ip, token = token, cookies = cookies, profile = leaf_profile_name, name = 'fex_ports', group = name, class_name = 'infraAccBndlGrp', fex_id = id, fex_profile_name = fex_profile_name):
             logging.error(f'failed to create fex interface selector {leaf_profile_name}')
@@ -142,7 +142,7 @@ def main():
     # Checking if interface selector block exists
     for port in ports:
         total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = leaf_profile_name, selector = 'fex_ports', name = port)
-        if total == 0:
+        if total is 0:
             # Adding interface selector block
             if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = leaf_profile_name, selector = 'fex_ports', name = port, description = fex_profile_name):
                 logging.error(f'failed to create interface selector block with {port}')

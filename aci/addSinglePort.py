@@ -117,19 +117,19 @@ def main():
 
     # Checking if interface policy group exists
     total, interface_policy_groups = getInterfacePolicyGroups(ip = apic_ip, token = token, cookies = cookies, name = group, class_name = 'infraAccPortGrp')
-    if total == 0:
+    if total is 0:
         logging.error(f'interface policy group {group} does not exist')
         sys.exit(1)
 
     # Checking if switch profile exists
     total, switch_profiles = getSwitchProfiles(ip = apic_ip, token = token, cookies = cookies, name = leaf)
-    if total == 0:
+    if total is 0:
         logging.error(f'switch profile {leaf} does not exist')
         sys.exit(1)
 
     # Checking if interface profile exists
     total, interface_profiles = getInterfaceProfiles(ip = apic_ip, token = token, cookies = cookies, name = name)
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface profile
         if not addInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = name, description = profile_description):
             logging.error(f'failed to create interface profile {name}')
@@ -152,7 +152,7 @@ def main():
 
     # Checking if interface selector exists
     total, interface_selectors = getInterfaceSelectors(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports')
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface selector associated to the policy group
         if not addInterfaceSelector(ip = apic_ip, token = token, cookies = cookies, profile = name, name = 'ports', group = group, class_name = 'infraAccPortGrp'):
             logging.error(f'failed to create interface selector {name}')
@@ -160,7 +160,7 @@ def main():
 
     # Checking if interface selector block exists
     total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = name, selector = 'ports', name = interface)
-    if total == 0:
+    if total is 0:
         # Adding interface selector block
         if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = name, selector = 'ports', name = interface, description = name):
             logging.error(f'failed to create interface selector block with {interface}')

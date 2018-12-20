@@ -133,7 +133,7 @@ def main():
 
     # Checking if L3Out exists
     total, l3outs = getL3Outs(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, name = l3out_name)
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface profile
         if not addStaticL3Out(ip = apic_ip, token = token, cookies = cookies, name = l3out_name, description = l3out_description, tenant = tenant, vrf = tenant, domain = domain_l3):
             logging.error(f'failed to create L3Out {l3out_name}')
@@ -141,7 +141,7 @@ def main():
 
     # Checking if Node Profile exists
     total, l3outs_nodes = getL3OutNodeProfiles(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, name = name)
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding node profile
         if not addL3OutNodeProfile(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, name = name, description = description):
             logging.error(f'failed to create L3Out node profile {name}')
@@ -149,7 +149,7 @@ def main():
 
     # Checking if Logical Interface profile exists
     total, l3outs_interfaces = getL3OutNodeInterfaceProfiles(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node = name, name = 'ports')
-    if total == 0 or force:
+    if total is 0 or force:
         # Adding interface profile
         if not addL3OutNodeInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, name = 'ports', description = l3out_interface_description, node = name):
             logging.error(f'failed to create L3Out node profile {l3out_name}')
@@ -168,7 +168,7 @@ def main():
                 sys.exit(1)
             # Checking if SVI exists
             total, svis = getStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, interface_name = 'ports', path = port_path)
-            if total == 0:
+            if total is 0:
                 # Adding the SVI
                 if not addStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, path = path, vip_mac_address = vip_mac_address, vlan = vlan, leaf_ip = leaf['ip'], vip_ip_address = vip_ip_address, mode = mode, l3out = l3out_name, node_name = name, name = 'ports'):
                     logging.error('failed to create SVI on path {path}')
@@ -181,7 +181,7 @@ def main():
 
             # Checking if node exists
             total, nodes = getStaticL3OutConfiguredNodes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, path = node_path)
-            if total == 0:
+            if total is 0:
                 # Adding physical node path
                 if not addStaticL3OutConfiguredNodes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, path = node_path, router_id = router_id):
                     logging.error(f'cannot add physical path {path} for L3Out')

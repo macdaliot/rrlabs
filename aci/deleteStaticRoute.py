@@ -83,23 +83,23 @@ def main():
 
     # Checking if L3Out exists
     total, l3outs = getL3Outs(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, name = l3_out)
-    if total == 0:
+    if total is 0:
         sys.exit(0)
 
     # Checking if Node Profile exists
     total, l3outs_nodes = getL3OutNodeProfiles(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, name = node_name)
-    if total == 0:
+    if total is 0:
         sys.exit(0)
 
     # Checking if node is configured
     total, nodes = getStaticL3OutConfiguredNodes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, node_name = node_name)
-    if total == 0:
+    if total is 0:
         sys.exit(0)
 
     for node in nodes:
         path = node['l3extRsNodeL3OutAtt']['attributes']['tDn']
         total, routes = getStaticRoutes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, node_name = node_name, path = path, network = subnet)
-        if total == 0:
+        if total is 0:
             sys.exit(0)
         # Deleting the static route
         if not deleteStaticRoute(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, node_name = node_name, path = path, network = subnet):

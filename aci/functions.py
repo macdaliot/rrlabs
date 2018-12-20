@@ -191,6 +191,61 @@ def getPathFromLeafPort(ip = None, token = None, cookies = None, name = None, po
         logging.debug(response_text)
         return False
 
+def getEPGsFromPath(ip = None, token = None, cookies = None, leaf_path = None, port = None, fex = None):
+    if not ip or not token or not cookies or not leaf_path or not port:
+        logging.error('missing ip, token, cookies, leaf or port')
+        return False
+
+    if fex:
+        url = f'https://{ip}/api/node/mo/{leaf_path}/sys/phys-[eth{fex}/{port}].json?rsp-subtree-include=full-deployment&target-node=all&target-path=l1EthIfToEPg&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/mo/{leaf_path}/sys/phys-[eth{port}].json?rsp-subtree-include=full-deployment&target-node=all&target-path=l1EthIfToEPg&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        if not 'children' in response['imdata'][0]['l1PhysIf']:
+            return 0, []
+        try:
+            objects = response['imdata'][0]['l1PhysIf']['children'][0]['pconsCtrlrDeployCtx']['children']
+        except Exception as err:
+            logging.debug('cannot parse EPGs from path')
+            return False, False
+        return len(objects), objects
+    else:
+        logging.error(f'failed to get EPGs with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+def getPortCfgFromPath(ip = None, token = None, cookies = None, leaf_path = None, port = None, fex = None):
+    if not ip or not token or not cookies or not leaf_path or not port:
+        logging.error('missing ip, token, cookies, leaf or port')
+        return False
+
+    if fex:
+        url = f'https://{ip}/api/node/class/{leaf_path}/l1PhysIf.json?rsp-subtree=children&rsp-subtree-class=ethpmPhysIf&query-target-filter=eq(l1PhysIf.dn,"{leaf_path}/sys/phys-[eth{fex}/{port}]")&challenge={token}'
+    else:
+        url = f'https://{ip}/api/node/class/{leaf_path}/l1PhysIf.json?rsp-subtree=children&rsp-subtree-class=ethpmPhysIf&query-target-filter=eq(l1PhysIf.dn,"{leaf_path}/sys/phys-[eth{port}]")&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        try:
+            return response['imdata'][0]['l1PhysIf']['children'][0]['ethpmPhysIf']['attributes']
+        except Exception as err:
+            logging.debug('cannot parse port config from path')
+            return False
+    else:
+        logging.error(f'failed to get port config with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def getPathFromPolicyGroup(ip = None, token = None, cookies = None, name = None):
     if not ip or not token or not cookies or not name:
         logging.error('missing ip, token, cookies or name')
@@ -1224,6 +1279,49 @@ def getInterfaceProfiles(ip = None, token = None, cookies = None, name = None):
         logging.debug(response_text)
         return False, False
 
+def getInterfaceProfileFromPortAndLeaf(ip = None, token = None, cookies = None, port = None, leaf = None):
+    if not ip or not token or not cookies or not port or not leaf:
+        logging.error('missing ip, token, cookies, port or leaf')
+        return False, False
+    try:
+        interface_card = port.split('/')[0]
+        interface_port = port.split('/')[1]
+    except Exception as err:
+        logging.error('port is not valid')
+        return False
+
+    url = f'https://{ip}/api/node/class/infraPortBlk.json?query-target=subtree&target-subtree-class=infraPortBlk&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"),wcard(infraPortBlk.dn,"^uni/infra/accportprof-"))&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        if total == 0:
+            return ''
+    else:
+        logging.error(f'failed to get interface profiles from port with code {response_code}')
+        logging.debug(response_text)
+        return False
+
+    # Found some Interface Profiles, checking which is bound to the switch profile
+    for object in objects:
+        interface_profile = object['infraPortBlk']['attributes']['dn'].split('/')[2].split('-')[1]
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{interface_profile}.json?query-target=children&target-subtree-class=relnFrom&query-target-filter=eq(infraRtAccPortP.tDn,"uni/infra/nprof-{leaf}")&challenge={token}'
+
+        r = requests.get(url, verify = False, cookies = cookies)
+        response_code = r.status_code
+        response_text = r.text
+
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        if total == 0:
+            return ''
+        else:
+            return interface_profile
+
 def getSwitchProfileFromInterfaceProfile(ip = None, token = None, cookies = None, name = None):
     if not ip or not token or not cookies or not name:
         logging.error('missing ip, token, cookies or name')
@@ -1411,6 +1509,49 @@ def addInterfaceSelectorBlock(ip = None, token = None, cookies = None, name = No
         logging.debug(response_text)
         return False
 
+def deleteInterfaceSelectorBlock(ip = None, token = None, cookies = None, name = None, profile = None, selector = None, fex = False, delete_selector = False):
+    if fex:
+        if not ip or not token or not cookies or not profile or not selector or not name:
+            logging.error('missing ip, token, cookies, profile, selector, name')
+            return False
+    else:
+        # TODO
+        logging.error('to be implemented')
+        return False
+
+    if fex:
+        url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}/hports-{selector}-typ-range.json?challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}/hports-{selector}-typ-range.json?challenge={token}'
+        payload = {
+        	"infraHPortS": {
+        		"attributes": {},
+        		"children": [{
+        			"infraPortBlk": {
+        				"attributes": {
+        					"dn": f"uni/infra/fexprof-{profile}/hports-{selector}-typ-range/portblk-{name}",
+        					"status": "deleted"
+        				}
+        			}
+        		}]
+        	}
+        }
+        if delete_selector:
+            payload['infraHPortS']['attributes']['status'] = 'deleted'
+    else:
+        # TODO
+        logging.error('to be implemented')
+        return False
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to delete interface selector block with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = None, profile = None, selector = None, fex = False):
     if fex:
         if not ip or not token or not cookies:
@@ -1424,13 +1565,17 @@ def getInterfaceSelectorBlocks(ip = None, token = None, cookies = None, name = N
     if name:
         interface_card = name.split('/')[0]
         interface_port = name.split('/')[1]
-        if fex:
+        if fex and not selector:
             url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"))&challenge={token}'
+        elif fex and selector:
+            url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"))&challenge={token}'
         else:
             url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"))&challenge={token}'
     else:
-        if fex:
+        if fex and not selector:
             url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
+        elif fex and selector:
+            url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
         else:
             url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{profile}/hports-{selector}-typ-range.json?query-target=subtree&target-subtree-class=infraPortBlk&target-subtree-class=infraRsAccBndlSubgrp&query-target=subtree&challenge={token}'
 
@@ -1840,11 +1985,6 @@ def getStaticRoutes(ip = None, token = None, cookies = None, tenant = None, l3ou
         logging.error(f'failed to get static routes with code {response_code}')
         logging.debug(response_text)
         return False, False
-
-
-        # url: https://10.1.24.1/api/node/mo/uni/tn-Prod/out-L3OUT_Prod/lnodep-FW1:dmz/rsnodeL3OutAtt-[topology/pod-2/node-202].json?query-target=subtree&target-subtree-class=ipRouteP&rsp-subtree=children&subscription=yes&order-by=ipRouteP.ip|asc&page=0&page-size=100
-
-        total, routes = getStaticRoutes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, node_name = node, path = path)
 
 '''
     Subnets

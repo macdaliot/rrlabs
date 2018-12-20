@@ -101,21 +101,21 @@ def main():
     else:
         # Device type not recognized, looking for an interface policy group (PC/vPC)
         total, interface_policy_groups = getInterfacePolicyGroups(ip = apic_ip, token = token, cookies = cookies, name = group, class_name = 'infraAccPortGrp')
-        if total == 0:
+        if total is 0:
             logging.error(f'interface policy group {group} does not exist')
             sys.exit(1)
         group = device_type
 
     # Checking if Fex profile exists
     total, fex_profiles = getFexProfile(ip = apic_ip, token = token, cookies = cookies, name = fex_profile_name)
-    if total == 0:
+    if total is 0:
         logging.error(f'Fex profile not found')
         sys.exit(1)
 
     # Checking if interface selector block exists
     for port in ports:
         total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = fex_profile_name, name = port, fex = True)
-        if total == 0:
+        if total is 0:
             # Adding interface selector block
             if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = fex_profile_name, selector = name, name = port, description = description, fex = True, group = group):
                 logging.error(f'failed to create interface selector block with {port}')
