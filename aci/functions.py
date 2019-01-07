@@ -1255,6 +1255,24 @@ def addInterfaceProfile(ip = None, token = None, cookies = None, name = None, de
         logging.debug(response_text)
         return False
 
+def deleteInterfaceProfile(ip = None, token = None, cookies = None, name = None):
+    if not ip or not token or not cookies or not name:
+        logging.error('missing ip, token, cookies, name')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?challenge={token}'
+
+    r = requests.delete(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        return True
+    else:
+        logging.error(f'failed to delete interface profile with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def getInterfaceProfiles(ip = None, token = None, cookies = None, name = None):
     if not ip or not token or not cookies:
         logging.error('missing ip, token, cookies')
@@ -1292,6 +1310,7 @@ def getInterfaceProfileFromPortAndLeaf(ip = None, token = None, cookies = None, 
 
     url = f'https://{ip}/api/node/class/infraPortBlk.json?query-target=subtree&target-subtree-class=infraPortBlk&query-target-filter=and(le(infraPortBlk.fromCard,"{interface_card}"),ge(infraPortBlk.toCard,"{interface_card}"),le(infraPortBlk.fromPort,"{interface_port}"),ge(infraPortBlk.toPort,"{interface_port}"),wcard(infraPortBlk.dn,"^uni/infra/accportprof-"))&challenge={token}'
 
+    # Finding interface profiles with specific port block
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code
     response_text = r.text
@@ -1306,28 +1325,25 @@ def getInterfaceProfileFromPortAndLeaf(ip = None, token = None, cookies = None, 
         logging.debug(response_text)
         return False
 
-    # Found some Interface Profiles, checking which is bound to the switch profile
+    # Checking which interface profiles is bound to the switch profile
     for object in objects:
         interface_profile = object['infraPortBlk']['attributes']['dn'].split('/')[2].split('-')[1]
-        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{interface_profile}.json?query-target=children&target-subtree-class=relnFrom&query-target-filter=eq(infraRtAccPortP.tDn,"uni/infra/nprof-{leaf}")&challenge={token}'
-
-        r = requests.get(url, verify = False, cookies = cookies)
-        response_code = r.status_code
-        response_text = r.text
-
-        total = int(response['totalCount'])
-        objects = response['imdata']
-        if total == 0:
-            return ''
-        else:
+        total, unused = getSwitchProfilesFromInterfaceProfile(ip = ip, token = token, cookies = cookies, name = interface_profile, leaf = leaf)
+        if total != 0:
             return interface_profile
+    # Nothing found
+    return ''
 
-def getSwitchProfileFromInterfaceProfile(ip = None, token = None, cookies = None, name = None):
+def getSwitchProfilesFromInterfaceProfile(ip = None, token = None, cookies = None, name = None, leaf = None):
     if not ip or not token or not cookies or not name:
         logging.error('missing ip, token, cookies or name')
         return False, False
 
-    url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?query-target=subtree&target-subtree-class=infraRtAccPortP&challenge={token}'
+    if not leaf:
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?query-target=subtree&target-subtree-class=infraRtAccPortP&challenge={token}'
+    else:
+        leaf_id = getLeafID(ip = ip, token = token, cookies = cookies, name = leaf)
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?rsp-subtree-include=full-deployment&target-path=AccPortPToEthIf&challenge={token}'
 
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code
@@ -1337,6 +1353,15 @@ def getSwitchProfileFromInterfaceProfile(ip = None, token = None, cookies = None
         cookies = r.cookies
         total = int(response['totalCount'])
         objects = response['imdata']
+        if leaf and total > 0:
+            new_objects = []
+            for object in objects:
+                if 'children' in object['infraAccPortP'] and len(object['infraAccPortP']['children']) > 0:
+                    for child in object['infraAccPortP']['children']:
+                        if child['pconsNodeDeployCtx']['attributes']['nodeId'] == str(leaf_id):
+                            new_objects.append(object)
+                            break
+            return len(new_objects), new_objects
         return total, objects
     else:
         logging.error(f'failed to get switch profile from interface profiles with code {response_code}')
@@ -2090,6 +2115,35 @@ def bindSwitchProfileToInterfaceProfile(ip = None, token = None, cookies = None,
         return total, objects
     else:
         logging.error(f'failed to bind switch profile to interface profile with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
+def unbindSwitchProfileFromInterfaceProfile(ip = None, token = None, cookies = None, name = None, interface_profile = None):
+    if not ip or not token or not cookies or not name or not interface_profile:
+        logging.error('missing ip, token, cookies, name or interface_profile')
+        return False, False
+
+    url = f'https://{ip}/api/node/mo/uni/infra/nprof-{name}.json?challenge={token}'
+    payload = {
+    	"infraRsAccPortP": {
+    		"attributes": {
+    			"tDn": f"uni/infra/accportprof-{interface_profile}",
+                "status": "deleted"
+    		}
+    	}
+    }
+
+    r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        total = int(response['totalCount'])
+        objects = response['imdata']
+        return total, objects
+    else:
+        logging.error(f'failed to unbind switch profile from interface profile with code {response_code}')
         logging.debug(response_text)
         return False, False
 

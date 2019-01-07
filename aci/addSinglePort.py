@@ -136,7 +136,7 @@ def main():
             sys.exit(1)
 
     # Checking how many switch profiles are connected to the interface profile
-    total, switch_profiles = getSwitchProfileFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = name)
+    total, switch_profiles = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = name)
     if total > 1:
         logging.error(f'interface profile {name} is bound to multiple switch profiles')
     elif total == 1:

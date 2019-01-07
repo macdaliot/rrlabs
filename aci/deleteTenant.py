@@ -12,12 +12,14 @@ from functions import *
 def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
+    print('  -f         force (delete without asking)')
     print('  -t STRING  Tenant Name')
     sys.exit(1)
 
 def main():
     debug = False
     name = None
+    force = False
 
     # Configure logging
     logging.basicConfig()
@@ -39,7 +41,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vt:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vft:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -47,6 +49,8 @@ def main():
         if opt == '-v':
             debug = True
             logger.setLevel(logging.DEBUG)
+        elif opt == '-f':
+            force = True
         elif opt == '-t':
             name = arg
         else:
@@ -65,6 +69,12 @@ def main():
     if not token or not cookies:
         logging.error('authentication failed')
         sys.exit(1)
+
+    if not force:
+        confirm = input(f'Deleting tenant {name}. Continue? [no|yes]')
+        if confirm != 'yes':
+            print('Aborting...')
+            sys.exit(0)
 
     if not deleteTenant(ip = apic_ip, token = token, cookies = cookies, name = name):
         logging.error(f'failed to delete tenant {name}')

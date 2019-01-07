@@ -12,6 +12,7 @@ from functions import *
 def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
+    print('  -f         force (delete without asking)')
     print('  -t STRING  Tenant Name')
     print('  -n STRING  Network Name')
     print('  -o         Delete only the subnet (optional)')
@@ -22,6 +23,7 @@ def main():
     debug = False
     name = None
     only_subnet = False
+    force = False
 
     # Configure logging
     logging.basicConfig()
@@ -43,7 +45,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vot:n:q:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vfot:n:q:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -51,6 +53,8 @@ def main():
         if opt == '-v':
             debug = True
             logger.setLevel(logging.DEBUG)
+        elif opt == '-f':
+            force = True
         elif opt == '-t':
             tenant = arg
         elif opt == '-n':
@@ -93,9 +97,21 @@ def main():
                     sys.exit(1)
         return
 
+    if not force:
+        confirm = input(f'Deleting EPG {name}. Continue? [no|yes]')
+        if confirm != 'yes':
+            print('Aborting...')
+            sys.exit(0)
+
     if not deleteEPG(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, name = name, app = tenant):
         logging.error(f'failed to delete EPG {name}')
         sys.exit(1)
+
+    if not force:
+        confirm = input(f'Deleting BD {name}. Continue? [no|yes]')
+        if confirm != 'yes':
+            print('Aborting...')
+            sys.exit(0)
 
     if not deleteBD(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, name = name):
         logging.error(f'failed to delete bridge domain {name}')

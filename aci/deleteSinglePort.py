@@ -6,7 +6,7 @@
     # ./deleteSinglePort.py -l Leaf102 -p 1/37 -f 101
 '''
 
-import getopt, logging, sys, yaml
+import getopt, logging, sys, time, yaml
 from functions import *
 
 def usage():
@@ -151,23 +151,35 @@ def main():
                 # Delete the interface from the Leaf Interface Profile
                 if not deleteInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, name = port_id, profile = fex_profile_name, fex = True, selector = selector, delete_selector = delete_selector):
                     logging.error('failed to delete port from FEX')
+                    sys.exit(1)
 
     if delete and not fex:
         interface_profile = getInterfaceProfileFromPortAndLeaf(ip = apic_ip, token = token, cookies = cookies, port = port, leaf = leaf)
-        # Unbind interface_profile from leaf
-        if not force:
-            confirm = input(f'Unbinding profile {interface_profile} from leaf {leaf}. Continue? [no|yes]')
-            if confirm != 'yes':
-                print('Aborting...')
-                sys.exit(0)
+        if interface_profile:
+            # Unbind interface_profile from leaf
+            if not force:
+                confirm = input(f'Unbinding profile {interface_profile} from leaf {leaf}. Continue? [no|yes]')
+                if confirm != 'yes':
+                    print('Aborting...')
+                    sys.exit(0)
+            if not unbindSwitchProfileFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf, interface_profile = interface_profile):
+                logging.error('failed to unbind interface profile from leaf')
+                sys.exit(1)
 
-        # Is interface profile unused?
-        confirm = input(f'Deleting unused profile {interface_profile}. Continue? [no|yes]')
-        if confirm != 'yes':
-            print('Aborting...')
-            sys.exit(0)
-        # if no more leaf is associated to interface_profile -> delete interface_profile
+            # Counting how many switch profiles are bound to the interface profile
+            time.sleep(1)
+            total, switch_profiles = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = interface_profile)
+            if total == 0:
+                # Interface profile is unused
+                if not force:
+                    confirm = input(f'Deleting unused profile {interface_profile}. Continue? [no|yes]')
+                    if confirm != 'yes':
+                        print('Aborting...')
+                        sys.exit(0)
 
+                if not deleteInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = interface_profile):
+                    logging.error('failed to delete interface profile')
+                    sys.exit(1)
 
 if __name__ == '__main__':
     main()

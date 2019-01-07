@@ -117,7 +117,7 @@ def main():
             sys.exit(1)
 
     # Checking how many switch profiles are connected to the leaf interface profile
-    total, switch_profiles = getSwitchProfileFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile_name)
+    total, switch_profiles = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile_name)
     if total > 1:
         logging.error(f'Fex profile {name} is bound to multiple switch profiles')
     elif total == 1:

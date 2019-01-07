@@ -12,6 +12,7 @@ from functions import *
 def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
+    print('  -f         force (delete without asking)')
     print('  -n STRING  node (i.e. FW1:dmz)')
     print('  -t STRING  tenant')
     print('  -s STRING  subnet (i.e. 10.0.0.0/8)')
@@ -22,6 +23,7 @@ def main():
     tenant = None
     node_name = None
     subnet = None
+    force = False
 
     # Configure logging
     logging.basicConfig()
@@ -43,7 +45,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vn:t:s:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vfn:t:s:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -51,6 +53,8 @@ def main():
         if opt == '-v':
             debug = True
             logger.setLevel(logging.DEBUG)
+        elif opt == '-f':
+            force = True
         elif opt == '-n':
             node_name = arg
         elif opt == '-t':
@@ -102,6 +106,11 @@ def main():
         if total is 0:
             sys.exit(0)
         # Deleting the static route
+        if not force:
+            confirm = input(f'Deleting static route {subnet} from L3 Out {l3_out}/{node_name}. Continue? [no|yes]')
+            if confirm != 'yes':
+                print('Aborting...')
+                sys.exit(0)
         if not deleteStaticRoute(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3_out, node_name = node_name, path = path, network = subnet):
             logger.error(f'failed to delete static route from path {path}')
             sys.exit(1)

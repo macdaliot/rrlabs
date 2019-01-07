@@ -12,13 +12,14 @@ from functions import *
 def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
+    print('  -f         force (delete without asking)')
     print('  -t STRING  Tenant')
     print('  -i INTEGER VLAN ID')
     print('  -a STRING  single|pc|vpc')
     print('  -g STRING  Policy Group (mandatory if PC or vPC is used)')
     print('  -l STRING  leaf (mandatory if single port is used)')
     print('  -p STRING  port (i.e. 1/15, mandatory if single port is used)')
-    print('  -f INTEGER FEX ID (i.e. 101, optional if single port is used)')
+    print('  -F INTEGER FEX ID (i.e. 101, optional if single port is used)')
     sys.exit(1)
 
 def main():
@@ -31,6 +32,7 @@ def main():
     port = None
     fex = None
     epg_name = None
+    force = False
 
     # Configure logging
     logging.basicConfig()
@@ -52,7 +54,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vt:i:a:g:l:p:f:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vft:i:a:g:l:p:F:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -60,6 +62,8 @@ def main():
         if opt == '-v':
             debug = True
             logger.setLevel(logging.DEBUG)
+        elif opt == '-f':
+            force = True
         elif opt == '-t':
             tenant = arg
         elif opt == '-i':
@@ -129,6 +133,11 @@ def main():
     # Getting paths from EPG
     total, paths = getPathFromEPG(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, app = tenant, name = epg_name, path = path)
     if total == 1:
+        if not force:
+            confirm = input(f'Deleting path {path} from EPG {epg_name}. Continue? [no|yes]')
+            if confirm != 'yes':
+                print('Aborting...')
+                sys.exit(0)
         # Deleting the path from the EPG
         if not deletePathFromEPG(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, app = tenant, name = epg_name, path = path):
             logging.error(f'cannot delete path {path} from EPG')
