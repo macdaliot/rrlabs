@@ -1,0 +1,13 @@
+---
+- name: reload_frrouting
+  become: yes
+  become_method: sudo
+  systemd:
+    name: frr.service
+    masked: no
+    enabled: yes
+    state: reloaded
+
+- name: nclu_commit
+  nclu:
+    commit: true

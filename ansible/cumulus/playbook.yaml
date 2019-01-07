@@ -1,0 +1,40 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: all
+  gather_facts: False
+  roles:
+    - role: routers
+      tags: routers
+
+  pre_tasks:
+    - name: "pre_task : VERIFYING ANSIBLE VERSION"
+      delegate_to: localhost
+      assert:
+        that: "ansible_version.full is version_compare('2.6.0', '>=')"
+        msg: "This playbook has been tested with Ansible >= 2.6.0, please upgrade."
+      tags: always
+
+    - name: "pre_task : TESTING REACHABILITY"
+      wait_for:
+        port: 22
+        host: "{{ansible_host}}"
+        timeout: 3
+      connection: local
+      tags: always
+
+    - name: "pre_task : ADDING SSH KEYS"
+      authorized_key:
+        user: cumulus
+        key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC/Pr0+TaiIKNdi0dFRtt45wmGpOJkUZJM2n4e0X5dlZd9Ut93g46qhnRKVjXdsc0RRt72sLIhZin4mUesSvZmWCCX8+VRnKINYcsu0/vMfxPKYSW1PfI6H5DWLHj+fvEfF0SNk7Kkvoy2RF5tGJTwI9pf/gJuNoWPhKYijfjMPwXmcUL053rasTeLGK2sn3sjHtWGjx+PuB9GYL/zHD9DbrMTPpoPhcAQ/0MGNRaxLTJhYc3S2LRVXQUTiVfuVjbRB5rxcO8wCVEK6R1tLmmaqY683rXoniCovSob85InbN4cBJ5/zq6yAC5YwSDrhK3/XCJf9jo/W6l63T3sq6YrF
+        state: present
+        exclusive: True
+
+    - name: "STARTING NCLU"
+      become: yes
+      become_method: sudo
+      systemd:
+        name: netd.service
+        masked: no
+        enabled: yes
+        state: started
+      tags: always

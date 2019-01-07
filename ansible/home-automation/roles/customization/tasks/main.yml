@@ -13,6 +13,7 @@
     - telnet
     - ruby
     - snmp
+    - sqlite3
     - vim
     - whois
 

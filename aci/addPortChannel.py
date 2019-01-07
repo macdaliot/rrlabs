@@ -5,7 +5,7 @@
     addVLANToEPG.py script.
 
     Examples:
-    # ./addPortChannel.py -t pc -T device -a active -n ESXi01-mgmt -p 1/15 -l Leaf101_102
+    # ./addPortChannel.py -t pc -T device -a active -n ESXi01:mgmt -p 1/15 -l Leaf101_102
 
 '''
 

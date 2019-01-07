@@ -1,0 +1,123 @@
+---
+- name: "ENABLING OSPF"
+  become: yes
+  become_method: sudo
+  lineinfile:
+    dest: "/etc/frr/daemons"
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  with_items:
+    - {regexp: "^[#]?ospfd", line: "ospfd=yes"}
+  notify: reload_frrouting
+
+- name: "STARTING FRRouting"
+  become: yes
+  become_method: sudo
+  systemd:
+    name: frr.service
+    masked: no
+    enabled: yes
+    state: started
+
+- name: "CONFIGURING OSPF"
+  nclu:
+    commands:
+      - "add hostname {{inventory_hostname}}"
+      - add interface eth0 alias Management
+      - add time zone Europe/Rome
+      - add vrf mgmt
+      - add vrf underlay
+      # - add add loopback lo vrf underlay
+  notify: nclu_commit
+
+- name: "CONFIGURING INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 alias to SW11
+      - add interface swp2 alias to SW12
+      - add interface swp3 alias to SW21
+      - add interface swp4 alias to SW22
+      - add interface swp1-4 vrf underlay
+      - add interface swp1-4 ospf network point-to-point
+      - add interface swp1-4 ospf area 0
+  when: "'routers' in group_names"
+  notify: nclu_commit
+
+- name: "CONFIGURING INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 alias to R1
+      - add interface swp2 alias to R2
+      - add interface swp1-2 vrf underlay
+      - add interface swp1-2 ospf network point-to-point
+      - add interface swp1-2 ospf area 0
+  when: "'dc1' in group_names or 'dc2' in group_names"
+  notify: nclu_commit
+
+- name: "CONFIGURING IP INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 ip address 192.168.254.0/31
+      - add interface swp2 ip address 192.168.254.4/31
+      - add interface swp3 ip address 192.168.254.8/31
+      - add interface swp4 ip address 192.168.254.12/31
+      - add ospf vrf underlay router-id 192.168.255.1
+      - add loopback lo ip address 192.168.255.1/32
+  when: "'r1' in inventory_hostname"
+  notify: nclu_commit
+
+- name: "CONFIGURING IP INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 ip address 192.168.254.2/31
+      - add interface swp2 ip address 192.168.254.6/31
+      - add interface swp3 ip address 192.168.254.10/31
+      - add interface swp4 ip address 192.168.254.14/31
+      - add ospf vrf underlay router-id 192.168.255.2
+      - add loopback lo ip address 192.168.255.2/32
+  when: "'r2' in inventory_hostname"
+  notify: nclu_commit
+
+- name: "CONFIGURING IP INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 ip address 192.168.254.1/31
+      - add interface swp2 ip address 192.168.254.3/31
+      - add ospf vrf underlay router-id 192.168.255.11
+      - add loopback lo ip address 192.168.255.11/32
+  when: "'sw11' in inventory_hostname"
+  notify: nclu_commit
+
+- name: "CONFIGURING IP INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 ip address 192.168.254.5/31
+      - add interface swp2 ip address 192.168.254.7/31
+      - add ospf vrf underlay router-id 192.168.255.12
+      - add loopback lo ip address 192.168.255.12/32
+  when: "'sw12' in inventory_hostname"
+  notify: nclu_commit
+
+- name: "CONFIGURING IP INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 ip address 192.168.254.9/31
+      - add interface swp2 ip address 192.168.254.11/31
+      - add ospf vrf underlay router-id 192.168.255.21
+      - add loopback lo ip address 192.168.255.21/32
+  when: "'sw21' in inventory_hostname"
+  notify: nclu_commit
+
+- name: "CONFIGURING IP INTERFACES"
+  nclu:
+    commands:
+      - add interface swp1 ip address 192.168.254.13/31
+      - add interface swp2 ip address 192.168.254.15/31
+      - add ospf vrf underlay router-id 192.168.255.22
+      - add loopback lo ip address 192.168.255.22/32
+  when: "'sw22' in inventory_hostname"
+  notify: nclu_commit
+
+
+# - name: "COMMIT"
+  # command: net commit

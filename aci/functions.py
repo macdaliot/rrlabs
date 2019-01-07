@@ -220,6 +220,35 @@ def getEPGsFromPath(ip = None, token = None, cookies = None, leaf_path = None, p
         logging.debug(response_text)
         return False, False
 
+def getEPGsFromInterfaceProfilePath(ip = None, token = None, cookies = None, interface_profile_path = None):
+    if not ip or not token or not cookies or not interface_profile_path:
+        logging.error('missing ip, token, cookies, interface_profile_path')
+        return False
+
+    url = f'https://{ip}/api/node/mo/{interface_profile_path}.json?rsp-subtree-include=full-deployment&target-node=all&challenge={token}'
+
+    r = requests.get(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        response = r.json()
+        cookies = r.cookies
+        if not 'children' in response['imdata'][0]['fabricPathEp']:
+            return 0, []
+        try:
+            objects = []
+            for object in response['imdata'][0]['fabricPathEp']['children']:
+                if 'children' in object['pconsNodeDeployCtx']:
+                    objects.append(object)
+        except Exception as err:
+            logging.debug('cannot parse EPGs from path')
+            return False, False
+        return len(objects), objects
+    else:
+        logging.error(f'failed to get EPGs with code {response_code}')
+        logging.debug(response_text)
+        return False, False
+
 def getPortCfgFromPath(ip = None, token = None, cookies = None, leaf_path = None, port = None, fex = None):
     if not ip or not token or not cookies or not leaf_path or not port:
         logging.error('missing ip, token, cookies, leaf or port')
@@ -1300,7 +1329,7 @@ def getInterfaceProfiles(ip = None, token = None, cookies = None, name = None):
 def getInterfaceProfileFromPortAndLeaf(ip = None, token = None, cookies = None, port = None, leaf = None):
     if not ip or not token or not cookies or not port or not leaf:
         logging.error('missing ip, token, cookies, port or leaf')
-        return False, False
+        return False
     try:
         interface_card = port.split('/')[0]
         interface_port = port.split('/')[1]
@@ -1342,8 +1371,7 @@ def getSwitchProfilesFromInterfaceProfile(ip = None, token = None, cookies = Non
     if not leaf:
         url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?query-target=subtree&target-subtree-class=infraRtAccPortP&challenge={token}'
     else:
-        leaf_id = getLeafID(ip = ip, token = token, cookies = cookies, name = leaf)
-        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?rsp-subtree-include=full-deployment&target-path=AccPortPToEthIf&challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/infra/accportprof-{name}.json?query-target=subtree&target-subtree-class=infraRtAccPortP&query-target-filter=eq(infraRtAccPortP.tDn,"uni/infra/nprof-{leaf}")&challenge={token}'
 
     r = requests.get(url, verify = False, cookies = cookies)
     response_code = r.status_code
@@ -1353,15 +1381,6 @@ def getSwitchProfilesFromInterfaceProfile(ip = None, token = None, cookies = Non
         cookies = r.cookies
         total = int(response['totalCount'])
         objects = response['imdata']
-        if leaf and total > 0:
-            new_objects = []
-            for object in objects:
-                if 'children' in object['infraAccPortP'] and len(object['infraAccPortP']['children']) > 0:
-                    for child in object['infraAccPortP']['children']:
-                        if child['pconsNodeDeployCtx']['attributes']['nodeId'] == str(leaf_id):
-                            new_objects.append(object)
-                            break
-            return len(new_objects), new_objects
         return total, objects
     else:
         logging.error(f'failed to get switch profile from interface profiles with code {response_code}')

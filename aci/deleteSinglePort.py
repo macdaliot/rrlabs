@@ -3,7 +3,7 @@
     This script check if a port is used in any tenant/app/EPGs. If the port is not used, the port is deconfigured.
 
     Examples:
-    # ./deleteSinglePort.py -l Leaf102 -p 1/37 -f 101
+    # ./deleteSinglePort.py -l Leaf102 -p 1/37 -F 101
 '''
 
 import getopt, logging, sys, time, yaml
@@ -95,8 +95,7 @@ def main():
     leaf_path = getPathFromLeafName(ip = apic_ip, token = token, cookies = cookies, name = leaf)
     if not leaf_path:
         logging.error(f'cannot find leaf {leaf}')
-        sys.exit(1
-        )
+        sys.exit(1)
 
     # Get EPGs from path
     total, epgs = getEPGsFromPath(ip = apic_ip, token = token, cookies = cookies, leaf_path = leaf_path, port = port, fex = fex)
