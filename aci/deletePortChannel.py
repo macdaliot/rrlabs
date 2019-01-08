@@ -98,54 +98,119 @@ def main():
         logging.error(f'cannot parse leaf {leaf}, should be in the form: Leaf103_104')
         sys.exit(1)
 
-    # Finding the interface profile
-    interface_profile = getInterfaceProfileFromPortAndLeaf(ip = apic_ip, token = token, cookies = cookies, port = port, leaf = leaf)
-    if not interface_profile:
-        logging.error(f'cannot find interface profile for {leaf}/{fex}/{port}')
-        sys.exit(1)
-
-    # Finding the path
-    path = getPathFromPolicyGroup(ip = apic_ip, token = token, cookies = cookies, name = interface_profile)
-    if not path:
-        logging.error(f'cannot find path for {interface_profile}')
-        sys.exit(1)
-
-    # Get EPGs from path
-    total, leaves = getEPGsFromInterfaceProfilePath(ip = apic_ip, token = token, cookies = cookies, interface_profile_path = path)
-    if total > 0:
-        # Port is used by leaf
-        for leaf in leaves:
-            leaf_id = leaf['pconsNodeDeployCtx']['attributes']['nodeId']
-            used_by = []
-            for epg in leaf['pconsNodeDeployCtx']['children']:
-                used_by.append(epg['pconsResourceCtx']['attributes']['ctxDn'])
-            logging.error('port is used in leaf {} by: {}'.format(leaf_id, ', '.join(used_by)))
-        sys.exit(1)
-
-    # testing if ports are used
-    for l in leafs:
-        leaf_path = getPathFromLeafName(ip = apic_ip, token = token, cookies = cookies, name = l)
-        if not leaf_path:
-            logging.error(f'cannot find leaf {l}')
-            sys.exit(1)
-
-        # any VLAN?
-        cfg = getPortCfgFromPath(ip = apic_ip, token = token, cookies = cookies, leaf_path = leaf_path, port = port, fex = fex)
-        if cfg['allowedVlans']:
-            logging.error(f'port is using VLANs {cfg["allowedVlans"]}')
-            sys.exit(1)
-
-        # is up?
-        if not force and cfg['operSt'] == 'up':
-            confirm = input(f'Port {l}:{fex}:{port} is up. Continue? [no|yes]')
-            if confirm != 'yes':
-                print('Aborting...')
-                sys.exit(0)
-
     if delete and fex:
-        # TODO
+        for leaf_name in leafs:
+            # Finding the path
+            path = getPathFromLeafPort(ip = apic_ip, token = token, cookies = cookies, name = leaf_name, port = port, fex = fex)
+            if not path:
+                logging.error(f'cannot find path for {leaf_name}/{fex}/{port}')
+                sys.exit(1)
+
+            # Get Leaf ID and POD
+            leaf_path = getPathFromLeafName(ip = apic_ip, token = token, cookies = cookies, name = leaf_name)
+            if not leaf_path:
+                logging.error(f'cannot find leaf {leaf_name}')
+                sys.exit(1)
+
+            # Get EPGs from path
+            total, epgs = getEPGsFromPath(ip = apic_ip, token = token, cookies = cookies, leaf_path = leaf_path, port = port, fex = fex)
+            if total > 0:
+                # Port is used by EPGs
+                used_by = []
+                for epg in epgs:
+                    used_by.append(epg['pconsResourceCtx']['attributes']['ctxDn'])
+                logging.error('port is used by: {}'.format(', '.join(used_by)))
+                sys.exit(1)
+
+            # is the port used by a PC/vPC?
+            cfg = getPortCfgFromPath(ip = apic_ip, token = token, cookies = cookies, leaf_path = leaf_path, port = port, fex = fex)
+            if cfg['bundleIndex'] != 'unspecified':
+                logging.error(f'port is used by {cfg["bundleIndex"]}')
+                sys.exit(1)
+
+            # any VLAN?
+            if cfg['allowedVlans']:
+                logging.error(f'port is using VLANs {cfg["allowedVlans"]}')
+                sys.exit(1)
+
+            # is up?
+            if not force and cfg['operSt'] == 'up':
+                confirm = input(f'Port {leaf}:{fex}:{port} is up. Continue? [no|yes]')
+                if confirm != 'yes':
+                    print('Aborting...')
+                    sys.exit(0)
+
+            fex_profile_name = f'FEX_{leaf_name}:Fex{fex}'
+            # Checking if port is used
+            total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = fex_profile_name, name = port, fex = True)
+            if total != 0:
+                for interface_selector_block in interface_selector_blocks:
+                    delete_selector = False
+                    selector = interface_selector_block['infraPortBlk']['attributes']['dn'].split('/')[3].split('-')[1]
+                    port_id = interface_selector_block['infraPortBlk']['attributes']['name']
+                    total_blocks, unused = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = fex_profile_name, selector = selector, fex = True)
+                    if total_blocks == 1:
+                        delete_selector = True
+                    if not force:
+                        confirm = input(f'Removing port {port} (id={port_id}) from interface profile FEX_{leaf}:Fex{fex}/{selector}. Continue? [no|yes]')
+                        if confirm != 'yes':
+                            print('Aborting...')
+                            sys.exit(0)
+                        if delete_selector:
+                            confirm = input(f'Removing also FEX_{leaf}:Fex{fex}/{selector}. Continue? [no|yes]')
+                            if confirm != 'yes':
+                                print('Aborting...')
+                                sys.exit(0)
+                    # Delete the interface from the Leaf Interface Profile
+                    if not deleteInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, name = port_id, profile = fex_profile_name, fex = True, selector = selector, delete_selector = delete_selector):
+                        logging.error('failed to delete port from FEX')
+                        sys.exit(1)
 
     if delete and not fex:
+        # Finding the interface profile
+        interface_profile = getInterfaceProfileFromPortAndLeaf(ip = apic_ip, token = token, cookies = cookies, port = port, leaf = leaf)
+        if not interface_profile:
+            logging.error(f'cannot find interface profile for {leaf}/{port}')
+            sys.exit(1)
+
+        # Finding the path
+        path = getPathFromPolicyGroup(ip = apic_ip, token = token, cookies = cookies, name = interface_profile)
+        if not path:
+            logging.error(f'cannot find path for {interface_profile}')
+            sys.exit(1)
+
+        # Get EPGs from path
+        total, leaves = getEPGsFromInterfaceProfilePath(ip = apic_ip, token = token, cookies = cookies, interface_profile_path = path)
+        if total > 0:
+            # Port is used by leaf
+            for leaf in leaves:
+                leaf_id = leaf['pconsNodeDeployCtx']['attributes']['nodeId']
+                used_by = []
+                for epg in leaf['pconsNodeDeployCtx']['children']:
+                    used_by.append(epg['pconsResourceCtx']['attributes']['ctxDn'])
+                logging.error('port is used in leaf {} by: {}'.format(leaf_id, ', '.join(used_by)))
+            sys.exit(1)
+
+        # testing if ports are used
+        for l in leafs:
+            leaf_path = getPathFromLeafName(ip = apic_ip, token = token, cookies = cookies, name = l)
+            if not leaf_path:
+                logging.error(f'cannot find leaf {l}')
+                sys.exit(1)
+
+            # any VLAN?
+            cfg = getPortCfgFromPath(ip = apic_ip, token = token, cookies = cookies, leaf_path = leaf_path, port = port, fex = fex)
+            if cfg['allowedVlans']:
+                logging.error(f'port is using VLANs {cfg["allowedVlans"]}')
+                sys.exit(1)
+
+            # is up?
+            if not force and cfg['operSt'] == 'up':
+                confirm = input(f'Port {l}:{fex}:{port} is up. Continue? [no|yes]')
+                if confirm != 'yes':
+                    print('Aborting...')
+                    sys.exit(0)
+
         # Counting how many switch profiles are bound to the interface profile
         total, unused = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = interface_profile, leaf = leaf)
         if total > 0:

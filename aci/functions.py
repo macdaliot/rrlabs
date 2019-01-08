@@ -101,7 +101,14 @@ def getPathFromLeafName(ip = None, token = None, cookies = None, name = None):
     response_text = r.text
     if response_code == 200:
         response = r.json()
-        return response['imdata'][0]['fabricNode']['attributes']['dn']
+        total = int(response['totalCount'])
+        if total == 1:
+            return response['imdata'][0]['fabricNode']['attributes']['dn']
+        elif total > 1:
+            logging.debug('found multiple path')
+        else:
+            logging.debug('path not found')
+        return False
     else:
         logging.error(f'failed to get path with code {response_code}')
         logging.debug(response_text)
