@@ -170,8 +170,8 @@ def main():
             total, svis = getStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, interface_name = 'ports', path = port_path)
             if total is 0:
                 # Adding the SVI
-                if not addStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, path = path, vip_mac_address = vip_mac_address, vlan = vlan, leaf_ip = leaf['ip'], vip_ip_address = vip_ip_address, mode = mode, l3out = l3out_name, node_name = name, name = 'ports'):
-                    logging.error('failed to create SVI on path {path}')
+                if not addStaticL3OutSVI(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, path = port_path, vip_mac_address = vip_mac_address, vlan = vlan, leaf_ip = leaf['ip'], vip_ip_address = vip_ip_address, mode = mode, l3out = l3out_name, node_name = name, name = 'ports'):
+                    logging.error('failed to create SVI on path {port_path}')
                     sys.exit(1)
 
             node_path = getPathFromLeafName(ip = apic_ip, token = token, cookies = cookies, name = leaf['name'])
@@ -184,7 +184,7 @@ def main():
             if total is 0:
                 # Adding physical node path
                 if not addStaticL3OutConfiguredNodes(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, l3out = l3out_name, node_name = name, path = node_path, router_id = router_id):
-                    logging.error(f'cannot add physical path {path} for L3Out')
+                    logging.error(f'cannot add physical path {node_path} for L3Out')
                     sys.exit(1)
 
     if bind:

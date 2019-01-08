@@ -93,16 +93,31 @@ def main():
         sys.exit(1)
 
     # Unbind the interface profile from the switch profile
+    if not force:
+        confirm = input(f'Unbinding {leaf_profile_name} from {leaf_profile}. Continue? [no|yes]')
+        if confirm != 'yes':
+            print('Aborting...')
+            sys.exit(0)
     if not unbindSwitchProfileFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile, interface_profile = leaf_profile_name):
         logging.error('failed to unbind interface profile from leaf')
         sys.exit(1)
 
     # Delete the leaf interface profile
+    if not force:
+        confirm = input(f'Deleting interface profile {leaf_profile_name}. Continue? [no|yes]')
+        if confirm != 'yes':
+            print('Aborting...')
+            sys.exit(0)
     if not deleteInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile_name):
         logging.error('failed to delete leaf interface profile')
         sys.exit(1)
 
     # Delete Fex Profile
+    if not force:
+        confirm = input(f'Deleting FEX profile {fex_profile_name}. Continue? [no|yes]')
+        if confirm != 'yes':
+            print('Aborting...')
+            sys.exit(0)
     if not deleteFexProfile(ip = apic_ip, token = token, cookies = cookies, name = fex_profile_name):
         logging.error(f'failed to delete {fex_profile_name}')
         sys.exit(1)

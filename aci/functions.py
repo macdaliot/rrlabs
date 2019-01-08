@@ -1855,6 +1855,23 @@ def addL3OutNodeProfile(ip = None, token = None, cookies = None, name = None, de
         logging.debug(response_text)
         return False
 
+def deleteL3OutNodeProfile(ip = None, token = None, cookies = None, name = None, l3out = None, tenant = None):
+    if not ip or not token or not cookies or not name or not tenant or not l3out or not tenant:
+        logging.error('missing ip, token, cookies, name, tenant, l3out')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/out-{l3out}/lnodep-{name}.json?challenge={token}'
+
+    r = requests.delete(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to delete L3Out node profile with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def getL3OutNodeProfiles(ip = None, token = None, cookies = None, tenant = None, l3out = None, name = None):
     if not ip or not token or not cookies or not tenant or not l3out:
         logging.error('missing ip, token, cookies, tenant, l3out')
