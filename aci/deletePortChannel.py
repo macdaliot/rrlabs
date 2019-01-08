@@ -143,7 +143,7 @@ def main():
             fex_profile_name = f'FEX_{leaf_name}:Fex{fex}'
             # Checking if port is used
             total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = fex_profile_name, name = port, fex = True)
-            if total != 0:
+            if total is not 0:
                 for interface_selector_block in interface_selector_blocks:
                     delete_selector = False
                     selector = interface_selector_block['infraPortBlk']['attributes']['dn'].split('/')[3].split('-')[1]

@@ -3,7 +3,7 @@
     This script configure a Fex attached to one leaf on one or more ports.
 
     Examples:
-    # ./addFex.py
+    # ./addFex.py -n Fex101 -i 101 -l Leaf101 -p 1/45 -p 1/46
 '''
 
 import getopt, logging, sys, yaml
@@ -12,7 +12,6 @@ from functions import *
 def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
-    print('  -n STRING  Fex Name (i.e. Fex101)')
     print('  -i INT     Fex ID (i.e. 101)')
     print('  -l STRING  Leaf Profile (i.e. Leaf101)')
     print('  -d STRING  description (optional)')
@@ -23,7 +22,6 @@ def usage():
 def main():
     debug = False
     force = False
-    name = None
     id = None
     leaf_profile = None
     description = None
@@ -49,7 +47,7 @@ def main():
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vfn:i:l:d:p:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vfi:l:d:p:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -57,8 +55,6 @@ def main():
         if opt == '-v':
             debug = True
             logger.setLevel(logging.DEBUG)
-        elif opt == '-n':
-            name = arg
         elif opt == '-i':
             id = int(arg)
         elif opt == '-d':
@@ -76,9 +72,6 @@ def main():
     # Checking options
     if len(sys.argv) == 1:
         usage()
-    if not name:
-        logger.error('name not specified')
-        sys.exit(1)
     if not leaf_profile:
         logger.error('leaf not specified')
         sys.exit(1)
@@ -87,6 +80,7 @@ def main():
         sys.exit(1)
     if not ports:
         logger.error('port not specified')
+    name = f'Fex{id}'
     fex_profile_name = f'FEX_{leaf_profile}:{name}'
     leaf_profile_name = f'{leaf_profile}:{name}'
 

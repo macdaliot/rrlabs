@@ -1122,6 +1122,23 @@ def addFexProfile(ip = None, token = None, cookies = None, name = None, descript
         logging.debug(response_text)
         return False
 
+def deleteFexProfile(ip = None, token = None, cookies = None, name = None):
+    if not ip or not token or not cookies or not name:
+        logging.error('missing ip, token, cookies, name')
+        return False
+
+    url = f'https://{ip}/api/node/mo/uni/infra/fexprof-{name}.json?challenge={token}'
+
+    r = requests.delete(url, verify = False, cookies = cookies)
+    response_code = r.status_code
+    response_text = r.text
+    if response_code == 200:
+        return True
+    else:
+        logging.error(f'failed to delete Fex with code {response_code}')
+        logging.debug(response_text)
+        return False
+
 def getFexProfile(ip = None, token = None, cookies = None, name = None):
     if not ip or not token or not cookies :
         logging.error('missing ip, token, cookies')
@@ -1375,7 +1392,7 @@ def getInterfaceProfileFromPortAndLeaf(ip = None, token = None, cookies = None, 
     for object in objects:
         interface_profile = object['infraPortBlk']['attributes']['dn'].split('/')[2].split('-')[1]
         total, unused = getSwitchProfilesFromInterfaceProfile(ip = ip, token = token, cookies = cookies, name = interface_profile, leaf = leaf)
-        if total != 0:
+        if total is not 0:
             return interface_profile
     # Nothing found
     return ''
