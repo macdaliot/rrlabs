@@ -142,6 +142,9 @@ def main():
                 print('Aborting...')
                 sys.exit(0)
 
+    if delete and fex:
+        # TODO
+
     if delete and not fex:
         # Counting how many switch profiles are bound to the interface profile
         total, unused = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = interface_profile, leaf = leaf)
@@ -158,7 +161,7 @@ def main():
         # Counting how many switch profiles are bound to the interface profile
         time.sleep(1)
         total, unused = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = interface_profile, leaf = leaf)
-        if total == 0:
+        if total is 0:
             # Interface profile is unused
             if not force:
                 confirm = input(f'Deleting unused profile {interface_profile}. Continue? [no|yes]')

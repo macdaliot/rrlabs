@@ -1201,13 +1201,23 @@ def addInterfacePolicyGroup(ip = None, token = None, cookies = None, name = None
             for k, v in objects[0].items():
                 # Need to capitalize first letter only
                 policy_class_name = k[:1].capitalize() + k[1:]
-            payload[class_name]['children'].append({
-                f"infraRs{policy_class_name}": {
-                    "attributes": {
-                        f"tn{policy_class_name}Name": policy_name
+            # Need to fix some class names
+            if policy_class_name == 'LacpLagPol':
+                payload[class_name]['children'].append({
+                    "infraRsLacpPol": {
+                        "attributes": {
+                            "tnLacpLagPolName": policy_name
+                        }
                     }
-                }
-            })
+                })
+            else:
+                payload[class_name]['children'].append({
+                    f"infraRs{policy_class_name}": {
+                        "attributes": {
+                            f"tn{policy_class_name}Name": policy_name
+                        }
+                    }
+                })
         elif total > 1:
             logging.error('found multiple policies for {policy_name}')
             return False
@@ -1347,7 +1357,7 @@ def getInterfaceProfileFromPortAndLeaf(ip = None, token = None, cookies = None, 
         response = r.json()
         total = int(response['totalCount'])
         objects = response['imdata']
-        if total == 0:
+        if total is 0:
             return ''
     else:
         logging.error(f'failed to get interface profiles from port with code {response_code}')

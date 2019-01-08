@@ -117,6 +117,15 @@ def main():
     else:
         logging.error(f'device type {device_type} not supported')
         sys.exit(1)
+    if po_protocol == 'active':
+        policies.append('LACP_Active')
+    elif po_protocol == 'nosuspend':
+        policies.append('LACP_No_Suspend')
+    elif po_protocol == 'static':
+        policies.append('Static')
+    else:
+        logging.error(f'po_protocol {po_protocol} not supported')
+        sys.exit(1)
     name = f'PC_{device_name}'
     if po_type == 'vpc':
         attributes['lagT'] = 'node'
@@ -192,15 +201,6 @@ def main():
             if not addInterfaceSelectorBlock(ip = apic_ip, token = token, cookies = cookies, profile = device_name, selector = 'ports', name = port, description = device_name):
                 logging.error(f'failed to create interface selector block with {port}')
                 sys.exit(1)
-
-    # Associating the interfaces to the policy group
-
-    '''
-        if not fex:
-            interface profile name = device_name
-                interface selector = one or more port
-            the script associate all ports to the leaf_profile
-    '''
 
 if __name__ == '__main__':
     main()

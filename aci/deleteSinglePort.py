@@ -168,7 +168,7 @@ def main():
             # Counting how many switch profiles are bound to the interface profile
             time.sleep(1)
             total, switch_profiles = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = interface_profile)
-            if total == 0:
+            if total is 0:
                 # Interface profile is unused
                 if not force:
                     confirm = input(f'Deleting unused profile {interface_profile}. Continue? [no|yes]')

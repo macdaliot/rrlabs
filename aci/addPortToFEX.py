@@ -5,7 +5,7 @@
     must be associated with the EPG using the addVLANToEPG.py script.
 
     Examples:
-    # ./addPortToFEX.py -v -n FEX_Leaf102:Fex101 -p 1/15 -T device|server|vPC_ESXi03:mgmt
+    # ./addPortToFEX.py -n ESXi01:mgmt -f FEX_Leaf102:Fex101 -p 1/31 -T device
 '''
 
 import getopt, logging, sys, yaml
@@ -15,19 +15,25 @@ def usage():
     print('Usage: {} [OPTIONS]'.format(sys.argv[0]))
     print('  -v         Be verbose and enable debug')
     print('  -n STRING  Connected device (i.e. ESXi02:iLO)')
-    print('  -f STRING  Fex Profile Name (i.e. FEX_Leaf102:Fex101)')
+    print('  -F STRING  Fex Profile Name (i.e. FEX_Leaf102:Fex101, must be repeated with -t)')
     print('  -d STRING  Interface Description (optional)')
+    print('  -t STRING  vpc (optional)')
     print('  -T STRING  device|server')
-    print('  -p STRING  port (i.e. 1/15, can be repeated)')
+    print('  -a STRING  active|nosuspend|static (mandatory with -t)')
+    print('  -p STRING  port (i.e. 1/15)')
+    print('  -f         Force: if policy group exists then overwrite it')
     sys.exit(1)
 
 def main():
     debug = False
-    fex_profile_name = None
+    fex_profile_names = []
     description = None
     device_type = None
-    ports = []
+    port = None
     name = None
+    po_type = None
+    po_protocol = None
+    force = False
 
     # Configure logging
     logging.basicConfig()
@@ -44,12 +50,13 @@ def main():
         apic_ip = config['apic_ip']
         apic_username = config['apic_username']
         apic_password = config['apic_password']
+        aep_l2 = config['aep_l2']
     except:
-        logger.error('invalid config.yaml file: missing apic_ip, apic_username or apic_password')
+        logger.error('invalid config.yaml file: missing apic_ip, apic_username, apic_password or aep_l2')
 
     # Reading options
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'vf:d:T:p:n:')
+        opts, args = getopt.getopt(sys.argv[1:], 'vfF:d:T:t:a:p:n:')
     except getopt.GetoptError as err:
         logger.error('exception while parsing options', exc_info = debug)
         usage()
@@ -57,16 +64,22 @@ def main():
         if opt == '-v':
             debug = True
             logger.setLevel(logging.DEBUG)
+        elif opt == '-f':
+            force = True
         elif opt == '-n':
             name = arg
-        elif opt == '-f':
-            fex_profile_name = arg
+        elif opt == '-F':
+            fex_profile_names.append(arg)
         elif opt == '-T':
             device_type = arg
+        elif opt == '-t':
+            po_type = arg
+        elif opt == '-a':
+            po_protocol = arg
         elif opt == '-d':
             description = arg
         elif opt == '-p':
-            ports.append(arg)
+            port = arg
         else:
             logger.error('unhandled option ({})'.format(opt))
             usage()
@@ -74,10 +87,10 @@ def main():
     # Checking options
     if len(sys.argv) == 1:
         usage()
-    if not fex_profile_name:
+    if not fex_profile_names:
         logger.error('fex name not specified')
         sys.exit(1)
-    if not ports:
+    if not port:
         logger.error('port not specified')
         sys.exit(1)
     if not device_type:
@@ -85,6 +98,12 @@ def main():
         sys.exit(1)
     if not name:
         logger.error('name not specified')
+    if po_type and po_type not in ['vpc']:
+        logger.error('po_type is not valid')
+        sys.exit(1)
+    if po_protocol and po_protocol not in ['active', 'nosuspend', 'static']:
+        logger.error('po_protocol is not valid')
+        sys.exit(1)
     if not description:
         description = name
 
@@ -94,26 +113,55 @@ def main():
         logging.error('authentication failed')
         sys.exit(1)
 
-    if device_type == 'server':
-        group = 'SinglePort_Server'
-    elif device_type == 'device':
-        group = 'SinglePort_Device'
-    else:
-        # Device type not recognized, looking for an interface policy group (PC/vPC)
-        total, interface_policy_groups = getInterfacePolicyGroups(ip = apic_ip, token = token, cookies = cookies, name = group, class_name = 'infraAccPortGrp')
-        if total is 0:
-            logging.error(f'interface policy group {group} does not exist')
+    if not po_type:
+        # Configuring single port
+        if device_type == 'server':
+            group = 'SinglePort_Server'
+        elif device_type == 'device':
+            group = 'SinglePort_Device'
+        else:
+            logging.error(f'device type {device_type} not supported')
             sys.exit(1)
-        group = device_type
+    else:
+        # Configuring a vPC
+        group = f'vPC_{name}'
+        attributes = {
+            'lagT': 'node'
+        }
+        po_description = f'Virtual Port-Channel to {name}'
+        if device_type == 'device':
+            policies = ['CDP_On', 'LLDP_On', 'BPDU_Guard']
+        elif device_type == 'server':
+            policies = ['CDP_Off', 'LLDP_Off', 'BPDU_Guard']
+        else:
+            logging.error(f'device type {device_type} not supported')
+            sys.exit(1)
+        if po_protocol == 'active':
+            policies.append('LACP_Active')
+        elif po_protocol == 'nosuspend':
+            policies.append('LACP_No_Suspend')
+        elif po_protocol == 'static':
+            policies.append('Static')
+        else:
+            logging.error(f'po_protocol {po_protocol} not supported')
+            sys.exit(1)
+
+        # Checking if interface policy group exists
+        total, interface_policy_groups = getInterfacePolicyGroups(ip = apic_ip, token = token, cookies = cookies, name = group, class_name = 'infraAccBndlGrp')
+        if total is 0 or force:
+            # Adding the policy group (port-channel)
+            if not addInterfacePolicyGroup(ip = apic_ip, token = token, cookies = cookies, name = group, policies = policies, aep = aep_l2, description = po_description, attributes = attributes, class_name = 'infraAccBndlGrp'):
+                logging.error(f'failed to add port-channel {name}')
+                sys.exit(1)
 
     # Checking if Fex profile exists
-    total, fex_profiles = getFexProfile(ip = apic_ip, token = token, cookies = cookies, name = fex_profile_name)
-    if total is 0:
-        logging.error(f'Fex profile not found')
-        sys.exit(1)
+    for fex_profile_name in fex_profile_names:
+        total, fex_profiles = getFexProfile(ip = apic_ip, token = token, cookies = cookies, name = fex_profile_name)
+        if total is 0:
+            logging.error(f'Fex profile {fex_profile_name} not found')
+            sys.exit(1)
 
-    # Checking if interface selector block exists
-    for port in ports:
+        # Checking if interface selector block exists
         total, interface_selector_blocks = getInterfaceSelectorBlocks(ip = apic_ip, token = token, cookies = cookies, profile = fex_profile_name, name = port, fex = True)
         if total is 0:
             # Adding interface selector block
@@ -121,8 +169,8 @@ def main():
                 logging.error(f'failed to create interface selector block with {port}')
                 sys.exit(1)
         else:
-            logging.error(f'port {port} is already configured on Fex {fex_profile_name}')
-            sys.exit(1)
+            logging.warning(f'port {port} is already configured on Fex {fex_profile_name}')
+            continue
 
 if __name__ == '__main__':
     main()
