@@ -319,7 +319,7 @@ def addPolicies(ip = None, token = None, cookies = None, aep = None):
         "AEP_Global": {
     		"infraAttEntityP": {
     			"attributes": {
-    				"dn": "uni/infra/attentp-AAA_AEP_Global"
+    				"dn": "uni/infra/attentp-AEP_Global"
     			}
     		}
         },
