@@ -1,49 +1,49 @@
 #!/bin/bash
 
-# echo -n "Adding base policies... "
-# ./addPolicies.py
-# if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
-#
-# cat build_FEXs.csv | tail -n+2 | grep -v "^$" | while read line; do
-#   LEAF=$(echo $line | cut -d, -f1)
-#   FEXID=$(echo $line | cut -d, -f2)
-#   PORT1=$(echo $line | cut -d, -f3)
-#   PORT2=$(echo $line | cut -d, -f4)
-#   echo -n "Adding FEX ${FEXID} to ${LEAF}... "
-#   ./addFex.py -i "${FEXID}" -l "${LEAF}" -p "${PORT1}" -p "${PORT2}"
-#   if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
-# done
-#
-# cat build_vpcs.csv | tail -n+2 | grep -v "^$" | while read line; do
-#   IFPROFILE=$(echo $line | cut -d, -f1)
-#   PROTOCOL=$(echo $line | cut -d, -f2)
-#   NAME=$(echo $line | cut -d, -f3)
-#   LEAF=$(echo $line | cut -d, -f4)
-#   PORT=$(echo $line | cut -d, -f5)
-#   echo -n "Adding vPC ${NAME}... "
-#   ./addPortChannel.py -t vpc -T "${IFPROFILE}" -a "${PROTOCOL}" -n "${NAME}" -l "${LEAF}" -p "${PORT}"
-#   if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
-# done
-#
-# cat build_single_ports.csv | tail -n+2 | grep -v "^$" | while read line; do
-#   IFPROFILE=$(echo $line | cut -d, -f1)
-#   NAME=$(echo $line | cut -d, -f2)
-#   LEAF=$(echo $line | cut -d, -f3)
-#   PORT=$(echo $line | cut -d, -f4)
-#   echo -n "Adding single port ${NAME}... "
-#   ./addSinglePort.py -n "${NAME}" -T "${IFPROFILE}" -i "${PORT}" -l "${LEAF}"
-#   if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
-# done
-#
-# cat build_fex_ports.csv | tail -n+2 | grep -v "^$" | while read line; do
-#   IFPROFILE=$(echo $line | cut -d, -f1)
-#   NAME=$(echo $line | cut -d, -f2)
-#   LEAF=$(echo $line | cut -d, -f3)
-#   PORT=$(echo $line | cut -d, -f4)
-#   echo -n "Adding FEX port ${NAME}... "
-#   ./addPortToFEX.py -F "${LEAF}" -n "${NAME}" -T "${IFPROFILE}" -p "${PORT}"
-#   if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
-# done
+echo -n "Adding base policies... "
+./addPolicies.py
+if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+
+cat build_FEXs.csv | tail -n+2 | grep -v "^$" | while read line; do
+  LEAF=$(echo $line | cut -d, -f1)
+  FEXID=$(echo $line | cut -d, -f2)
+  PORT1=$(echo $line | cut -d, -f3)
+  PORT2=$(echo $line | cut -d, -f4)
+  echo -n "Adding FEX ${FEXID} to ${LEAF}... "
+  ./addFex.py -i "${FEXID}" -l "${LEAF}" -p "${PORT1}" -p "${PORT2}"
+  if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+done
+
+cat build_vpcs.csv | tail -n+2 | grep -v "^$" | while read line; do
+  IFPROFILE=$(echo $line | cut -d, -f1)
+  PROTOCOL=$(echo $line | cut -d, -f2)
+  NAME=$(echo $line | cut -d, -f3)
+  LEAF=$(echo $line | cut -d, -f4)
+  PORT=$(echo $line | cut -d, -f5)
+  echo -n "Adding vPC ${NAME}... "
+  ./addPortChannel.py -t vpc -T "${IFPROFILE}" -a "${PROTOCOL}" -n "${NAME}" -l "${LEAF}" -p "${PORT}"
+  if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+done
+
+cat build_single_ports.csv | tail -n+2 | grep -v "^$" | while read line; do
+  IFPROFILE=$(echo $line | cut -d, -f1)
+  NAME=$(echo $line | cut -d, -f2)
+  LEAF=$(echo $line | cut -d, -f3)
+  PORT=$(echo $line | cut -d, -f4)
+  echo -n "Adding single port ${NAME}... "
+  ./addSinglePort.py -n "${NAME}" -T "${IFPROFILE}" -i "${PORT}" -l "${LEAF}"
+  if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+done
+
+cat build_fex_ports.csv | tail -n+2 | grep -v "^$" | while read line; do
+  IFPROFILE=$(echo $line | cut -d, -f1)
+  NAME=$(echo $line | cut -d, -f2)
+  LEAF=$(echo $line | cut -d, -f3)
+  PORT=$(echo $line | cut -d, -f4)
+  echo -n "Adding FEX port ${NAME}... "
+  ./addPortToFEX.py -F "${LEAF}" -n "${NAME}" -T "${IFPROFILE}" -p "${PORT}"
+  if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+done
 
 cat build_tenants.csv | tail -n+2 | grep -v "^$" | while read line; do
   TENANT=$(echo $line | cut -d, -f1)
