@@ -25,6 +25,17 @@ cat build_vpcs.csv | tail -n+2 | grep -v "^$" | while read line; do
   if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
 done
 
+cat build_pcs.csv | tail -n+2 | grep -v "^$" | while read line; do
+  IFPROFILE=$(echo $line | cut -d, -f1)
+  PROTOCOL=$(echo $line | cut -d, -f2)
+  NAME=$(echo $line | cut -d, -f3)
+  LEAF=$(echo $line | cut -d, -f4)
+  PORT=$(echo $line | cut -d, -f5)
+  echo -n "Adding PC ${NAME}... "
+  ./addPortChannel.py -t pc -T "${IFPROFILE}" -a "${PROTOCOL}" -n "${NAME}" -l "${LEAF}" -p "${PORT}"
+  if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+done
+
 cat build_single_ports.csv | tail -n+2 | grep -v "^$" | while read line; do
   IFPROFILE=$(echo $line | cut -d, -f1)
   NAME=$(echo $line | cut -d, -f2)
