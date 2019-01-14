@@ -102,6 +102,16 @@ cat build_static3out.csv | tail -n+2 | grep -v "^$" | while read line; do
   if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
 done
 
+cat build_static_routes.csv | tail -n+2 | grep -v "^$" | while read line; do
+  TENANT=$(echo $line | cut -d, -f1)
+  NODE=$(echo $line | cut -d, -f2)
+  NETWORK=$(echo $line | cut -d, -f3)
+  NEXTHOP=$(echo $line | cut -d, -f4)
+  echo -n "Adding static route to ${NODE} for ${NETWORK}... "
+  ./addStaticRoute.py -n "${NODE}" -t "${TENANT}" -s "${NETWORK}" -g "${NEXTHOP}"
+  if [ $? -eq 0 ]; then echo "OK"; else echo "FAIL"; exit 1; fi
+done
+
 cat build_ports2EPG.csv | tail -n+2 | grep -v "^$" | while read line; do
   TENANT=$(echo $line | cut -d, -f1)
   MODE=$(echo $line | cut -d, -f2)
