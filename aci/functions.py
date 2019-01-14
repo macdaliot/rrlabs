@@ -400,8 +400,7 @@ def addPolicies(ip = None, token = None, cookies = None, aep = None):
     			"children": [{
     				"infraRsVlanNs": {
     					"attributes": {
-    						"annotation": "",
-    						"tDn": "uni/infra/vlanns-[Pool_ALL_VLANs]-static"
+    						"tDn": "uni/infra/vlanns-[VLAN_ALL]-static"
     					}
     				}
     			}]
