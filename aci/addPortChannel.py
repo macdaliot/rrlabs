@@ -172,6 +172,7 @@ def main():
 
     # Checking how many switch profiles are connected to the interface profile
     total, switch_profiles = getSwitchProfilesFromInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = name)
+
     if total > 1:
         logging.error(f'interface profile {name} is bound to multiple switch profiles')
     elif total == 1:
@@ -181,8 +182,8 @@ def main():
             sys.exit(1)
     else:
         # Binding interface profile with the switch profile
-        if not bindSwitchProfileToInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile, interface_profile = name):
-            logging.error(f'failed to bind switch profile {leaf_profile} to interface profile {name}')
+        if not bindSwitchProfileToInterfaceProfile(ip = apic_ip, token = token, cookies = cookies, name = leaf_profile, interface_profile = device_name):
+            logging.error(f'failed to bind switch profile {leaf_profile} to interface profile {device_name}')
             sys.exit(1)
 
     # Checking if interface selector exists

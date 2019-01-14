@@ -316,47 +316,6 @@ def addPolicies(ip = None, token = None, cookies = None, aep = None):
         return False
 
     policies = {
-        "AEP_Global": {
-    		"infraAttEntityP": {
-    			"attributes": {
-    				"dn": "uni/infra/attentp-AEP_Global"
-    			}
-    		}
-        },
-        "Phy_Global": {
-    		"physDomP": {
-    			"attributes": {
-    				"dn": "uni/phys-Phy_Global"
-    			},
-    			"children": [{
-    				"infraRsVlanNs": {
-    					"attributes": {
-    						"tDn": "uni/infra/vlanns-[VLAN_ALL]-static"
-    					}
-    				}
-    			}]
-    		}
-        },
-        "L3_Global": {
-    		"l3extDomP": {
-    			"attributes": {
-    				"annotation": "",
-    				"dn": "uni/l3dom-L3_Global",
-    				"name": "L3_Global",
-    				"nameAlias": "",
-    				"ownerKey": "",
-    				"ownerTag": ""
-    			},
-    			"children": [{
-    				"infraRsVlanNs": {
-    					"attributes": {
-    						"annotation": "",
-    						"tDn": "uni/infra/vlanns-[Pool_ALL_VLANs]-static"
-    					}
-    				}
-    			}]
-    		}
-        },
         "VLAN_ALL": {
     		"fvnsVlanInstP": {
     			"attributes": {
@@ -412,6 +371,64 @@ def addPolicies(ip = None, token = None, cookies = None, aep = None):
     					}
     				}
     			}]
+    		}
+        },
+        "Phy_Global": {
+    		"physDomP": {
+    			"attributes": {
+    				"dn": "uni/phys-Phy_Global"
+    			},
+    			"children": [{
+    				"infraRsVlanNs": {
+    					"attributes": {
+    						"tDn": "uni/infra/vlanns-[VLAN_ALL]-static"
+    					}
+    				}
+    			}]
+    		}
+        },
+        "L3_Global": {
+    		"l3extDomP": {
+    			"attributes": {
+    				"annotation": "",
+    				"dn": "uni/l3dom-L3_Global",
+    				"name": "L3_Global",
+    				"nameAlias": "",
+    				"ownerKey": "",
+    				"ownerTag": ""
+    			},
+    			"children": [{
+    				"infraRsVlanNs": {
+    					"attributes": {
+    						"annotation": "",
+    						"tDn": "uni/infra/vlanns-[Pool_ALL_VLANs]-static"
+    					}
+    				}
+    			}]
+    		}
+        },
+        "AEP_Global": {
+    		"infraAttEntityP": {
+    			"attributes": {
+    				"dn": "uni/infra/attentp-AEP_Global"
+    			},
+                "children": [{
+                		"infraRsDomP": {
+                			"attributes": {
+                				"annotation": "",
+                				"tDn": "uni/l3dom-L3_Global"
+                			}
+                		}
+                	},
+                	{
+                		"infraRsDomP": {
+                			"attributes": {
+                				"annotation": "",
+                				"tDn": "uni/phys-Phy_Global"
+                			}
+                		}
+                	}
+                ]
     		}
         },
         "IGMP_Snoop_Off": {

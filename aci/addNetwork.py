@@ -119,12 +119,6 @@ def main():
         if total > 0:
             epg_exists = True
 
-    if subnet:
-        # Binding the BD to the L3Out (mandatory to avoid blackhole)
-        if not bindBDtoL3Out(ip = apic_ip, token = token, cookies = cookies, name = name, tenant = tenant, l3out = f'L3OUT_{tenant}'):
-            logger.error(f'failed to bind L3Oout to BD {bd_name}')
-            sys.exit(1)
-
     if subnet_only:
         # Working on subnet only
         if subnet:
@@ -145,6 +139,12 @@ def main():
     else:
         if not addBD(ip = apic_ip, token = token, cookies = cookies, name = name, description = description, tenant = tenant, mac = mac, subnet = subnet, vrf = tenant):
             logging.error(f'failed to create bridge domain {name}')
+            sys.exit(1)
+
+    if subnet:
+        # Binding the BD to the L3Out (mandatory to avoid blackhole)
+        if not bindBDtoL3Out(ip = apic_ip, token = token, cookies = cookies, name = name, tenant = tenant, l3out = f'L3OUT_{tenant}'):
+            logger.error(f'failed to bind L3Oout to BD {name}')
             sys.exit(1)
 
     if epg_exists:
