@@ -1117,7 +1117,6 @@ def addFexProfile(ip = None, token = None, cookies = None, name = None, descript
     			"infraFexBndlGrp": {
     				"attributes": {
     					"name": name,
-                        "descr": f"Port-Channel connected to the leaf"
     				}
     			}
     		}]
@@ -1127,6 +1126,7 @@ def addFexProfile(ip = None, token = None, cookies = None, name = None, descript
     # Adding description
     if description:
         payload['infraFexP']['attributes']['descr'] = description
+        payload['infraFexP']['children'][0]['infraFexBndlGrp']['attributes']['descr'] = description
 
     r = requests.post(url, verify = False, cookies = cookies, data = json.dumps(payload))
     response_code = r.status_code
