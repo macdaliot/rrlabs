@@ -60,7 +60,7 @@ def main():
         elif opt == '-n':
             name = arg
         elif opt == '-q':
-            vlan = arg
+            vlan = int(arg)
         elif opt == '-o':
             only_subnet = True
         else:
@@ -72,6 +72,9 @@ def main():
         usage()
     if not tenant or not name or not vlan:
         logger.error('tenant, network name or vlan not specified')
+        sys.exit(1)
+    if vlan < 1 or vlan > 4094 or vlan == 3967 or vlan == 4095 or (vlan >= 1002 and vlan <= 1005):
+        logger.error('vlan is a between 1 amd 4094 excluding 1002-1005 and 3967 ')
         sys.exit(1)
     name = f'{vlan:0>4}_{name}'
     l3out = f'L3OUT_{tenant}'
@@ -96,6 +99,16 @@ def main():
                     logging.error(f'failed to delete {network} from bd {name}')
                     sys.exit(1)
         return
+
+    # Checking if EPG is used
+    total, paths = getPathFromEPG(ip = apic_ip, token = token, cookies = cookies, tenant = tenant, app = tenant, name = name)
+    if total != 0:
+        # EPG is used
+        used_by = ''
+        for path in paths:
+            used_by = used_by + path['fvRsPathAtt']['attributes']['tDn']
+        logging.error(f'EPG used by {used_by}')
+        sys.exit(1)
 
     if not force:
         confirm = input(f'Deleting EPG {name}. Continue? [no|yes]')

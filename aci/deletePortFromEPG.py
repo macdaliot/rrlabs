@@ -67,7 +67,7 @@ def main():
         elif opt == '-t':
             tenant = arg
         elif opt == '-i':
-            vlan = arg
+            vlan = int(arg)
         elif opt == '-a':
             port_type = arg
         elif opt == '-g':
@@ -76,7 +76,7 @@ def main():
             leaf = arg
         elif opt == '-p':
             port = arg
-        elif opt == '-f':
+        elif opt == '-F':
             fex = arg
         else:
             logger.error('unhandled option ({})'.format(opt))
@@ -90,6 +90,9 @@ def main():
         sys.exit(1)
     if not vlan:
         logger.error('vlan not specified')
+        sys.exit(1)
+    if vlan < 1 or vlan > 4094 or vlan == 3967 or vlan == 4095 or (vlan >= 1002 and vlan <= 1005):
+        logger.error('vlan is a between 1 amd 4094 excluding 1002-1005 and 3967 ')
         sys.exit(1)
     if not port_type or port_type not in ['single', 'pc', 'vpc']:
         logger.error('single|pv|vpc not specified or not valid')

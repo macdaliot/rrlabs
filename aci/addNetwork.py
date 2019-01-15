@@ -19,7 +19,7 @@ def usage():
     print('  -q INT     VLAN ID (802.1Q)')
     print('  -d STRING  Network Description (optional)')
     print('  -m STRING  MAC address (i.e. 00:22:BD:aa:bb:cc, optional)')
-    print('  -s STRING  Subnet (i.e. 192.168.0.1/24, mandatory with -o)')
+    print('  -s STRING  Anycast address (i.e. 192.168.0.1/24, mandatory with -o)')
     print('  -o         Create subnet only (optional)')
     print('  -f         Force: if exists then overwrite it')
     sys.exit(1)
@@ -75,7 +75,7 @@ def main():
         elif opt == '-n':
             name = arg
         elif opt == '-q':
-            vlan = arg
+            vlan = int(arg)
         elif opt == '-d':
             description = arg
         elif opt == '-m':
@@ -93,6 +93,9 @@ def main():
         usage()
     if not tenant or not name or not vlan:
         logger.error('tenant, network name or vlan not specified')
+        sys.exit(1)
+    if vlan < 1 or vlan > 4094 or vlan == 3967 or vlan == 4095 or (vlan >= 1002 and vlan <= 1005):
+        logger.error('vlan is a between 1 amd 4094 excluding 1002-1005 and 3967 ')
         sys.exit(1)
     name = f'{vlan:0>4}_{name}'
 

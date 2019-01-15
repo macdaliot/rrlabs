@@ -1080,7 +1080,7 @@ def getPathFromEPG(ip = None, token = None, cookies = None, tenant = None, app =
         return False, False
 
     if path:
-        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/ap-{app}/epg-{name}.json?query-target=children&target-subtree-class=fvRsPathAtt&&query-target-filter=eq(fvRsPathAtt.tDn,"{path}")&challenge={token}'
+        url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/ap-{app}/epg-{name}.json?query-target=children&target-subtree-class=fvRsPathAtt&query-target-filter=eq(fvRsPathAtt.tDn,"{path}")&challenge={token}'
     else:
         url = f'https://{ip}/api/node/mo/uni/tn-{tenant}/ap-{app}/epg-{name}.json?query-target=children&target-subtree-class=fvRsPathAtt&challenge={token}'
 
