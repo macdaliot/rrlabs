@@ -1,16 +1,23 @@
 ---
+- name: "INSTALLING PYTHON SETUPTOOLS MODULE"
+  pip:
+    executable: pip3
+    name:
+      - setuptools
+
 - name: "INSTALLING PYTHON MODULES"
   pip:
     executable: pip3
     name:
-      - ansible
       - fbtftp
       - lxml
-      - nornir
       - pexpect
       - salt
       - selenium
       - zeep
+      - ansible==2.7.0
+      - nornir==1.1.0
+
 
 - file:
     src: /usr/lib/chromium-browser/chromedriver
@@ -26,7 +33,7 @@
   with_items:
     - {path: "/opt/customtftp/tftproot", owner: "root", group: "root"}
     - {path: "/root/scripts", owner: "root", group: "root"}
-    - {path: "/opt/unetlab/labs/Courses", owner: "www-data", group: "www-data"}
+    - {path: "/opt/unetlab/labs/Courses/NetDevOps", owner: "www-data", group: "www-data"}
     - {path: "/etc/salt/pillar", owner: "root", group: "root"}
     - {path: "/usr/src/axlsqltoolkit", owner: "root", group: "root"}
 
