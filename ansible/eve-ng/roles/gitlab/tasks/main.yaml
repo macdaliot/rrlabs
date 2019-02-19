@@ -43,7 +43,7 @@
 - name: "SETTING ADMIN PASSWORD"
   command: /usr/local/bin/set_gitlab_password.py
   register: command_result
-  changed_when: command_result.stdout is search("has been set")
+  changed_when: command_result.stderr is search("has been set")
 
 - name: "DOWNLOADING GITLAB RUNNER"
   get_url:
